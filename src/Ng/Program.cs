@@ -43,6 +43,10 @@ namespace Ng
                         var feedToCatalog = new Feed2Catalog();
                         feedToCatalog.Run(args, cancellationTokenSource.Token);
                         break;
+                    case "commandqueue2catalog":
+                        var commandQueueToCatalog = new CommandQueue2Catalog();
+                        commandQueueToCatalog.Run(args, cancellationTokenSource.Token);
+                        break;
                     case "catalog2registration":
                         var catalog2Registration = new Catalog2Registration();
                         catalog2Registration.Run(args, cancellationTokenSource.Token);

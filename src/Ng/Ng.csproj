@@ -158,6 +158,7 @@
   <ItemGroup>
     <Compile Include="Catalog2Dnx.cs" />
     <Compile Include="DnxCatalogCollector.cs" />
+    <Compile Include="CommandQueue2Catalog.cs" />
     <Compile Include="ResetLucene.cs" />
     <Compile Include="Catalog2Lucene.cs" />
     <Compile Include="Catalog2Registration.cs" />
