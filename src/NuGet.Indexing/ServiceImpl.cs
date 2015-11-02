@@ -131,7 +131,9 @@ namespace NuGet.Indexing
                 AddField(obj, document, "licenseUrl", "LicenseUrl");
                 AddField(obj, document, "projectUrl", "ProjectUrl");
                 AddFieldAsArray(obj, document, "tags", "Tags");
-                AddFieldAsArray(obj, document, "authors", "Authors");
+                AddFieldAsArray(obj, document, "authors", "Authors", true);
+
+                obj["totalDownloads"] = searcherManager.GetDownloadCounts(id, version).Item1;
 
                 obj["version"] = version;
                 obj["versions"] = searcherManager.GetVersions(searcher, scheme, scoreDoc.Doc);
@@ -157,13 +159,20 @@ namespace NuGet.Indexing
             }
         }
 
-        static void AddFieldAsArray(JObject obj, Document document, string to, string from)
+        static void AddFieldAsArray(JObject obj, Document document, string to, string from, bool singleElement = false)
         {
             string value = document.Get(from);
             if (value != null)
             {
-                // ReSharper disable once CoVariantArrayConversion
-                obj[to] = new JArray(value.Split(' '));
+                if (singleElement)
+                {
+                    obj[to] = new JArray(value);
+                }
+                else
+                {
+                    // ReSharper disable once CoVariantArrayConversion
+                    obj[to] = new JArray(value.Split(' '));
+                }
             }
         }
 
