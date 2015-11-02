@@ -182,6 +182,7 @@ namespace NuGet.Indexing
         {
             IDictionary<string, string> commitMetadata = new Dictionary<string, string>();
 
+            commitMetadata.Add("commitTimeStamp", DateTime.UtcNow.ToString("O"));
             commitMetadata.Add("commit-time-stamp", DateTime.UtcNow.ToString());
             commitMetadata.Add("commit-description", description ?? string.Empty);
             commitMetadata.Add("commit-document-count", count.ToString());
