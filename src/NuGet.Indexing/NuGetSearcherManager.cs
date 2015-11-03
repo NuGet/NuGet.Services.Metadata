@@ -97,7 +97,7 @@ namespace NuGet.Indexing
 
             return new NuGetSearcherManager(
                 indexContainer,
-                new AzureDirectory(storageAccount, indexContainer, new RAMDirectory()),
+                new AzureDirectory(storageAccount, indexContainer),
                 new StorageRankings(storageAccount, dataContainer, dataPath + Rankings.FileName),
                 new StorageDownloadLookup(storageAccount, dataContainer, dataPath + DownloadLookup.FileName),
                 new StorageFrameworkCompatibility(storageAccount, dataContainer, dataPath + FrameworkCompatibility.FileName));
