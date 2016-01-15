@@ -1,17 +1,17 @@
 <?xml version="1.0"?>
-<package >
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
   <metadata>
-    <id>$id$</id>
-    <version>$version$</version>
-    <title>$title$</title>
-    <authors>$author$</authors>
-    <owners>$author$</owners>
+    <id>NuGet.Indexing</id>
+    <version>3.4.0-r-master</version>
+    <title>NuGet.Indexing</title>
+    <authors>Outercurve Foundation</authors>
+    <owners>Outercurve Foundation</owners>
     <licenseUrl>https://github.com/NuGet/NuGet.Services.Search/blob/master/LICENSE</licenseUrl>
     <projectUrl>https://github.com/NuGet/NuGet.Services.Search</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>$description$</description>
-    <releaseNotes></releaseNotes>
-    <copyright>Copyright 2014 .NET Foundation</copyright>
+    <description>Lucene-based Search Indexing tools for NuGet</description>
+    <releaseNotes />
+    <copyright>Copyright 2014 Outercurve Foundation</copyright>
     <tags>nuget services search index lucene</tags>
   </metadata>
 </package>
