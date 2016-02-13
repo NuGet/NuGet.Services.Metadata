@@ -17,7 +17,7 @@ namespace NuGet.Services.Metadata.Catalog.Registration
         IList<Uri> _cleanUpList;
 
         public RegistrationMakerCatalogWriter(IStorage storage, int partitionSize = 100, IList<Uri> cleanUpList = null, ICatalogGraphPersistence graphPersistence = null, CatalogContext context = null)
-            : base(storage, graphPersistence, context)
+            : base(storage, graphPersistence, context, false)
         {
             _cleanUpList = cleanUpList;
             PartitionSize = partitionSize;

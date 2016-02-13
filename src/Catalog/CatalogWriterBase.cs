@@ -17,8 +17,9 @@ namespace NuGet.Services.Metadata.Catalog
     {
         protected List<CatalogItem> _batch;
         protected bool _open;
+        protected bool _saveCommitInfo;
 
-        public CatalogWriterBase(IStorage storage, ICatalogGraphPersistence graphPersistence = null, CatalogContext context = null)
+        public CatalogWriterBase(IStorage storage, ICatalogGraphPersistence graphPersistence = null, CatalogContext context = null, bool saveCommitInfo = true)
         {
             Options.InternUris = false;
 
@@ -28,6 +29,7 @@ namespace NuGet.Services.Metadata.Catalog
 
             _batch = new List<CatalogItem>();
             _open = true;
+            _saveCommitInfo = saveCommitInfo;
 
             RootUri = Storage.ResolveUri("index.json");
         }
@@ -170,9 +172,13 @@ namespace NuGet.Services.Metadata.Catalog
             INode countPredicate = graph.CreateUriNode(Schema.Predicates.CatalogCount);
 
             graph.Assert(resourceNode, typePredicate, graph.CreateUriNode(typeUri));
-            graph.Assert(resourceNode, commitIdPredicate, graph.CreateLiteralNode(commitId.ToString()));
-            graph.Assert(resourceNode, timeStampPredicate, graph.CreateLiteralNode(commitTimeStamp.ToString("O"), Schema.DataTypes.DateTime));
-            graph.Assert(resourceNode, countPredicate, graph.CreateLiteralNode(entries.Count.ToString(), Schema.DataTypes.Integer));
+
+            if (_saveCommitInfo)
+            {
+                graph.Assert(resourceNode, commitIdPredicate, graph.CreateLiteralNode(commitId.ToString()));
+                graph.Assert(resourceNode, timeStampPredicate, graph.CreateLiteralNode(commitTimeStamp.ToString("O"), Schema.DataTypes.DateTime));
+                graph.Assert(resourceNode, countPredicate, graph.CreateLiteralNode(entries.Count.ToString(), Schema.DataTypes.Integer));
+            }
 
             foreach (KeyValuePair<string, CatalogItemSummary> itemEntry in entries)
             {
@@ -180,12 +186,16 @@ namespace NuGet.Services.Metadata.Catalog
 
                 graph.Assert(resourceNode, itemPredicate, itemNode);
                 graph.Assert(itemNode, typePredicate, graph.CreateUriNode(itemEntry.Value.Type));
-                graph.Assert(itemNode, commitIdPredicate, graph.CreateLiteralNode(itemEntry.Value.CommitId.ToString()));
-                graph.Assert(itemNode, timeStampPredicate, graph.CreateLiteralNode(itemEntry.Value.CommitTimeStamp.ToString("O"), Schema.DataTypes.DateTime));
 
-                if (itemEntry.Value.Count != null)
+                if (_saveCommitInfo)
                 {
-                    graph.Assert(itemNode, countPredicate, graph.CreateLiteralNode(itemEntry.Value.Count.ToString(), Schema.DataTypes.Integer));
+                    graph.Assert(itemNode, commitIdPredicate, graph.CreateLiteralNode(itemEntry.Value.CommitId.ToString()));
+                    graph.Assert(itemNode, timeStampPredicate, graph.CreateLiteralNode(itemEntry.Value.CommitTimeStamp.ToString("O"), Schema.DataTypes.DateTime));
+
+                    if (itemEntry.Value.Count != null)
+                    {
+                        graph.Assert(itemNode, countPredicate, graph.CreateLiteralNode(itemEntry.Value.Count.ToString(), Schema.DataTypes.Integer));
+                    }
                 }
 
                 if (itemEntry.Value.Content != null)
