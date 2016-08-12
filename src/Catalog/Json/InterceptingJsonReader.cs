@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
-namespace Ng.Json
+namespace NuGet.Services.Metadata.Catalog.Json
 {
     public abstract class InterceptingJsonReader
         : JsonReader
@@ -46,7 +46,7 @@ namespace Ng.Json
             return expression;
         }
 
-        private bool TestPath(string jsonPath)
+        protected bool TestPath(string jsonPath)
         {
             foreach (var property in PropertiesToIntercept)
             {
