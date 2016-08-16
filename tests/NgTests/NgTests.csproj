@@ -84,6 +84,7 @@
     <Compile Include="Feed2CatalogTests.cs" />
     <Compile Include="Infrastructure\MemoryStorage.cs" />
     <Compile Include="Infrastructure\MockServerHttpClientHandlerExtensions.cs" />
+    <Compile Include="Infrastructure\StopwatchMeasurement.cs" />
     <Compile Include="Infrastructure\StorageContentExtensions.cs" />
     <Compile Include="Infrastructure\TestStorageFactory.cs" />
     <Compile Include="Infrastructure\MockServerHttpClientHandler.cs" />

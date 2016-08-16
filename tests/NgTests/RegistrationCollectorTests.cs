@@ -12,11 +12,19 @@ using NgTests.Infrastructure;
 using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Registration;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace NgTests
 {
     public class RegistrationCollectorTests
     {
+        private readonly ITestOutputHelper _output;
+
+        public RegistrationCollectorTests(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [Fact]
         public async Task CreatesRegistrationsAndRespectsDeletes()
         {
@@ -42,7 +50,10 @@ namespace NgTests
             ReadCursor back = MemoryCursor.CreateMax();
 
             // Act
-            await target.Run(front, back, CancellationToken.None);
+            using (new StopwatchMeasurement("Run collector", _output))
+            {
+                await target.Run(front, back, CancellationToken.None);
+            }
 
             // Assert
             Assert.Equal(6, catalogToRegistrationStorage.Content.Count);
