@@ -20,14 +20,16 @@ namespace CollectorSample.RegistrationPoc
         private readonly RecordingStorage _storage;
         private readonly Uri _registrationBaseAddress;
         private readonly Uri _contentBaseAddress;
+        private readonly IPackagePathProvider _packagePathProvider;
 
-        public RegistrationPersistence2(StorageFactory storageFactory, RegistrationKey registrationKey, int partitionSize, int packageCountThreshold, Uri contentBaseAddress)
+        public RegistrationPersistence2(StorageFactory storageFactory, RegistrationKey registrationKey, int partitionSize, int packageCountThreshold, Uri contentBaseAddress, IPackagePathProvider packagePathProvider)
         {
             _storage = new RecordingStorage(storageFactory.Create(registrationKey.ToString()));
             _packageCountThreshold = packageCountThreshold;
             _partitionSize = partitionSize;
             _registrationBaseAddress = storageFactory.BaseAddress;
             _contentBaseAddress = contentBaseAddress;
+            _packagePathProvider = packagePathProvider;
         }
 
         public Task<IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2>> Load(CancellationToken cancellationToken)
@@ -37,7 +39,7 @@ namespace CollectorSample.RegistrationPoc
 
         public async Task Save(IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2> registration, CancellationToken cancellationToken)
         {
-            await Save(_storage, _registrationBaseAddress, registration, _partitionSize, _packageCountThreshold, _contentBaseAddress, cancellationToken);
+            await Save(_storage, _registrationBaseAddress, registration, _partitionSize, _packageCountThreshold, _contentBaseAddress, _packagePathProvider, cancellationToken);
 
             await Cleanup(_storage, cancellationToken);
         }
@@ -56,7 +58,7 @@ namespace CollectorSample.RegistrationPoc
             }
         }
 
-        private static async Task Save(IStorage storage, Uri registrationBaseAddress, IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2> registration, int partitionSize, int packageCountThreshold, Uri contentBaseAddress, CancellationToken cancellationToken)
+        private static async Task Save(IStorage storage, Uri registrationBaseAddress, IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2> registration, int partitionSize, int packageCountThreshold, Uri contentBaseAddress, IPackagePathProvider packagePathProvider, CancellationToken cancellationToken)
         {
             Trace.TraceInformation("RegistrationPersistence2.Save");
 
@@ -79,9 +81,10 @@ namespace CollectorSample.RegistrationPoc
                             item.Version,
                             new Uri(item.RegistrationUri),
                             item.Subject, 
-                            registrationBaseAddress, 
-                            item.IsExistingItem, 
-                            contentBaseAddress));
+                            registrationBaseAddress,
+                            item.IsExistingItem,
+                            contentBaseAddress,
+                            packagePathProvider.GetPackagePath(item.Id, item.Version)));
                 }
 
                 await writer.Commit(items.First().Id, DateTime.UtcNow, cancellationToken);

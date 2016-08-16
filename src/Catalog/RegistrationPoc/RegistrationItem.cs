@@ -14,13 +14,14 @@ namespace CollectorSample.RegistrationPoc
         public Uri RegistrationBaseAddress { get; }
         public JObject Subject { get; }
         public Uri RegistrationUri { get; }
+        public string PackagePath { get; }
 
         public Uri RegistrationVersionUri
         {
             get { return new Uri($"{RegistrationBaseAddress}{Id}/{Version}.json".ToLowerInvariant()); }
         }
 
-        public RegistrationItem(string id, string version, Uri registrationUri, JObject subject, Uri registrationBaseAddress, bool isExistingItem, Uri contentBaseAddress)
+        public RegistrationItem(string id, string version, Uri registrationUri, JObject subject, Uri registrationBaseAddress, bool isExistingItem, Uri contentBaseAddress, string packagePath)
         {
             Id = id;
             Version = version;
@@ -29,6 +30,7 @@ namespace CollectorSample.RegistrationPoc
             RegistrationBaseAddress = registrationBaseAddress;
             IsExistingItem = isExistingItem;
             ContentBaseAddress = contentBaseAddress;
+            PackagePath = packagePath;
         }
 
         public JTokenStorageContent CreateContent(Guid commitId, DateTime commitTimeStamp)
@@ -44,7 +46,7 @@ namespace CollectorSample.RegistrationPoc
             packageContext.Add(PropertyNames.CatalogEntry, RegistrationUri);
             packageContext.Add(PropertyNames.Listed, Subject["listed"]);
             packageContext.Add(PropertyNames.Published, Subject["published"]);
-            packageContext.Add(PropertyNames.PackageContent, $"{ContentBaseAddress}packages/{Id}.{Version}.nupkg".ToLowerInvariant());
+            packageContext.Add(PropertyNames.PackageContent, $"{ContentBaseAddress.ToString().TrimEnd('/')}/{PackagePath}".ToLowerInvariant());
             packageContext.Add(PropertyNames.Registration, $"{RegistrationBaseAddress}{Id}/index.json".ToLowerInvariant());
 
             return new JTokenStorageContent(packageContext, "application/json", "no-store");

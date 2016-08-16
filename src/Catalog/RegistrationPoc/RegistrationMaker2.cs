@@ -11,11 +11,11 @@ namespace CollectorSample.RegistrationPoc
 {
     public static class RegistrationMaker2
     {
-        public static async Task Process(RegistrationKey registrationKey, IDictionary<string, JObject> newItems, StorageFactory storageFactory, Uri contentBaseAddress, int partitionSize, int packageCountThreshold, CancellationToken cancellationToken)
+        public static async Task Process(RegistrationKey registrationKey, IDictionary<string, JObject> newItems, StorageFactory storageFactory, Uri contentBaseAddress, IPackagePathProvider packagePathProvider, int partitionSize, int packageCountThreshold, CancellationToken cancellationToken)
         {
             Trace.TraceInformation("RegistrationMaker2.Process: registrationKey = {0} newItems: {1}", registrationKey, newItems.Count);
 
-            var registration = new RegistrationPersistence2(storageFactory, registrationKey, partitionSize, packageCountThreshold, contentBaseAddress);
+            var registration = new RegistrationPersistence2(storageFactory, registrationKey, partitionSize, packageCountThreshold, contentBaseAddress, packagePathProvider);
 
             var existing = await registration.Load(cancellationToken);
 

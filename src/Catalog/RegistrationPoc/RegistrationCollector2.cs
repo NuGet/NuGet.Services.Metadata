@@ -17,6 +17,7 @@ namespace CollectorSample.RegistrationPoc
         private readonly StorageFactory _storageFactory;
 
         public Uri ContentBaseAddress { get; set; }
+        public IPackagePathProvider PackagePathProvider { get; set; }
         public int PartitionSize { get; set; }
         public int PackageCountThreshold { get; set; }
 
@@ -26,6 +27,7 @@ namespace CollectorSample.RegistrationPoc
             _storageFactory = storageFactory;
 
             ContentBaseAddress = new Uri("http://tempuri.org");
+            PackagePathProvider = new PackagesFolderPackagePathProvider();
 
             PartitionSize = 64;
             PackageCountThreshold = 128;
@@ -77,6 +79,7 @@ namespace CollectorSample.RegistrationPoc
                 sortedGraphs.Value,
                 _storageFactory,
                 ContentBaseAddress,
+                PackagePathProvider,
                 PartitionSize,
                 PackageCountThreshold,
                 cancellationToken);

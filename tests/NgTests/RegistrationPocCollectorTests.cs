@@ -32,9 +32,7 @@ namespace NgTests
             {
                 ContentBaseAddress = new Uri("http://tempuri.org/packages")
             };
-
-            // TODO RegistrationMakerCatalogItem.PackagePathProvider = new PackagesFolderPackagePathProvider();
-
+            
             ReadWriteCursor front = new DurableCursor(catalogToRegistrationStorage.ResolveUri("cursor.json"), catalogToRegistrationStorage, MemoryCursor.MinValue);
             ReadCursor back = MemoryCursor.CreateMax();
 
