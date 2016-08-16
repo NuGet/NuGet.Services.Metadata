@@ -63,28 +63,29 @@ namespace CollectorSample.RegistrationPoc
                 registrationVersionContext.Add(PropertyNames.CatalogEntry, registrationVersion.Subject.FilterClone(
                     new[]
                     {
-                        "[*].catalogEntry.@id",
-                        "[*].catalogEntry.@type",
-                        "[*].catalogEntry.authors",
-                        "[*].catalogEntry.dependencyGroups",
-                        "[*].catalogEntry.dependencyGroups[*].*",
-                        "[*].catalogEntry.description",
-                        "[*].catalogEntry.iconUrl",
-                        "[*].catalogEntry.id",
-                        "[*].catalogEntry.language",
-                        "[*].catalogEntry.licenseUrl",
-                        "[*].catalogEntry.listed",
-                        "[*].catalogEntry.minClientVersion",
-                        "[*].catalogEntry.projectUrl",
-                        "[*].catalogEntry.published",
-                        "[*].catalogEntry.requireLicenseAcceptance",
-                        "[*].catalogEntry.summary",
-                        "[*].catalogEntry.tags",
-                        "[*].catalogEntry.title",
-                        "[*].catalogEntry.version"
+                        "@id",
+                        "@type",
+                        "authors",
+                        "dependencyGroups",
+                        "dependencyGroups[*].*",
+                        "description",
+                        "iconUrl",
+                        "id",
+                        "language",
+                        "licenseUrl",
+                        "listed",
+                        "minClientVersion",
+                        "projectUrl",
+                        "published",
+                        "requireLicenseAcceptance",
+                        "summary",
+                        "tags",
+                        "title",
+                        "version",
+                        "verbatimVersion"
                     }));
 
-                registrationVersionContext.Add("packageContent", $"{contentBaseAddress}packages/{registrationVersion.Id}.{registrationVersion.Version}.nupkg".ToLowerInvariant()); // TODO
+                registrationVersionContext.Add("packageContent", $"{contentBaseAddress.ToString().TrimEnd('/')}/{registrationVersion.PackagePath}".ToLowerInvariant()); // TODO
                 registrationVersionContext.Add("registration", $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant()); // TODO
 
                 registrationItemsContext.Add(registrationVersionContext);

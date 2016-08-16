@@ -57,8 +57,13 @@ namespace CollectorSample.RegistrationPoc
             if (Pages.Count == 1)
             {
                 // Only one page? Then our first page is the index root...
-                registrationContext.Add("count", 1);
-                registrationContext.Add("items", Pages.First().CreateContent(partitionSize, commitId, commitTimeStamp).Content);
+                var page = Pages.First();
+
+                registrationContext.Add(PropertyNames.Count, 1);
+                registrationContext.Add(PropertyNames.Items, page.CreateContent(partitionSize, commitId, commitTimeStamp).Content);
+                
+                registrationContext.Add(PropertyNames.Lower, page.Lower.Version);
+                registrationContext.Add(PropertyNames.Upper, page.Upper.Version);
             }
             else
             {
@@ -80,8 +85,8 @@ namespace CollectorSample.RegistrationPoc
                     pagesContext.Add(pageContext);
                 }
 
-                registrationContext.Add("count", pagesContext.Count);
-                registrationContext.Add("items", pagesContext);
+                registrationContext.Add(PropertyNames.Count, pagesContext.Count);
+                registrationContext.Add(PropertyNames.Items, pagesContext);
             }
             
             return new JTokenStorageContent(registrationContext, "application/json", "no-store");

@@ -184,30 +184,7 @@ namespace CollectorSample.RegistrationPoc
             var content = new JTokenStorageContent(registrationContext, "application/json", "no-store");
             await storage.Save(new Uri($"{registrationBaseAddress}{items.First().Id}/index.json"), content, cancellationToken);
         }
-
-        //private static async Task SaveLargeRegistration(IStorage storage, Uri registrationBaseAddress, IList<RegistrationCatalogEntry2> items, int partitionSize, Uri contentBaseAddress, CancellationToken cancellationToken)
-        //{
-        //    Trace.TraceInformation("RegistrationPersistence2.SaveLargeRegistration: registrationBaseAddress = {0} items: {1}", registrationBaseAddress, items.Count);
-
-        //    IList<Uri> cleanUpList = new List<Uri>();
-
-        //    await SaveRegistration(storage, registrationBaseAddress, items, cleanUpList, null, partitionSize, contentBaseAddress, cancellationToken);
-        //}
-
-        //private static async Task SaveRegistration(IStorage storage, Uri registrationBaseAddress, IList<RegistrationCatalogEntry2> items, IList<Uri> cleanUpList, SingleGraphPersistence graphPersistence, int partitionSize, Uri contentBaseAddress, CancellationToken cancellationToken)
-        //{
-        //    Trace.TraceInformation("RegistrationPersistence2.SaveRegistration: registrationBaseAddress = {0} items: {1}", registrationBaseAddress, items.Count);
-
-        //    using (RegistrationMakerCatalogWriter writer = new RegistrationMakerCatalogWriter(storage, partitionSize, cleanUpList, graphPersistence))
-        //    {
-        //        foreach (var item in items)
-        //        {
-        //            writer.Add(new RegistrationMakerCatalogItem(new Uri(item.ResourceUri), item.Graph, registrationBaseAddress, item.IsExistingItem, contentBaseAddress));
-        //        }
-        //        await writer.Commit(DateTime.UtcNow, null, cancellationToken);
-        //    }
-        //}
-
+        
         private static async Task Cleanup(RecordingStorage storage, CancellationToken cancellationToken)
         {
             Trace.TraceInformation("RegistrationPersistence2.Cleanup");

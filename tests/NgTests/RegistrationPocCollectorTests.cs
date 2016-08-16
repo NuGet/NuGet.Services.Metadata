@@ -8,6 +8,7 @@ using CollectorSample.RegistrationPoc;
 using NgTests.Data;
 using NgTests.Infrastructure;
 using NuGet.Services.Metadata.Catalog;
+using NuGet.Services.Metadata.Catalog.Registration;
 using Xunit;
 
 namespace NgTests
@@ -30,7 +31,8 @@ namespace NgTests
             // Setup collector
             var target = new RegistrationCollector2(new Uri("http://tempuri.org/index.json"), catalogToRegistrationStorageFactory, () => mockServer)
             {
-                ContentBaseAddress = new Uri("http://tempuri.org/packages")
+                ContentBaseAddress = new Uri("http://tempuri.org/packages"),
+                PackagePathProvider =  new PackagesFolderPackagePathProvider(prefix: null)
             };
             
             ReadWriteCursor front = new DurableCursor(catalogToRegistrationStorage.ResolveUri("cursor.json"), catalogToRegistrationStorage, MemoryCursor.MinValue);

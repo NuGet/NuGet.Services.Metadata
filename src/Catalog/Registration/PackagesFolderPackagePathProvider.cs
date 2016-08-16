@@ -5,9 +5,21 @@ namespace NuGet.Services.Metadata.Catalog.Registration
 {
     public class PackagesFolderPackagePathProvider : IPackagePathProvider
     {
+        private readonly string _prefix;
+
+        public PackagesFolderPackagePathProvider(string prefix = "packages")
+        {
+            _prefix = prefix;
+        }
+
         public string GetPackagePath(string id, string version)
         {
-            return $"packages/{id.ToLowerInvariant()}.{version.ToLowerInvariant()}.nupkg";
+            if (!string.IsNullOrEmpty(_prefix))
+            {
+                return $"{_prefix}/{id.ToLowerInvariant()}.{version.ToLowerInvariant()}.nupkg";
+            }
+
+            return $"{id.ToLowerInvariant()}.{version.ToLowerInvariant()}.nupkg";
         }
     }
 }
