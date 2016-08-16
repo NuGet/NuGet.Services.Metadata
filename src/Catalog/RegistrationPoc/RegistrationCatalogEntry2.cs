@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Registration;
@@ -25,9 +26,11 @@ namespace CollectorSample.RegistrationPoc
 
         public static KeyValuePair<RegistrationEntryKey, RegistrationCatalogEntry2> Promote(string registrationUri, JObject subject, bool isExistingItem)
         {
-            var id = subject["id"].ToString().ToLowerInvariant();
-            var version = subject["version"].ToString().ToLowerInvariant();
-            var type = Schema.Prefixes.NuGet + subject["@type"].ToString().Replace("nuget:", string.Empty);
+            var id = subject[PropertyNames.Id].ToString().ToLowerInvariant();
+            var version = subject[PropertyNames.Version].ToString().ToLowerInvariant();
+            var type = subject[PropertyNames.SchemaType] is JArray
+                ? subject[PropertyNames.SchemaType].Select(t => Schema.Prefixes.NuGet + t.ToString().Replace("nuget:", string.Empty))
+                : new [] { Schema.Prefixes.NuGet + subject[PropertyNames.SchemaType].ToString().Replace("nuget:", string.Empty) };
 
             var registrationEntryKey = new RegistrationEntryKey(
                 new RegistrationKey(id), version);
@@ -39,10 +42,10 @@ namespace CollectorSample.RegistrationPoc
             return new KeyValuePair<RegistrationEntryKey, RegistrationCatalogEntry2>(registrationEntryKey, registrationCatalogEntry);
         }
 
-        static bool IsDelete(string type)
+        static bool IsDelete(IEnumerable<string> type)
         {
-            return type == Schema.DataTypes.CatalogDelete.ToString()
-                || type == Schema.DataTypes.PackageDelete.ToString();
+            return type.Any(t => t == Schema.DataTypes.CatalogDelete.ToString()
+                              || t == Schema.DataTypes.PackageDelete.ToString());
         }
     }
 }
