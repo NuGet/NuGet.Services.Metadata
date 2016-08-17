@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -22,6 +23,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
         public IPackagePathProvider PackagePathProvider { get; set; }
         public int PartitionSize { get; set; }
         public int PackageCountThreshold { get; set; }
+        public bool ProcessBatchesConcurrent { get; set; }
 
         public RawJsonRegistrationCollector(Uri index, StorageFactory storageFactory, Func<HttpMessageHandler> handlerFunc = null)
             : base(index, new Uri[] { Schema.DataTypes.PackageDetails, Schema.DataTypes.PackageDelete }, handlerFunc)
@@ -62,14 +64,102 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
                     group.Min(item => item.CommitTimeStamp),
                     group));
 
-            // TODO: do we want to limit the number of batches that can be processed at once?
-
             return Task.FromResult(batches);
         }
 
         private string GetKey(JToken item)
         {
             return item["nuget:id"].ToString();
+        }
+
+        protected override async Task<bool> Fetch(
+            CollectorHttpClient client, 
+            ReadWriteCursor front, 
+            ReadCursor back, 
+            CancellationToken cancellationToken)
+        {
+            // Process batches concurrently?
+            if (!ProcessBatchesConcurrent)
+            {
+                // No...
+                return await base.Fetch(client, front, back, cancellationToken);
+            }
+
+            // Yes!
+            JObject root = await client.GetJObjectAsync(Index, cancellationToken);
+
+            IEnumerable<CatalogItem> rootItems = root["items"]
+                .Select(item => new CatalogItem(item))
+                .Where(item => item.CommitTimeStamp > front.Value)
+                .OrderBy(item => item.CommitTimeStamp);
+
+            bool acceptNextBatch = false;
+
+            foreach (CatalogItem rootItem in rootItems)
+            {
+                JObject page = await client.GetJObjectAsync(rootItem.Uri, cancellationToken);
+
+                JToken context = null;
+                page.TryGetValue("@context", out context);
+
+                var batches = await CreateBatches(page["items"]
+                    .Select(item => new CatalogItem(item))
+                    .Where(item => item.CommitTimeStamp > front.Value && item.CommitTimeStamp <= back.Value));
+
+                var orderedBatches = batches
+                    .OrderBy(batch => batch.CommitTimeStamp)
+                    .ToList();
+
+                var lastBatch = orderedBatches.LastOrDefault();
+
+                var tasks = new Dictionary<CatalogItemBatch, Task<bool>>();
+                foreach (var batch in orderedBatches)
+                {
+                    var task = OnProcessBatch(
+                        client,
+                        batch.Items.Select(item => item.Value),
+                        context,
+                        batch.CommitTimeStamp,
+                        batch.CommitTimeStamp == lastBatch.CommitTimeStamp,
+                        cancellationToken);
+
+                    tasks.Add(batch, task);
+
+                    if (!Concurrent)
+                    {
+                        task.Wait(cancellationToken);
+                    }
+                }
+
+                await Task.WhenAll(tasks.Values.ToArray());
+
+                var latestCommitTimestamp = front.Value;
+                foreach (var batchTask in tasks)
+                {
+                    acceptNextBatch = batchTask.Value.Result;
+                    if (batchTask.Key.CommitTimeStamp > latestCommitTimestamp)
+                    {
+                        latestCommitTimestamp = batchTask.Key.CommitTimeStamp;
+                    }
+
+                    if (!acceptNextBatch)
+                    {
+                        break;
+                    }
+                }
+                
+                front.Value = latestCommitTimestamp;
+                await front.Save(cancellationToken);
+
+                Trace.TraceInformation("CommitCatalog.Fetch front.Save has value: {0}", front);
+
+                if (!acceptNextBatch)
+                {
+                    break;
+                }
+            }
+
+            return acceptNextBatch;
         }
 
         protected override Task ProcessTypedBatch(
