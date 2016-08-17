@@ -6,7 +6,6 @@ using NuGet.Services.Metadata.Catalog.Persistence;
 using NuGet.Services.Metadata.Catalog.Registration;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -22,7 +21,7 @@ namespace Ng
             _logger = loggerFactory.CreateLogger<Catalog2Registration>();
         }
 
-        public async Task Loop(string source, StorageFactory storageFactory, string contentBaseAddress, bool unlistShouldDelete, bool verbose, int interval, CancellationToken cancellationToken)
+        public async Task Loop(string source, StorageFactory storageFactory, string contentBaseAddress, bool unlistShouldDelete, bool verbose, int interval, string endTime, CancellationToken cancellationToken)
         {
             CommitCollector collector = new RegistrationCollector(new Uri(source), storageFactory, CommandHelpers.GetHttpMessageHandlerFactory(verbose))
             {
@@ -33,19 +32,14 @@ namespace Ng
 
             Storage storage = storageFactory.Create();
             ReadWriteCursor front = new DurableCursor(storage.ResolveUri("cursor.json"), storage, MemoryCursor.MinValue);
-            ReadCursor back = MemoryCursor.CreateMax();
+            ReadCursor back = new MemoryCursor(DateTime.Parse(endTime));    // Run until end.
 
-            while (true)
+            bool run = false;
+            do
             {
-                bool run = false;
-                do
-                {
-                    run = await collector.Run(front, back, cancellationToken);
-                }
-                while (run);
-
-                Thread.Sleep(interval * 1000);
+                run = await collector.Run(front, back, cancellationToken);
             }
+            while (run);
         }
 
         public static void PrintUsage()
@@ -83,7 +77,8 @@ namespace Ng
             bool unlistShouldDelete = CommandHelpers.GetUnlistShouldDelete(arguments, required: false);
             bool verbose = CommandHelpers.GetVerbose(arguments, required: false);
             int interval = CommandHelpers.GetInterval(arguments, defaultInterval: Constants.DefaultInterval);
-
+            string endtime;
+            CommandHelpers.TryGetArgument(arguments, BenchmarkC2R.EndCursorArgument, out endtime);
             string contentBaseAddress = CommandHelpers.GetContentBaseAddress(arguments);
 
             StorageFactory storageFactory = CommandHelpers.CreateStorageFactory(arguments, verbose);
@@ -106,11 +101,11 @@ namespace Ng
                     new[] { compressedStorageFactory },
                     secondaryStorageBaseUrlRewriter.Rewrite);
 
-                Loop(source, aggregateStorageFactory, contentBaseAddress, unlistShouldDelete, verbose, interval, cancellationToken).Wait();
+                Loop(source, aggregateStorageFactory, contentBaseAddress, unlistShouldDelete, verbose, interval, endtime, cancellationToken).Wait();
             }
             else
             {
-                Loop(source, storageFactory, contentBaseAddress, unlistShouldDelete, verbose, interval, cancellationToken).Wait();
+                Loop(source, storageFactory, contentBaseAddress, unlistShouldDelete, verbose, interval, endtime, cancellationToken).Wait();
             }
         }
     }

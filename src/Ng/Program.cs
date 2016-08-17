@@ -75,8 +75,8 @@ namespace Ng
                         break;
                     case "catalog2registration":
                         printToolUsage = Catalog2Registration.PrintUsage;
-                        var catalog2Registration = new Catalog2Registration(loggerFactory);
-                        catalog2Registration.Run(arguments, cancellationTokenSource.Token);
+                        var bencmarkC2R = new BenchmarkC2R(loggerFactory, arguments, cancellationTokenSource.Token);
+                        //catalog2Registration.Run(arguments, cancellationTokenSource.Token);
                         break;
                     case "catalog2lucene":
                         printToolUsage = Catalog2Lucene.PrintUsage;

@@ -279,6 +279,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BenchmarkC2R.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Catalog2Dnx.cs" />
     <Compile Include="Json\RegistrationBaseUrlRewritingJsonReader.cs" />

@@ -55,7 +55,7 @@ namespace Ng
             Trace.TraceError("Required argument \"{0}\" not provided", name);
         }
 
-        private static bool TryGetArgument(IDictionary<string, string> arguments, string searchArg, out string value, bool required = false)
+        public static bool TryGetArgument(IDictionary<string, string> arguments, string searchArg, out string value, bool required = false)
         {
             if (!arguments.TryGetValue(Constants.ArgumentPrefix + searchArg, out value))
             {
