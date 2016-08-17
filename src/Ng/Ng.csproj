@@ -282,10 +282,6 @@
     <Compile Include="BenchmarkC2R.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="Catalog2Dnx.cs" />
-    <Compile Include="Json\RegistrationBaseUrlRewritingJsonReader.cs" />
-    <Compile Include="Json\InterceptingJsonReader.cs" />
-    <Compile Include="Json\JTokenExtensions.cs" />
-    <Compile Include="Json\PropertySkippingJsonReader.cs" />
     <Compile Include="Lightning.cs" />
     <Compile Include="Db2Lucene.cs" />
     <Compile Include="ResetLucene.cs" />

@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Ng.Json;
+using NuGet.Services.Metadata.Catalog.Json;
 using NuGet.Services.Metadata.Catalog.Persistence;
 
 namespace Ng

@@ -1,12 +1,10 @@
-// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-
 using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using CollectorSample.RegistrationPoc;
 using NgTests.Data;
 using NgTests.Infrastructure;
 using NuGet.Services.Metadata.Catalog;
@@ -16,11 +14,11 @@ using Xunit.Abstractions;
 
 namespace NgTests
 {
-    public class RegistrationCollectorTests
+    public class RegistrationPocCollectorTests
     {
         private readonly ITestOutputHelper _output;
 
-        public RegistrationCollectorTests(ITestOutputHelper output)
+        public RegistrationPocCollectorTests(ITestOutputHelper output)
         {
             _output = output;
         }
@@ -39,13 +37,12 @@ namespace NgTests
             await mockServer.AddStorage(catalogStorage);
 
             // Setup collector
-            var target = new RegistrationCollector(new Uri("http://tempuri.org/index.json"), catalogToRegistrationStorageFactory, () => mockServer)
+            var target = new RegistrationCollector2(new Uri("http://tempuri.org/index.json"), catalogToRegistrationStorageFactory, () => mockServer)
             {
-                ContentBaseAddress = new Uri("http://tempuri.org/packages")
+                ContentBaseAddress = new Uri("http://tempuri.org/packages"),
+                PackagePathProvider =  new PackagesFolderPackagePathProvider(prefix: null)
             };
-
-            RegistrationMakerCatalogItem.PackagePathProvider = new PackagesFolderPackagePathProvider();
-
+            
             ReadWriteCursor front = new DurableCursor(catalogToRegistrationStorage.ResolveUri("cursor.json"), catalogToRegistrationStorage, MemoryCursor.MinValue);
             ReadCursor back = MemoryCursor.CreateMax();
 

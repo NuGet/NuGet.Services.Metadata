@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Ng.Json
+namespace NuGet.Services.Metadata.Catalog.Json
 {
     public class PropertySkippingJsonReader
         : InterceptingJsonReader

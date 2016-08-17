@@ -195,11 +195,11 @@
     <Compile Include="Extraction\CatalogPackageMetadataExtraction.cs" />
     <Compile Include="ChainedFilter.cs" />
     <Compile Include="ClientException.cs" />
+    <Compile Include="Extraction\JTokenExtensions.cs" />
     <Compile Include="Handlers\CuratedFeedHandler.cs" />
     <Compile Include="Extraction\CatalogPackageReader.cs" />
     <Compile Include="Extraction\LuceneCommitMetadata.cs" />
     <Compile Include="Extraction\DocumentCreator.cs" />
-    <Compile Include="Extraction\JTokenExtensions.cs" />
     <Compile Include="Extraction\PackageEntityMetadataExtraction.cs" />
     <Compile Include="Handlers\DownloadDocIdMappingHandler.cs" />
     <Compile Include="Handlers\SegmentToMainReaderMappingHandler.cs" />
