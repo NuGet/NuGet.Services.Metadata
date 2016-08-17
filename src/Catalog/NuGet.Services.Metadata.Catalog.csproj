@@ -162,7 +162,7 @@
     <Compile Include="RawJsonRegistration\RawJsonRegistrationReader.cs" />
     <Compile Include="RawJsonRegistration\Model\RegistrationRoot.cs" />
     <Compile Include="RawJsonRegistration\RawJsonRegistrationWriter.cs" />
-    <Compile Include="RawJsonRegistration\TypedSortingCollector.cs" />
+    <Compile Include="TypedSortingCollector.cs" />
     <Compile Include="Registration\IPackagePathProvider.cs" />
     <Compile Include="Registration\PackagesFolderPackagePathProvider.cs" />
     <Compile Include="Registration\RegistrationCollector.cs" />

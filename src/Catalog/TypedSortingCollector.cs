@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
-namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
+namespace NuGet.Services.Metadata.Catalog
 {
     public abstract class TypedSortingCollector 
         : SortingCollector
