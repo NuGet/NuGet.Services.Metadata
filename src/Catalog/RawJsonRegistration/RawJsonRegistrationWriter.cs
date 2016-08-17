@@ -1,3 +1,6 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -82,7 +85,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
         {
             var items = new ConcurrentDictionary<string, RegistrationItem>();
 
-            int batchIndex = 0;
+            var batchIndex = 0;
 
             var saveTasks = new List<Task>();
             foreach (var item in _batch)
@@ -106,7 +109,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
                 }
                 catch (Exception ex)
                 {
-                    string message = saveOperationForItem?.ResourceUri == null
+                    var message = saveOperationForItem?.ResourceUri == null
                         ? string.Format("Batch index: {0}", batchIndex)
                         : string.Format("Batch index: {0}; resourceUri: {1}", batchIndex, saveOperationForItem.ResourceUri);
 
@@ -123,7 +126,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
         {
             var pages = new ConcurrentDictionary<string, RegistrationPage>();
 
-            int batchIndex = 0;
+            var batchIndex = 0;
 
             if (itemEntries.Count < packageCountThreshold)
             {
@@ -166,7 +169,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
                     }
                     catch (Exception ex)
                     {
-                        string message = saveOperationForItem?.ResourceUri == null
+                        var message = saveOperationForItem?.ResourceUri == null
                             ? string.Format("Batch index: {0}", batchIndex)
                             : string.Format("Batch index: {0}; resourceUri: {1}", batchIndex, saveOperationForItem.ResourceUri);
 

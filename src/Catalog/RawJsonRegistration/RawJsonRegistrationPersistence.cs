@@ -1,3 +1,6 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -190,7 +193,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
             Trace.TraceInformation("RegistrationPersistence2.Cleanup");
 
             IList<Task> tasks = new List<Task>();
-            foreach (Uri loaded in storage.Loaded)
+            foreach (var loaded in storage.Loaded)
             {
                 if (!storage.Saved.Contains(loaded))
                 {
