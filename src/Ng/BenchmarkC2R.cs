@@ -19,31 +19,32 @@ namespace Ng
             CommandHelpers.TryGetArgument(arguments, Constants.StorageBaseAddress, out BaseDirectoryAddress);
 
             TextWriterTraceListener myListener = new TextWriterTraceListener("E:\\Nuget\\Assets\\benchmark_output.log", "myListener");
-            myListener.WriteLine($"Period(in mins)\tGraph\t\t\t\tNoGraph");
+            myListener.WriteLine($"Window(1 hour/period)\tRawJson");
             var catalog2Registration = new Catalog2Registration(loggerFactory);
             var runC2R = new Action<IDictionary<string, string>, CancellationToken, bool>(catalog2Registration.Run);
-
-            for (var commitPeriod = 1; commitPeriod <= 20; commitPeriod++)
+            DateTime WaveCursorTime = DateTime.Parse(WaveCursorTimeValue);
+            DateTime EndCursorTime = WaveCursorTime;
+            for (var commitPeriod = 1; commitPeriod <= 24; commitPeriod++)
             {
-                ResetFrontCursor(arguments);
-                CleanUp();
-                DateTime WaveCursorTime = DateTime.Parse(WaveCursorTimeValue);
-                DateTime EndCursorTime = WaveCursorTime.AddMinutes(commitPeriod);
+                //ResetFrontCursor(arguments);
+                //CleanUp();
+                EndCursorTime = EndCursorTime.AddHours(1);
                 UpdateEndCursorTime(arguments, EndCursorTime.ToString());
-                var timeWithGraph = Time(runC2R, arguments, token, isGraph: true);
-                ResetFrontCursor(arguments);
-                CleanUp();
-                var timeWithNoGraph = Time(runC2R, arguments, token, isGraph: false);
-                myListener.WriteLine($"{commitPeriod}\t\t\t\t{timeWithGraph}\t{timeWithNoGraph}");
+                var timeWithConcurrentProcessing = Time(runC2R, arguments, token, processBatchConcurrent: true);
+                //ResetFrontCursor(arguments);
+                //CleanUp();
+                //var timeWithNonConcurrentProcessing = Time(runC2R, arguments, token, processBatchConcurrent: false);
+                //myListener.WriteLine($"{commitPeriod}\t\t\t\t{timeWithConcurrentProcessing}\t{timeWithNonConcurrentProcessing}");
+
+                myListener.WriteLine($"{commitPeriod}\t\t\t\t\t\t{timeWithConcurrentProcessing}");
                 myListener.Flush();
             }
-
         }
 
-        public static TimeSpan Time(Action<IDictionary<string, string>, CancellationToken, bool> action, IDictionary<string, string> arguments, CancellationToken token, bool isGraph = true)
+        public static TimeSpan Time(Action<IDictionary<string, string>, CancellationToken, bool> action, IDictionary<string, string> arguments, CancellationToken token, bool processBatchConcurrent = true)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
-            action.DynamicInvoke(arguments, token, isGraph);
+            action.DynamicInvoke(arguments, token, processBatchConcurrent);
             stopwatch.Stop();
             return stopwatch.Elapsed;
         }

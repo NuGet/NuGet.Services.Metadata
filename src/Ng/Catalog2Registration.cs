@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using CollectorSample.RegistrationPoc;
+using NuGet.Services.Metadata.Catalog.RawJsonRegistration;
 
 namespace Ng
 {
@@ -22,20 +22,14 @@ namespace Ng
             _logger = loggerFactory.CreateLogger<Catalog2Registration>();
         }
 
-        public async Task Loop(string source, StorageFactory storageFactory, string contentBaseAddress, bool unlistShouldDelete, bool verbose, int interval, string endTime, Boolean isGraph, CancellationToken cancellationToken)
+        public async Task Loop(string source, StorageFactory storageFactory, string contentBaseAddress, bool unlistShouldDelete, bool verbose, int interval, string endTime, Boolean processBatchConcurrent, CancellationToken cancellationToken)
         {
             CommitCollector collector;
-            if (isGraph)
             {
-                collector = new RegistrationCollector(new Uri(source), storageFactory, CommandHelpers.GetHttpMessageHandlerFactory(verbose))
+                collector = new RawJsonRegistrationCollector(new Uri("https://api.nuget.org/v3/catalog0/index.json"), storageFactory)
                 {
-                    ContentBaseAddress = contentBaseAddress == null
-                        ? null
-                        : new Uri(contentBaseAddress)
+                    ProcessBatchesConcurrent = processBatchConcurrent
                 };
-            } else
-            {
-                collector = new RegistrationCollector2(new Uri("https://api.nuget.org/v3/catalog0/index.json"), storageFactory);
             }
 
             Storage storage = storageFactory.Create();
@@ -79,7 +73,7 @@ namespace Ng
                 + $"-{Constants.CompressedStoragePath} <path>");
         }
 
-        public void Run(IDictionary<string, string> arguments, CancellationToken cancellationToken, bool isGraph = true)
+        public void Run(IDictionary<string, string> arguments, CancellationToken cancellationToken, bool processBatchConcurrent = false)
         {
             string source = CommandHelpers.GetSource(arguments);
             bool unlistShouldDelete = CommandHelpers.GetUnlistShouldDelete(arguments, required: false);
@@ -109,11 +103,11 @@ namespace Ng
                     new[] { compressedStorageFactory },
                     secondaryStorageBaseUrlRewriter.Rewrite);
 
-                Loop(source, aggregateStorageFactory, contentBaseAddress, unlistShouldDelete, verbose, interval, endtime, isGraph, cancellationToken).Wait();
+                Loop(source, aggregateStorageFactory, contentBaseAddress, unlistShouldDelete, verbose, interval, endtime, processBatchConcurrent, cancellationToken).Wait();
             }
             else
             {
-                Loop(source, storageFactory, contentBaseAddress, unlistShouldDelete, verbose, interval, endtime, isGraph, cancellationToken).Wait();
+                Loop(source, storageFactory, contentBaseAddress, unlistShouldDelete, verbose, interval, endtime, processBatchConcurrent, cancellationToken).Wait();
             }
         }
     }
