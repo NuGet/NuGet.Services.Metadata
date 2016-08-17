@@ -17,11 +17,11 @@ namespace Ng
 
         public BenchmarkC2R(ILoggerFactory loggerFactory, IDictionary<string, string> arguments, CancellationToken token) {
             TextWriterTraceListener myListener = new TextWriterTraceListener("E:\\Nuget\\Assets\\benchmark_output.log", "myListener");
-            myListener.WriteLine($"Period\tGraph\tJSON");
+            myListener.WriteLine($"Period(in mins)\tGraph\t\t\t\tJSON");
             var catalog2Registration = new Catalog2Registration(loggerFactory);
             var runC2RWithGraph = new Action<IDictionary<string, string>, CancellationToken>(catalog2Registration.Run);
 
-            for (var i = 1; i < 10; i++)
+            for (var commitPeriod = 1; commitPeriod <= 10; commitPeriod++)
             {
 
             }
@@ -34,7 +34,7 @@ namespace Ng
 
             //resetCursor(arguments);
             //var timeWithJSON = Time(runC2RWithGraph, arguments, token);
-            myListener.WriteLine($"{1}\t{timeWithGraph}");
+            myListener.WriteLine($"{1}\t\t\t\t{timeWithGraph}\t");
             myListener.Flush();
         }
 
