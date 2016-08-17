@@ -17,6 +17,7 @@ namespace NuGet.Services.Metadata.Catalog
         {
             _handlerFunc = handlerFunc;
             Index = index;
+
             ServicePointManager.DefaultConnectionLimit = 4;
             ServicePointManager.MaxServicePointIdleTime = 10000;
         }
