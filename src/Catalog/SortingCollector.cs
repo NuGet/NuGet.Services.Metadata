@@ -10,8 +10,11 @@ using System.Threading.Tasks;
 
 namespace NuGet.Services.Metadata.Catalog
 {
-    public abstract class SortingCollector : CommitCollector
+    public abstract class SortingCollector 
+        : CommitCollector
     {
+        private const string NuGetId = "nuget:id";
+
         public SortingCollector(Uri index, Func<HttpMessageHandler> handlerFunc = null)
             : base(index, handlerFunc)
         {
@@ -44,12 +47,11 @@ namespace NuGet.Services.Metadata.Catalog
                 itemList.Add(item);
             }
 
-            IList<Task> tasks = new List<Task>();
+            var tasks = new List<Task>();
 
-            foreach (KeyValuePair<string, IList<JObject>> sortedBatch in sortedItems)
+            foreach (var sortedBatch in sortedItems)
             {
-                Task task = ProcessSortedBatch(client, sortedBatch, context, cancellationToken);
-
+                var task = ProcessSortedBatch(client, sortedBatch, context, cancellationToken);
                 tasks.Add(task);
 
                 if (!Concurrent)
@@ -62,9 +64,10 @@ namespace NuGet.Services.Metadata.Catalog
 
             return true;
         }
+
         protected virtual string GetKey(JObject item)
         {
-            return item["nuget:id"].ToString();
+            return item[NuGetId].ToString();
         }
 
         protected abstract Task ProcessSortedBatch(

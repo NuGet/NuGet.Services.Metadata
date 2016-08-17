@@ -1,12 +1,14 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Json;
 using NuGet.Services.Metadata.Catalog.Persistence;
 
-namespace CollectorSample.RegistrationPoc
+namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
 {
     public class RegistrationPage
     {
@@ -85,16 +87,16 @@ namespace CollectorSample.RegistrationPoc
                         "verbatimVersion"
                     }));
 
-                registrationVersionContext.Add("packageContent", $"{contentBaseAddress.ToString().TrimEnd('/')}/{registrationVersion.PackagePath}".ToLowerInvariant()); // TODO
-                registrationVersionContext.Add("registration", $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant()); // TODO
+                registrationVersionContext.Add(PropertyNames.PackageContent, $"{contentBaseAddress.ToString().TrimEnd('/')}/{registrationVersion.PackagePath}".ToLowerInvariant()); // TODO
+                registrationVersionContext.Add(PropertyNames.Registration, $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant()); // TODO
 
                 registrationItemsContext.Add(registrationVersionContext);
             }
                 
-            registrationContext.Add("count", registrationItemsContext.Count);
-            registrationContext.Add("items", registrationItemsContext);
+            registrationContext.Add(PropertyNames.Count, registrationItemsContext.Count);
+            registrationContext.Add(PropertyNames.Items, registrationItemsContext);
 
-            return new JTokenStorageContent(registrationContext, "application/json", "no-store");
+            return new JTokenStorageContent(registrationContext, ContentTypes.ApplicationJson, "no-store");
         }
     }
 }

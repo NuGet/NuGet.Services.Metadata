@@ -1,3 +1,6 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -5,18 +8,17 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Persistence;
 using NuGet.Services.Metadata.Catalog.Registration;
 
-namespace CollectorSample.RegistrationPoc
+namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
 {
-    public class RegistrationReader
+    public class RawJsonRegistrationReader
         : IDisposable
     {
         private bool _open;
 
-        public RegistrationReader(IStorage storage)
+        public RawJsonRegistrationReader(IStorage storage)
         {
             Storage = storage;
             
@@ -33,7 +35,7 @@ namespace CollectorSample.RegistrationPoc
         public IStorage Storage { get; }
         public Uri RootUri { get; }
 
-        public async Task<IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2>> Load(CancellationToken cancellationToken)
+        public async Task<IDictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry>> Load(CancellationToken cancellationToken)
         {
             var graph = await LoadRegistration(Storage, RootUri, cancellationToken);
 
@@ -42,9 +44,9 @@ namespace CollectorSample.RegistrationPoc
             return resources;
         }
 
-        private static IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2> GetResources(JArray registrationEntries)
+        private static IDictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry> GetResources(JArray registrationEntries)
         {
-            var resources = new Dictionary<RegistrationEntryKey, RegistrationCatalogEntry2>();
+            var resources = new Dictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry>();
 
             if (registrationEntries != null && registrationEntries.Count > 0)
             {
@@ -57,7 +59,7 @@ namespace CollectorSample.RegistrationPoc
 
                     resources.Add(
                         new RegistrationEntryKey(new RegistrationKey(id), version),
-                        new RegistrationCatalogEntry2(id, version, resourceUri, (JObject)registrationEntry[PropertyNames.CatalogEntry], true));
+                        new RawJsonRegistrationCatalogEntry(id, version, resourceUri, (JObject)registrationEntry[PropertyNames.CatalogEntry], true));
                 }
             }
 
