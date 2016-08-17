@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace CollectorSample.RegistrationPoc
+namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
 {
     public static class EnumerableExtensions
     {

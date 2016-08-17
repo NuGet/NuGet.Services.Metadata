@@ -5,13 +5,12 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Persistence;
 using NuGet.Services.Metadata.Catalog.Registration;
 
-namespace CollectorSample.RegistrationPoc
+namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
 {
-    public class RegistrationCollector2
+    public class RawJsonRegistrationCollector
         : TypedSortingCollector
     {
         private readonly StorageFactory _storageFactory;
@@ -21,7 +20,7 @@ namespace CollectorSample.RegistrationPoc
         public int PartitionSize { get; set; }
         public int PackageCountThreshold { get; set; }
 
-        public RegistrationCollector2(Uri index, StorageFactory storageFactory, Func<HttpMessageHandler> handlerFunc = null)
+        public RawJsonRegistrationCollector(Uri index, StorageFactory storageFactory, Func<HttpMessageHandler> handlerFunc = null)
             : base(index, new Uri[] { Schema.DataTypes.PackageDetails, Schema.DataTypes.PackageDelete }, handlerFunc)
         {
             _storageFactory = storageFactory;
@@ -74,7 +73,7 @@ namespace CollectorSample.RegistrationPoc
             KeyValuePair<string, IDictionary<string, JObject>> sortedGraphs, 
             CancellationToken cancellationToken)
         {
-            return RegistrationMaker2.Process(
+            return RawJsonRegistrationMaker.Process(
                 new RegistrationKey(sortedGraphs.Key),
                 sortedGraphs.Value,
                 _storageFactory,

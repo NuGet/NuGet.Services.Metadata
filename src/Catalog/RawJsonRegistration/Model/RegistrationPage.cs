@@ -2,11 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Json;
 using NuGet.Services.Metadata.Catalog.Persistence;
 
-namespace CollectorSample.RegistrationPoc
+namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
 {
     public class RegistrationPage
     {
@@ -94,7 +93,7 @@ namespace CollectorSample.RegistrationPoc
             registrationContext.Add("count", registrationItemsContext.Count);
             registrationContext.Add("items", registrationItemsContext);
 
-            return new JTokenStorageContent(registrationContext, "application/json", "no-store");
+            return new JTokenStorageContent(registrationContext, ContentTypes.ApplicationJson, "no-store");
         }
     }
 }

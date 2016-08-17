@@ -7,15 +7,15 @@ using Newtonsoft.Json.Linq;
 using NuGet.Services.Metadata.Catalog.Persistence;
 using NuGet.Services.Metadata.Catalog.Registration;
 
-namespace CollectorSample.RegistrationPoc
+namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
 {
-    public static class RegistrationMaker2
+    public static class RawJsonRegistrationMaker
     {
         public static async Task Process(RegistrationKey registrationKey, IDictionary<string, JObject> newItems, StorageFactory storageFactory, Uri contentBaseAddress, IPackagePathProvider packagePathProvider, int partitionSize, int packageCountThreshold, CancellationToken cancellationToken)
         {
             Trace.TraceInformation("RegistrationMaker2.Process: registrationKey = {0} newItems: {1}", registrationKey, newItems.Count);
 
-            var registration = new RegistrationPersistence2(storageFactory, registrationKey, partitionSize, packageCountThreshold, contentBaseAddress, packagePathProvider);
+            var registration = new RawJsonRegistrationPersistence(storageFactory, registrationKey, partitionSize, packageCountThreshold, contentBaseAddress, packagePathProvider);
 
             var existing = await registration.Load(cancellationToken);
 
@@ -32,12 +32,12 @@ namespace CollectorSample.RegistrationPoc
             await registration.Save(resulting, cancellationToken);
         }
 
-        private static IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2> PromoteRegistrationKey(IDictionary<string, JObject> newItems)
+        private static IDictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry> PromoteRegistrationKey(IDictionary<string, JObject> newItems)
         {
-            var promoted = new Dictionary<RegistrationEntryKey, RegistrationCatalogEntry2>();
+            var promoted = new Dictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry>();
             foreach (var newItem in newItems)
             {
-                var promotedEntry = RegistrationCatalogEntry2.Promote(newItem.Key, newItem.Value, isExistingItem: false);
+                var promotedEntry = RawJsonRegistrationCatalogEntry.Promote(newItem.Key, newItem.Value, isExistingItem: false);
 
                 promoted[promotedEntry.Key] = promotedEntry.Value;
             }
@@ -45,11 +45,11 @@ namespace CollectorSample.RegistrationPoc
             return promoted;
         }
 
-        private static IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2> Apply(
-            IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2> existing,
-            IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2> delta)
+        private static IDictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry> Apply(
+            IDictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry> existing,
+            IDictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry> delta)
         {
-            IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2> resulting = new Dictionary<RegistrationEntryKey, RegistrationCatalogEntry2>();
+            IDictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry> resulting = new Dictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry>();
 
             foreach (var item in existing)
             {

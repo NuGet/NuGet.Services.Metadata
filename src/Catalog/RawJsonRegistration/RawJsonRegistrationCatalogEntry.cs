@@ -1,14 +1,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Registration;
 
-namespace CollectorSample.RegistrationPoc
+namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
 {
-    public class RegistrationCatalogEntry2
+    public class RawJsonRegistrationCatalogEntry
     {
-        public RegistrationCatalogEntry2(string id, string version, string registrationUri, JObject subject, bool isExistingItem)
+        public RawJsonRegistrationCatalogEntry(string id, string version, string registrationUri, JObject subject, bool isExistingItem)
         {
             Id = id;
             Version = version;
@@ -24,7 +23,7 @@ namespace CollectorSample.RegistrationPoc
         public string Id { get; private set; }
         public string Version { get; private set; }
 
-        public static KeyValuePair<RegistrationEntryKey, RegistrationCatalogEntry2> Promote(string registrationUri, JObject subject, bool isExistingItem)
+        public static KeyValuePair<RegistrationEntryKey, RawJsonRegistrationCatalogEntry> Promote(string registrationUri, JObject subject, bool isExistingItem)
         {
             var id = subject[PropertyNames.Id].ToString().ToLowerInvariant();
             var version = subject[PropertyNames.Version].ToString().ToLowerInvariant();
@@ -37,9 +36,9 @@ namespace CollectorSample.RegistrationPoc
             
             var registrationCatalogEntry = IsDelete(type)
                 ? null
-                : new RegistrationCatalogEntry2(id, version, registrationUri, subject, isExistingItem);
+                : new RawJsonRegistrationCatalogEntry(id, version, registrationUri, subject, isExistingItem);
 
-            return new KeyValuePair<RegistrationEntryKey, RegistrationCatalogEntry2>(registrationEntryKey, registrationCatalogEntry);
+            return new KeyValuePair<RegistrationEntryKey, RawJsonRegistrationCatalogEntry>(registrationEntryKey, registrationCatalogEntry);
         }
 
         static bool IsDelete(IEnumerable<string> type)

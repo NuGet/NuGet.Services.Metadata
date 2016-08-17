@@ -1,4 +1,4 @@
-﻿namespace CollectorSample.RegistrationPoc
+﻿namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
 {
     public static class PropertyNames
     {

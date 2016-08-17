@@ -1,9 +1,8 @@
 using System;
 using Newtonsoft.Json.Linq;
-using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Persistence;
 
-namespace CollectorSample.RegistrationPoc
+namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
 {
     public class RegistrationItem
     {
@@ -49,7 +48,7 @@ namespace CollectorSample.RegistrationPoc
             packageContext.Add(PropertyNames.PackageContent, $"{ContentBaseAddress.ToString().TrimEnd('/')}/{PackagePath}".ToLowerInvariant());
             packageContext.Add(PropertyNames.Registration, $"{RegistrationBaseAddress}{Id}/index.json".ToLowerInvariant());
 
-            return new JTokenStorageContent(packageContext, "application/json", "no-store");
+            return new JTokenStorageContent(packageContext, ContentTypes.ApplicationJson, "no-store");
         }
     }
 }

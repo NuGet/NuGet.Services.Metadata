@@ -5,15 +5,15 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Json;
 using NuGet.Services.Metadata.Catalog.Persistence;
+using NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model;
 using NuGet.Services.Metadata.Catalog.Registration;
 
-namespace CollectorSample.RegistrationPoc
+namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
 {
-    public class RegistrationPersistence2
-        : IRegistrationPersistence2
+    public class RawJsonRegistrationPersistence
+        : IRawJsonRegistrationPersistence
     {
         private readonly int _packageCountThreshold;
         private readonly int _partitionSize;
@@ -22,7 +22,7 @@ namespace CollectorSample.RegistrationPoc
         private readonly Uri _contentBaseAddress;
         private readonly IPackagePathProvider _packagePathProvider;
 
-        public RegistrationPersistence2(StorageFactory storageFactory, RegistrationKey registrationKey, int partitionSize, int packageCountThreshold, Uri contentBaseAddress, IPackagePathProvider packagePathProvider)
+        public RawJsonRegistrationPersistence(StorageFactory storageFactory, RegistrationKey registrationKey, int partitionSize, int packageCountThreshold, Uri contentBaseAddress, IPackagePathProvider packagePathProvider)
         {
             _storage = new RecordingStorage(storageFactory.Create(registrationKey.ToString()));
             _packageCountThreshold = packageCountThreshold;
@@ -32,21 +32,21 @@ namespace CollectorSample.RegistrationPoc
             _packagePathProvider = packagePathProvider;
         }
 
-        public Task<IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2>> Load(CancellationToken cancellationToken)
+        public Task<IDictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry>> Load(CancellationToken cancellationToken)
         {
             return Load(_storage, cancellationToken);
         }
 
-        public async Task Save(IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2> registration, CancellationToken cancellationToken)
+        public async Task Save(IDictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry> registration, CancellationToken cancellationToken)
         {
             await Save(_storage, _registrationBaseAddress, registration, _partitionSize, _packageCountThreshold, _contentBaseAddress, _packagePathProvider, cancellationToken);
 
             await Cleanup(_storage, cancellationToken);
         }
         
-        private static async Task<IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2>> Load(IStorage storage, CancellationToken cancellationToken)
+        private static async Task<IDictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry>> Load(IStorage storage, CancellationToken cancellationToken)
         {
-            using (var reader = new RegistrationReader(storage))
+            using (var reader = new RawJsonRegistrationReader(storage))
             {
                 Trace.TraceInformation("RegistrationPersistence2.Load: resourceUri = {0}", reader.RootUri);
 
@@ -58,7 +58,7 @@ namespace CollectorSample.RegistrationPoc
             }
         }
 
-        private static async Task Save(IStorage storage, Uri registrationBaseAddress, IDictionary<RegistrationEntryKey, RegistrationCatalogEntry2> registration, int partitionSize, int packageCountThreshold, Uri contentBaseAddress, IPackagePathProvider packagePathProvider, CancellationToken cancellationToken)
+        private static async Task Save(IStorage storage, Uri registrationBaseAddress, IDictionary<RegistrationEntryKey, RawJsonRegistrationCatalogEntry> registration, int partitionSize, int packageCountThreshold, Uri contentBaseAddress, IPackagePathProvider packagePathProvider, CancellationToken cancellationToken)
         {
             Trace.TraceInformation("RegistrationPersistence2.Save");
 
@@ -71,7 +71,7 @@ namespace CollectorSample.RegistrationPoc
                 return;
             }
 
-            using (var writer = new RegistrationWriter(storage, partitionSize, packageCountThreshold))
+            using (var writer = new RawJsonRegistrationWriter(storage, partitionSize, packageCountThreshold))
             {
                 foreach (var item in items)
                 {
@@ -91,7 +91,7 @@ namespace CollectorSample.RegistrationPoc
             }
         }
 
-        private static async Task SaveSmallRegistration(IStorage storage, Uri registrationBaseAddress, IList<RegistrationCatalogEntry2> items, int partitionSize, Uri contentBaseAddress, CancellationToken cancellationToken)
+        private static async Task SaveSmallRegistration(IStorage storage, Uri registrationBaseAddress, IList<RawJsonRegistrationCatalogEntry> items, int partitionSize, Uri contentBaseAddress, CancellationToken cancellationToken)
         {
             Trace.TraceInformation("RegistrationPersistence2.SaveSmallRegistration");
 
@@ -181,7 +181,7 @@ namespace CollectorSample.RegistrationPoc
             registrationContext.Add("items", partitionsContext);
 
             // Save index
-            var content = new JTokenStorageContent(registrationContext, "application/json", "no-store");
+            var content = new JTokenStorageContent(registrationContext, ContentTypes.ApplicationJson, "no-store");
             await storage.Save(new Uri($"{registrationBaseAddress}{items.First().Id}/index.json"), content, cancellationToken);
         }
         

@@ -4,21 +4,21 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using CollectorSample.RegistrationPoc;
 using NgTests.Data;
 using NgTests.Infrastructure;
 using NuGet.Services.Metadata.Catalog;
+using NuGet.Services.Metadata.Catalog.RawJsonRegistration;
 using NuGet.Services.Metadata.Catalog.Registration;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace NgTests
 {
-    public class RegistrationPocCollectorTests
+    public class RawJsonRegistrationCollectorTests
     {
         private readonly ITestOutputHelper _output;
 
-        public RegistrationPocCollectorTests(ITestOutputHelper output)
+        public RawJsonRegistrationCollectorTests(ITestOutputHelper output)
         {
             _output = output;
         }
@@ -37,7 +37,7 @@ namespace NgTests
             await mockServer.AddStorage(catalogStorage);
 
             // Setup collector
-            var target = new RegistrationCollector2(new Uri("http://tempuri.org/index.json"), catalogToRegistrationStorageFactory, () => mockServer)
+            var target = new RawJsonRegistrationCollector(new Uri("http://tempuri.org/index.json"), catalogToRegistrationStorageFactory, () => mockServer)
             {
                 ContentBaseAddress = new Uri("http://tempuri.org/packages"),
                 PackagePathProvider =  new PackagesFolderPackagePathProvider(prefix: null)
