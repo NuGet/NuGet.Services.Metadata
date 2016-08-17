@@ -87,14 +87,14 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                         "verbatimVersion"
                     }));
 
-                registrationVersionContext.Add("packageContent", $"{contentBaseAddress.ToString().TrimEnd('/')}/{registrationVersion.PackagePath}".ToLowerInvariant()); // TODO
-                registrationVersionContext.Add("registration", $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant()); // TODO
+                registrationVersionContext.Add(PropertyNames.PackageContent, $"{contentBaseAddress.ToString().TrimEnd('/')}/{registrationVersion.PackagePath}".ToLowerInvariant()); // TODO
+                registrationVersionContext.Add(PropertyNames.Registration, $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant()); // TODO
 
                 registrationItemsContext.Add(registrationVersionContext);
             }
                 
-            registrationContext.Add("count", registrationItemsContext.Count);
-            registrationContext.Add("items", registrationItemsContext);
+            registrationContext.Add(PropertyNames.Count, registrationItemsContext.Count);
+            registrationContext.Add(PropertyNames.Items, registrationItemsContext);
 
             return new JTokenStorageContent(registrationContext, ContentTypes.ApplicationJson, "no-store");
         }

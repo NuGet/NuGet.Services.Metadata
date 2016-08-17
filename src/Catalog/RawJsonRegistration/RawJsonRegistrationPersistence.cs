@@ -82,112 +82,17 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
                         new RegistrationItem(
                             item.Id,
                             item.Version,
-                            new Uri(item.RegistrationUri),
                             item.Subject, 
+                            new Uri(item.RegistrationUri),
                             registrationBaseAddress,
-                            item.IsExistingItem,
                             contentBaseAddress,
-                            packagePathProvider.GetPackagePath(item.Id, item.Version)));
+                            packagePathProvider.GetPackagePath(item.Id, item.Version), item.IsExistingItem));
                 }
 
                 await writer.Commit(items.First().Id, DateTime.UtcNow, cancellationToken);
             }
         }
 
-        private static async Task SaveSmallRegistration(IStorage storage, Uri registrationBaseAddress, IList<RawJsonRegistrationCatalogEntry> items, int partitionSize, Uri contentBaseAddress, CancellationToken cancellationToken)
-        {
-            Trace.TraceInformation("RegistrationPersistence2.SaveSmallRegistration");
-
-            if (items.Count == 0)
-            {
-                return;
-            }
-
-            var commitId = Guid.NewGuid();
-            var commitTimeStamp = DateTime.UtcNow.ToString("O"); // TODO
-
-          
-            // Save index
-            var registrationJsonLdContext = Utils.GetResource("context.Registration.json");
-
-            var registrationContext = JObject.Parse(registrationJsonLdContext);
-
-            registrationContext.Add("@id", $"{registrationBaseAddress}{items.First().Id}/index.json".ToLowerInvariant()); // TODO
-            registrationContext.Add("@type", new JArray(
-                "catalog:CatalogRoot",
-                "PackageRegistration",
-                "catalog:Permalink"));
-
-            registrationContext.Add("commitId", commitId);
-            registrationContext.Add("commitTimeStamp", commitTimeStamp);
-
-            var partitionsContext = new JArray();
-            foreach (var partition in items.Paged(partitionSize))
-            {
-                var partitionContext = new JObject();
-                partitionContext.Add("@id", $"{registrationBaseAddress}{items.First().Id}/index.json#page/{partition.First().Version}/{partition.Last().Version}".ToLowerInvariant()); // TODO
-                partitionContext.Add("@type", "catalog:CatalogPage");
-
-                partitionContext.Add("commitId", commitId);
-                partitionContext.Add("commitTimeStamp", commitTimeStamp);
-                
-                var partitionItemsContext = new JArray();
-                foreach (var registrationVersion in partition)
-                {
-                    var registrationVersionContext = new JObject();
-                    registrationVersionContext.Add("@id", $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant()); // TODO
-                    registrationVersionContext.Add("@type", "Package");
-
-                    registrationVersionContext.Add("commitId", commitId);
-                    registrationVersionContext.Add("commitTimeStamp", commitTimeStamp);
-
-                    registrationVersionContext.Add("catalogEntry", registrationVersion.Subject.FilterClone(
-                        new []
-                        {
-                             "[*].catalogEntry.@id",
-                             "[*].catalogEntry.@type",
-                             "[*].catalogEntry.authors",
-                             "[*].catalogEntry.dependencyGroups",
-                             "[*].catalogEntry.dependencyGroups[*].*",
-                             "[*].catalogEntry.description",
-                             "[*].catalogEntry.iconUrl",
-                             "[*].catalogEntry.id",
-                             "[*].catalogEntry.language",
-                             "[*].catalogEntry.licenseUrl",
-                             "[*].catalogEntry.listed",
-                             "[*].catalogEntry.minClientVersion",
-                             "[*].catalogEntry.projectUrl",
-                             "[*].catalogEntry.published",
-                             "[*].catalogEntry.requireLicenseAcceptance",
-                             "[*].catalogEntry.summary",
-                             "[*].catalogEntry.tags",
-                             "[*].catalogEntry.title",
-                             "[*].catalogEntry.version"
-                        }));
-
-                    registrationVersionContext.Add("packageContent", $"{contentBaseAddress}packages/{registrationVersion.Id}.{registrationVersion.Version}.nupkg".ToLowerInvariant()); // TODO
-                    registrationVersionContext.Add("registration", $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant()); // TODO
-
-                    partitionItemsContext.Add(registrationVersionContext);
-                }
-
-                partitionContext.Add("count", partitionItemsContext.Count);
-                partitionContext.Add("items", partitionItemsContext);
-                partitionContext.Add("lower", partition.First().Version);
-                partitionContext.Add("upper", partition.Last().Version);
-                partitionContext.Add("parent", $"{registrationBaseAddress}{items.First().Id}/index.json".ToLowerInvariant());
-
-                partitionsContext.Add(partitionContext);
-            }
-
-            registrationContext.Add("count", partitionsContext.Count);
-            registrationContext.Add("items", partitionsContext);
-
-            // Save index
-            var content = new JTokenStorageContent(registrationContext, ContentTypes.ApplicationJson, "no-store");
-            await storage.Save(new Uri($"{registrationBaseAddress}{items.First().Id}/index.json"), content, cancellationToken);
-        }
-        
         private static async Task Cleanup(RecordingStorage storage, CancellationToken cancellationToken)
         {
             Trace.TraceInformation("RegistrationPersistence2.Cleanup");
