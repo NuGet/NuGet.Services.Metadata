@@ -60,7 +60,7 @@ namespace NuGet.Indexing
                 AddString("requireLicenseAcceptance");
 
                 AddFlattenedDependencies();
-                AddPackageTypes();
+                AddFlattenedPackageTypes();
                 AddSupportedFrameworks();
 
                 return _metadata;
@@ -125,18 +125,27 @@ namespace NuGet.Indexing
                 _metadata["listed"] = listed;
             }
 
-            private void AddPackageTypes()
+            private void AddFlattenedPackageTypes()
             {
                 var packageTypes = _reader.GetPackageTypes();
 
                 var builder = new StringBuilder();
-                foreach (var packageType in packageTypes)
+                for (var index = 0; index < packageTypes.Count; index++)
                 {
-                    builder.Append(packageType.Name);
-                    builder.Append(" ");
+                    var packageType = packageTypes[index];
+                    if (!string.IsNullOrWhiteSpace(packageType.Name))
+                    {
+                        builder.Append(packageType.Name);
+                        builder.Append(":");
+                        builder.Append(packageType.Version.ToString());
+                        builder.Append(index < packageTypes.Count-1 ? " " : "");
+                    }
                 }
 
-                _metadata["packageTypes"] = builder.ToString();
+                if (builder.Length > 0)
+                {
+                    _metadata["flattenedPackageTypes"] = builder.ToString();
+                }
             }
 
             private void AddFlattenedDependencies()
@@ -166,7 +175,7 @@ namespace NuGet.Indexing
                         AddFlattenedFrameworkDependency(dependencyGroup, builder);
                     }
                 }
-                
+
                 if (builder.Length > 0)
                 {
                     _metadata["flattenedDependencies"] = builder.ToString();
@@ -174,7 +183,7 @@ namespace NuGet.Indexing
             }
 
             private void AddFlattennedPackageDependency(
-                PackageDependencyGroup dependencyGroup, 
+                PackageDependencyGroup dependencyGroup,
                 Packaging.Core.PackageDependency packageDependency,
                 StringBuilder builder)
             {
@@ -234,7 +243,7 @@ namespace NuGet.Indexing
                     Trace.TraceError("CatalogPackageMetadataExtraction.AddSupportedFrameworks exception: " + ex.Message);
                     return;
                 }
-                
+
                 // Filter out special frameworks + get short framework names
                 var supportedFrameworks = supportedFrameworksFromReader
                     .Except(SpecialFrameworks)
@@ -253,7 +262,7 @@ namespace NuGet.Indexing
                     })
                     .Where(f => !String.IsNullOrEmpty(f))
                     .ToArray();
-                
+
                 if (supportedFrameworks.Any())
                 {
                     _metadata["supportedFrameworks"] = string.Join("|", supportedFrameworks);

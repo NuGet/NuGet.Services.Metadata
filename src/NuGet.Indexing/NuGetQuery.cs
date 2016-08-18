@@ -199,7 +199,7 @@ namespace NuGet.Indexing
 
         private static void PackageTypeClause(BooleanQuery query, Analyzer analyzer, IEnumerable<string> values, Occur occur)
         {
-            query.Add(ConstructClauseQuery(analyzer, "PackageTypes", values), occur);
+            query.Add(ConstructClauseQuery(analyzer, "PackageTypesIndex", values), occur);
         }
 
         private static IEnumerable<Filter> OwnerFilters(

@@ -45,7 +45,8 @@ namespace NuGet.Indexing
             AddField(document, "Summary", package, "summary", Field.Index.ANALYZED);
             AddField(document, "Tags", package, "tags", Field.Index.ANALYZED, 2.0f);
             AddField(document, "Authors", package, "authors", Field.Index.ANALYZED);
-            AddField(document, "PackageTypes", package, "packageTypes", Field.Index.ANALYZED);
+            // AddField(document, "PackageTypes", package, "packageTypes", Field.Index.ANALYZED);
+            AddPackageTypes(document, package);
 
             // add fields used by filtering and sorting
             AddListed(document, package, errors);
@@ -175,7 +176,7 @@ namespace NuGet.Indexing
             {
                 package.TryGetValue("id", out value);
             }
-            
+
             AddField(document, "SortableTitle", (value ?? string.Empty).Trim().ToLower(), Field.Index.NOT_ANALYZED);
         }
 
@@ -260,6 +261,56 @@ namespace NuGet.Indexing
                     errors.Add("Unable to parse 'requireLicenseAcceptance' as Boolean.");
                 }
             }
+        }
+
+        private static void AddPackageTypes(Document document, IDictionary<string, string> package)
+        {
+            string value;
+            StringBuilder searchIndex = new StringBuilder();
+            if (package.TryGetValue("flattenedPackageTypes", out value))
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    AddField(document, "FlattenedPackageTypes", value, Field.Index.NOT_ANALYZED);
+
+                    using (var textWriter = new StringWriter())
+                    {
+                        using (var jsonWriter = new JsonTextWriter(textWriter))
+                        {
+                            jsonWriter.WriteStartArray();
+                            foreach (var packageType in value.Split(' '))
+                            {
+                                string[] fields = packageType.Split(':');
+                                if (fields.Length > 0)
+                                {
+                                    jsonWriter.WriteStartObject();
+                                    jsonWriter.WritePropertyName("Type");
+                                    jsonWriter.WriteValue(fields[0]);
+                                    searchIndex.Append(fields[0]);
+                                    searchIndex.Append(" ");
+                                    if (fields.Length > 1)
+                                    {
+                                        jsonWriter.WritePropertyName("Version");
+                                        jsonWriter.WriteValue(fields[1]);
+                                    }
+
+                                    jsonWriter.WriteEndObject();
+                                }
+                            }
+
+                            jsonWriter.WriteEndArray();
+                            jsonWriter.Flush();
+                            textWriter.Flush();
+
+                            var packageTypes = textWriter.ToString();
+
+                            AddField(document, "packageTypes", packageTypes, Field.Index.NOT_ANALYZED);
+                        }
+                    }
+                }
+            }
+
+            AddField(document, "PackageTypesIndex", searchIndex.ToString(), Field.Index.ANALYZED);
         }
 
         private static void AddDependencies(Document document, IDictionary<string, string> package)
@@ -392,7 +443,7 @@ namespace NuGet.Indexing
 
         private static void AddField(Document document, string destination, string value, Field.Index index, float boost = 1.0f)
         {
-            var termVector = index == Field.Index.ANALYZED 
+            var termVector = index == Field.Index.ANALYZED
                 ? Field.TermVector.WITH_POSITIONS_OFFSETS
                 : Field.TermVector.NO;
 
