@@ -40,7 +40,7 @@ namespace NgTests
             var target = new RawJsonRegistrationCollector(new Uri("http://tempuri.org/index.json"), catalogToRegistrationStorageFactory, () => mockServer)
             {
                 ContentBaseAddress = new Uri("http://tempuri.org/packages"),
-                PackagePathProvider =  new PackagesFolderPackagePathProvider(prefix: null)
+                PackagePathProvider = new PackagesFolderPackagePathProvider(prefix: null)
             };
             
             ReadWriteCursor front = new DurableCursor(catalogToRegistrationStorage.ResolveUri("cursor.json"), catalogToRegistrationStorage, MemoryCursor.MinValue);

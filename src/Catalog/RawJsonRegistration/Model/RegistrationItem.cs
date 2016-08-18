@@ -17,11 +17,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
         public Uri ContentBaseAddress { get; }
         public string PackagePath { get; }
         public bool IsExistingItem { get; }
-
-        public Uri RegistrationVersionUri
-        {
-            get { return new Uri($"{RegistrationBaseAddress}{Id}/{Version}.json".ToLowerInvariant()); }
-        }
+        public Uri RegistrationVersionUri { get; }
 
         public RegistrationItem(string id, string version, JObject subject, Uri registrationUri, Uri registrationBaseAddress, Uri contentBaseAddress, string packagePath, bool isExistingItem)
         {
@@ -33,6 +29,8 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             ContentBaseAddress = contentBaseAddress;
             PackagePath = packagePath;
             IsExistingItem = isExistingItem;
+
+            RegistrationVersionUri = new Uri($"{RegistrationBaseAddress}{Id}/{Version}.json".ToLowerInvariant());
         }
 
         public JTokenStorageContent CreateContent(Guid commitId, DateTime commitTimeStamp)
