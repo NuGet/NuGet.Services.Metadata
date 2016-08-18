@@ -19,11 +19,12 @@ namespace Ng
             CommandHelpers.TryGetArgument(arguments, Constants.StorageBaseAddress, out BaseDirectoryAddress);
 
             TextWriterTraceListener myListener = new TextWriterTraceListener("E:\\Nuget\\Assets\\benchmark_output.log", "myListener");
-            myListener.WriteLine($"Window(1 hour/period)\tRawJson");
+            myListener.WriteLine($"Window(1 hour/period)\tRawJson - Concurrent");
             var catalog2Registration = new Catalog2Registration(loggerFactory);
             var runC2R = new Action<IDictionary<string, string>, CancellationToken, bool>(catalog2Registration.Run);
             DateTime WaveCursorTime = DateTime.Parse(WaveCursorTimeValue);
             DateTime EndCursorTime = WaveCursorTime;
+            ResetFrontCursor(arguments);
             for (var commitPeriod = 1; commitPeriod <= 24; commitPeriod++)
             {
                 //ResetFrontCursor(arguments);
