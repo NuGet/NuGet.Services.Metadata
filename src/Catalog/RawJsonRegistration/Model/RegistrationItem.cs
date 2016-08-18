@@ -41,7 +41,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             packageContext.Add(PropertyNames.SchemaId, RegistrationVersionUri.ToString().ToLowerInvariant());
             packageContext.Add(PropertyNames.SchemaType, new JArray(
                 "Package",
-                "catalog:Permalink"));
+                Schema.DataTypes.Permalink));
 
             packageContext.Add(PropertyNames.CatalogEntry, RegistrationUri);
             packageContext.Add(PropertyNames.Listed, Subject[PropertyNames.Listed]);

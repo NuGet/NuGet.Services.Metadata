@@ -55,14 +55,17 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             var registrationItemsContext = new JArray();
             foreach (var registrationVersion in Items.Values)
             {
+                var packageContentUrl = $"{contentBaseAddress.ToString().TrimEnd('/')}/{registrationVersion.PackagePath}".ToLowerInvariant();
+
                 var registrationVersionContext = new JObject();
-                registrationVersionContext.Add(PropertyNames.SchemaId, $"{registrationBaseAddress}{id}/index.json".ToLowerInvariant()); // TODO verify correctness
+                registrationVersionContext.Add(PropertyNames.SchemaId, $"{registrationBaseAddress}{id}/{registrationVersion.Version}.json".ToLowerInvariant()); // TODO verify correctness
                 registrationVersionContext.Add(PropertyNames.SchemaType, "Package");
 
                 registrationVersionContext.Add(PropertyNames.CommitId, commitId);
                 registrationVersionContext.Add(PropertyNames.CommitTimeStamp, commitTimeStamp);
 
-                registrationVersionContext.Add(PropertyNames.CatalogEntry, registrationVersion.Subject.FilterClone(
+                // Copy catalog entry
+                var catalogEntry = registrationVersion.Subject.FilterClone(
                     new[]
                     {
                         "@id",
@@ -83,11 +86,27 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                         "summary",
                         "tags",
                         "title",
-                        "version",
-                        "verbatimVersion"
-                    }));
+                        "version"
+                    });
 
-                registrationVersionContext.Add(PropertyNames.PackageContent, $"{contentBaseAddress.ToString().TrimEnd('/')}/{registrationVersion.PackagePath}".ToLowerInvariant()); // TODO
+                // Update catalog entry
+                catalogEntry[PropertyNames.SchemaType] = "PackageDetails";
+                catalogEntry[PropertyNames.PackageContent] = packageContentUrl;
+
+                // Ensure default values are present
+                // TODO: Check if this is needed for the client or not. If not, remove the following checks and assignments as they are ballast...
+                if (catalogEntry["iconUrl"] == null) catalogEntry["iconUrl"] = string.Empty;
+                if (catalogEntry["licenseUrl"] == null) catalogEntry["licenseUrl"] = string.Empty;
+                if (catalogEntry["projectUrl"] == null) catalogEntry["projectUrl"] = string.Empty;
+                if (catalogEntry["minClientVersion"] == null) catalogEntry["minClientVersion"] = string.Empty;
+                if (catalogEntry["language"] == null) catalogEntry["language"] = string.Empty;
+                if (catalogEntry["summary"] == null) catalogEntry["summary"] = string.Empty;
+                if (catalogEntry["title"] == null) catalogEntry["title"] = string.Empty;
+                if (catalogEntry["tags"] == null) catalogEntry["tags"] = new JArray(string.Empty);
+
+                registrationVersionContext.Add(PropertyNames.CatalogEntry, catalogEntry);
+
+                registrationVersionContext.Add(PropertyNames.PackageContent, packageContentUrl);
                 registrationVersionContext.Add(PropertyNames.Registration, $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant()); // TODO
 
                 registrationItemsContext.Add(registrationVersionContext);

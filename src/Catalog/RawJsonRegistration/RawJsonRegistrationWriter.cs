@@ -197,7 +197,9 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
 
             if (!item.IsExistingItem && item.Subject != null)
             {
-                saveOperation.SaveTask = storage.Save(item.RegistrationVersionUri, item.CreateContent(commitId, commitTimeStamp), cancellationToken);
+                saveOperation.SaveTask = storage.Save(
+                    item.RegistrationVersionUri, 
+                    item.CreateContent(commitId, commitTimeStamp), cancellationToken);
             }
             else
             {
