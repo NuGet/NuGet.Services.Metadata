@@ -1,0 +1,15 @@
+{
+  "name": "C2RVerification",
+  "version": "1.0.0",
+  "description": "Verification of different outputs of C2R jobs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "ShishirH",
+  "license": "MIT",
+  "dependencies": {
+    "deep-equal": "^1.0.1",
+    "dir-compare": "^1.0.1"
+  }
+}
