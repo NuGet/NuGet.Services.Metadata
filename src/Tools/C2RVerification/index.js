@@ -45,12 +45,6 @@ function fileComparator(filePath1, stat1, filePath2, stat2) {
     var contentsOfFile2 = require(filePath2);
 
     var result = deepEqual(contentsOfFile1, contentsOfFile2, { strict: true });
-
-    if (!result) {
-        console.log("1:" + contentsOfFile1);
-        console.log("2:" + contentsOfFile2);
-    }
-
     return result;
 }
 
