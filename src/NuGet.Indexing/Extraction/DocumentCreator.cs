@@ -45,6 +45,7 @@ namespace NuGet.Indexing
             AddField(document, "Summary", package, "summary", Field.Index.ANALYZED);
             AddField(document, "Tags", package, "tags", Field.Index.ANALYZED, 2.0f);
             AddField(document, "Authors", package, "authors", Field.Index.ANALYZED);
+            AddField(document, "PackageTypes", package, "packageTypes", Field.Index.ANALYZED);
 
             // add fields used by filtering and sorting
             AddListed(document, package, errors);

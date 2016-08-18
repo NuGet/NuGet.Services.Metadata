@@ -46,6 +46,23 @@ namespace NuGet.Indexing
             }
         }
 
+        public override IReadOnlyList<PackageType> GetPackageTypes()
+        {
+            var packageTypes = new List<PackageType>();
+            var array = _catalogItem.GetJArray("packageTypes");
+            if (array == null)
+            {
+                return packageTypes;
+            }
+
+            foreach (var entry in array)
+            {
+                packageTypes.Add(new PackageType((string)entry["type"], new Version((string)entry["version"])));
+            }
+
+            return packageTypes;
+        }
+
         public override IEnumerable<string> GetFiles(string folder)
         {
             return GetFiles().Where(f => f.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase));

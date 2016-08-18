@@ -21,6 +21,7 @@ namespace NuGet.Indexing
             { QueryField.Author,  new [] { "author", "authors" } },
             { QueryField.Summary,  new [] { "summary" } },
             { QueryField.Owner,  new [] { "owner", "owners" } },
+            { QueryField.PackageType, new [] { "packageType", "packageTypes"} },
             { QueryField.Any,  new [] { "*" } }
         };
 

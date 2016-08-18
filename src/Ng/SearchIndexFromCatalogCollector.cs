@@ -44,7 +44,7 @@ namespace Ng
             IEnumerable<JObject> catalogItems = await FetchCatalogItems(client, items, cancellationToken);
 
             var numDocs = _indexWriter.NumDocs();
-            _logger.LogInformation(string.Format("Index contains {0} documents.", _indexWriter.NumDocs()));
+            _logger.LogInformation(string.Format("Index contains {0} documents.", numDocs));
 
             ProcessCatalogIndex(_indexWriter, catalogIndex, _baseAddress);
             ProcessCatalogItems(_indexWriter, catalogItems, _baseAddress);
@@ -135,7 +135,7 @@ namespace Ng
 
             foreach (JObject catalogItem in catalogItems)
             {
-                _logger.LogInformation("Process CatalogItem {CatalogItem}", catalogItem["@id"]);
+                _logger.LogInformation($"Process CatalogItem {catalogItem["@id"]}", catalogItem["@id"]);
 
                 NormalizeId(catalogItem);
 

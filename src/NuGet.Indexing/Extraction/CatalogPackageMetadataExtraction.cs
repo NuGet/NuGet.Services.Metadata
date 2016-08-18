@@ -60,6 +60,7 @@ namespace NuGet.Indexing
                 AddString("requireLicenseAcceptance");
 
                 AddFlattenedDependencies();
+                AddPackageTypes();
                 AddSupportedFrameworks();
 
                 return _metadata;
@@ -122,6 +123,20 @@ namespace NuGet.Indexing
                 }
 
                 _metadata["listed"] = listed;
+            }
+
+            private void AddPackageTypes()
+            {
+                var packageTypes = _reader.GetPackageTypes();
+
+                var builder = new StringBuilder();
+                foreach (var packageType in packageTypes)
+                {
+                    builder.Append(packageType.Name);
+                    builder.Append(" ");
+                }
+
+                _metadata["packageTypes"] = builder.ToString();
             }
 
             private void AddFlattenedDependencies()

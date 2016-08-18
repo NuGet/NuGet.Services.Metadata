@@ -44,49 +44,52 @@ namespace NuGet.Indexing
             {
                 switch (clause.Key)
                 {
-                case QueryField.Id:
-                    IdClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
-                    break;
-                case QueryField.PackageId:
-                    PackageIdClause(booleanQuery, analyzer, clause.Value);
-                    break;
-                case QueryField.Version:
-                    VersionClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
-                    break;
-                case QueryField.Title:
-                    TitleClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
-                    break;
-                case QueryField.Description:
-                    DescriptionClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
-                    break;
-                case QueryField.Tag:
-                    TagClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
-                    break;
-                case QueryField.Author:
-                    AuthorClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
-                    break;
-                case QueryField.Summary:
-                    SummaryClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
-                    break;
-                case QueryField.Owner:
-                    if (owners != null)
-                    {
-                        filters.AddRange(OwnerFilters(owners, clause.Value));
-                    }
-                    break;
-                default:
-                    AnyClause(booleanQuery, analyzer, clause.Value);
-
-                    if (owners != null)
-                    {
-                        var ownerFilters = OwnerFilters(owners, clause.Value).ToList();
-                        if (ownerFilters.Any())
+                    case QueryField.Id:
+                        IdClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
+                        break;
+                    case QueryField.PackageId:
+                        PackageIdClause(booleanQuery, analyzer, clause.Value);
+                        break;
+                    case QueryField.Version:
+                        VersionClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
+                        break;
+                    case QueryField.Title:
+                        TitleClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
+                        break;
+                    case QueryField.Description:
+                        DescriptionClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
+                        break;
+                    case QueryField.Tag:
+                        TagClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
+                        break;
+                    case QueryField.Author:
+                        AuthorClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
+                        break;
+                    case QueryField.Summary:
+                        SummaryClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
+                        break;
+                    case QueryField.Owner:
+                        if (owners != null)
                         {
-                            booleanQuery.Add(ConstructFilteredQuery(new MatchAllDocsQuery(), ownerFilters), Occur.SHOULD);
+                            filters.AddRange(OwnerFilters(owners, clause.Value));
                         }
-                    }
+                        break;
+                    case QueryField.PackageType:
+                        PackageTypeClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
+                        break;
+                    default:
+                        AnyClause(booleanQuery, analyzer, clause.Value);
 
-                    break;
+                        if (owners != null)
+                        {
+                            var ownerFilters = OwnerFilters(owners, clause.Value).ToList();
+                            if (ownerFilters.Any())
+                            {
+                                booleanQuery.Add(ConstructFilteredQuery(new MatchAllDocsQuery(), ownerFilters), Occur.SHOULD);
+                            }
+                        }
+
+                        break;
                 }
             }
 
@@ -192,6 +195,11 @@ namespace NuGet.Indexing
         private static void AuthorClause(BooleanQuery query, Analyzer analyzer, IEnumerable<string> values, Occur occur)
         {
             query.Add(ConstructClauseQuery(analyzer, "Authors", values), occur);
+        }
+
+        private static void PackageTypeClause(BooleanQuery query, Analyzer analyzer, IEnumerable<string> values, Occur occur)
+        {
+            query.Add(ConstructClauseQuery(analyzer, "PackageTypes", values), occur);
         }
 
         private static IEnumerable<Filter> OwnerFilters(

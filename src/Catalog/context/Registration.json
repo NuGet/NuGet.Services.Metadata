@@ -16,7 +16,15 @@
         "packageTargetFrameworks":  { "@container": "@set", "@id": "packageTargetFramework" },
 
         "dependencyGroups": { "@container" : "@set", "@id": "dependencyGroup" },
-        "dependencies": { "@container" : "@set", "@id": "dependency" },
+      "dependencies": {
+        "@container": "@set",
+        "@id": "dependency"
+      },
+
+      "packageTypes": {
+        "@container": "@set",
+        "@id": "packageType"
+      },
 
         "packageContent": { "@type": "@id" },
         "published" : { "@type" : "xsd:dateTime" },

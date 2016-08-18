@@ -81,7 +81,7 @@ namespace NuGet.Indexing
         public static float DownloadScore(long totalDownloads,
             QueryBoostingContext context)
         {
-            if (!context.BoostByDownloads)
+            if (context==null || !context.BoostByDownloads)
             {
                 return 1.0f;
             }

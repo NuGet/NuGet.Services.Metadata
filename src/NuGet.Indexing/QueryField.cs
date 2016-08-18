@@ -14,6 +14,7 @@ namespace NuGet.Indexing
         Author,
         Summary,
         Owner,
+        PackageType,
         Any,
         Invalid
     }
