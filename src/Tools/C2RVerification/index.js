@@ -53,7 +53,7 @@ function compare(folder1, folder2) {
         compareSize: false,
         compareContent: true,
         compareFileSync: fileComparator,
-//        excludeFilter: "cursor.json"
+        excludeFilter: "cursor.json"
     };
 
     var result = dirCompare.compareSync(folder1, folder2, options);
