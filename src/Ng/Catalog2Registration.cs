@@ -22,20 +22,26 @@ namespace Ng
             _logger = loggerFactory.CreateLogger<Catalog2Registration>();
         }
 
-        public async Task Loop(string source, StorageFactory storageFactory, string contentBaseAddress, bool unlistShouldDelete, bool verbose, int interval, string endTime, Boolean processBatchConcurrent, CancellationToken cancellationToken)
+        public async Task Loop(string source, StorageFactory storageFactory, string contentBaseAddress, bool unlistShouldDelete, bool verbose, int interval, string endTime, bool isGraph, CancellationToken cancellationToken)
         {
-            //CommitCollector collector = new RegistrationCollector(new Uri(source), storageFactory, CommandHelpers.GetHttpMessageHandlerFactory(verbose))
-            //    {
-            //        ContentBaseAddress = contentBaseAddress == null
-            //        ? null
-            //        : new Uri(contentBaseAddress)
-            //    };
 
             CommitCollector collector;
+            if (isGraph)
             {
-                collector = new RawJsonRegistrationCollector(new Uri("https://api.nuget.org/v3/catalog0/index.json"), storageFactory)
+                collector = new RegistrationCollector(new Uri(source), storageFactory, CommandHelpers.GetHttpMessageHandlerFactory(verbose))
                 {
-                    ProcessBatchesConcurrent = processBatchConcurrent
+                    ContentBaseAddress = contentBaseAddress == null
+                        ? null
+                        : new Uri(contentBaseAddress)
+                };
+            }
+            else
+            {
+                collector = new RawJsonRegistrationCollector(new Uri(source), storageFactory, CommandHelpers.GetHttpMessageHandlerFactory(verbose))
+                {
+                    ContentBaseAddress = contentBaseAddress == null
+                                ? null
+                                : new Uri(contentBaseAddress)
                 };
             }
 
@@ -80,7 +86,7 @@ namespace Ng
                 + $"-{Constants.CompressedStoragePath} <path>");
         }
 
-        public void Run(IDictionary<string, string> arguments, CancellationToken cancellationToken, bool processBatchConcurrent = false)
+        public void Run(IDictionary<string, string> arguments, CancellationToken cancellationToken, bool isGraph = true)
         {
             string source = CommandHelpers.GetSource(arguments);
             bool unlistShouldDelete = CommandHelpers.GetUnlistShouldDelete(arguments, required: false);
@@ -110,11 +116,11 @@ namespace Ng
                     new[] { compressedStorageFactory },
                     secondaryStorageBaseUrlRewriter.Rewrite);
 
-                Loop(source, aggregateStorageFactory, contentBaseAddress, unlistShouldDelete, verbose, interval, endtime, processBatchConcurrent, cancellationToken).Wait();
+                Loop(source, aggregateStorageFactory, contentBaseAddress, unlistShouldDelete, verbose, interval, endtime, isGraph, cancellationToken).Wait();
             }
             else
             {
-                Loop(source, storageFactory, contentBaseAddress, unlistShouldDelete, verbose, interval, endtime, processBatchConcurrent, cancellationToken).Wait();
+                Loop(source, storageFactory, contentBaseAddress, unlistShouldDelete, verbose, interval, endtime, isGraph, cancellationToken).Wait();
             }
         }
     }

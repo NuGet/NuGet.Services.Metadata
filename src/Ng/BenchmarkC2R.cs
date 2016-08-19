@@ -31,21 +31,22 @@ namespace Ng
                 //CleanUp();
                 EndCursorTime = EndCursorTime.AddHours(1);
                 UpdateEndCursorTime(arguments, EndCursorTime.ToString());
-                var timeWithConcurrentProcessing = Time(runC2R, arguments, token, processBatchConcurrent: true);
+                var timeWithRawJson = Time(runC2R, arguments, token, isGraph: false);
+                myListener.WriteLine($"{commitPeriod}\t\t\t\t\t\t{timeWithRawJson}");
                 //ResetFrontCursor(arguments);
                 //CleanUp();
-                //var timeWithNonConcurrentProcessing = Time(runC2R, arguments, token, processBatchConcurrent: false);
+                //var timeWithGraph = Time(runC2R, arguments, token, isGraph: true);
+                //myListener.WriteLine($"{commitPeriod}\t\t\t\t\t\t{timeWithGraph}");
                 //myListener.WriteLine($"{commitPeriod}\t\t\t\t{timeWithConcurrentProcessing}\t{timeWithNonConcurrentProcessing}");
 
-                myListener.WriteLine($"{commitPeriod}\t\t\t\t\t\t{timeWithConcurrentProcessing}");
                 myListener.Flush();
             }
         }
 
-        public static TimeSpan Time(Action<IDictionary<string, string>, CancellationToken, bool> action, IDictionary<string, string> arguments, CancellationToken token, bool processBatchConcurrent = true)
+        public static TimeSpan Time(Action<IDictionary<string, string>, CancellationToken, bool> action, IDictionary<string, string> arguments, CancellationToken token, bool isGraph = true)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
-            action.DynamicInvoke(arguments, token, processBatchConcurrent);
+            action.DynamicInvoke(arguments, token, isGraph);
             stopwatch.Stop();
             return stopwatch.Elapsed;
         }
