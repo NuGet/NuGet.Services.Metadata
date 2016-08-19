@@ -12,6 +12,7 @@ var fs = require("fs");
 var dirCompare = require("dir-compare");
 var showJsonFiles = false;
 var deepEqual = require("deep-equal");
+var ignoreKeys = ["commitTimeStamp", "commitId"];
 
 function run() {
     var dirPath1 = process.argv[2];
@@ -44,7 +45,7 @@ function fileComparator(filePath1, stat1, filePath2, stat2) {
     var contentsOfFile1 = require(filePath1);
     var contentsOfFile2 = require(filePath2);
 
-    var result = deepEqual(contentsOfFile1, contentsOfFile2, { strict: true });
+    var result = deepEqual(contentsOfFile1, contentsOfFile2, { strict: true, ignoreKeys: ignoreKeys });
     return result;
 }
 

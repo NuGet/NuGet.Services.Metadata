@@ -24,13 +24,20 @@ namespace Ng
 
         public async Task Loop(string source, StorageFactory storageFactory, string contentBaseAddress, bool unlistShouldDelete, bool verbose, int interval, string endTime, Boolean processBatchConcurrent, CancellationToken cancellationToken)
         {
-            CommitCollector collector;
-            {
-                collector = new RawJsonRegistrationCollector(new Uri("https://api.nuget.org/v3/catalog0/index.json"), storageFactory)
+            CommitCollector collector = new RegistrationCollector(new Uri(source), storageFactory, CommandHelpers.GetHttpMessageHandlerFactory(verbose))
                 {
-                    ProcessBatchesConcurrent = processBatchConcurrent
+                    ContentBaseAddress = contentBaseAddress == null
+                    ? null
+                    : new Uri(contentBaseAddress)
                 };
-            }
+
+            //CommitCollector collector;
+            //{
+            //    collector = new RawJsonRegistrationCollector(new Uri("https://api.nuget.org/v3/catalog0/index.json"), storageFactory)
+            //    {
+            //        ProcessBatchesConcurrent = processBatchConcurrent
+            //    };
+            //}
 
             Storage storage = storageFactory.Create();
             ReadWriteCursor front = new DurableCursor(storage.ResolveUri("cursor.json"), storage, MemoryCursor.MinValue);

@@ -141,7 +141,14 @@ namespace NuGet.Services.Metadata.Catalog.Registration
 
             foreach (Task<IGraph> task in tasks)
             {
-                graph.Merge(task.Result, false);
+                try
+                {
+                    graph.Merge(task.Result, false);
+                }
+                catch (Exception ex)
+                {
+                    // continue
+                }
             }
 
             return graph;
