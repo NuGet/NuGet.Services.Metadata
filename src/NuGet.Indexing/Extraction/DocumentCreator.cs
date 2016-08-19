@@ -45,7 +45,6 @@ namespace NuGet.Indexing
             AddField(document, "Summary", package, "summary", Field.Index.ANALYZED);
             AddField(document, "Tags", package, "tags", Field.Index.ANALYZED, 2.0f);
             AddField(document, "Authors", package, "authors", Field.Index.ANALYZED);
-            // AddField(document, "PackageTypes", package, "packageTypes", Field.Index.ANALYZED);
             AddPackageTypes(document, package);
 
             // add fields used by filtering and sorting
@@ -265,20 +264,20 @@ namespace NuGet.Indexing
 
         private static void AddPackageTypes(Document document, IDictionary<string, string> package)
         {
-            string value;
+            string flattenedPackageTypes;
             StringBuilder searchIndex = new StringBuilder();
-            if (package.TryGetValue("flattenedPackageTypes", out value))
+            if (package.TryGetValue("flattenedPackageTypes", out flattenedPackageTypes))
             {
-                if (!string.IsNullOrWhiteSpace(value))
+                if (!string.IsNullOrWhiteSpace(flattenedPackageTypes))
                 {
-                    AddField(document, "FlattenedPackageTypes", value, Field.Index.NOT_ANALYZED);
+                    AddField(document, "FlattenedPackageTypes", flattenedPackageTypes, Field.Index.NOT_ANALYZED);
 
                     using (var textWriter = new StringWriter())
                     {
                         using (var jsonWriter = new JsonTextWriter(textWriter))
                         {
                             jsonWriter.WriteStartArray();
-                            foreach (var packageType in value.Split('|'))
+                            foreach (var packageType in flattenedPackageTypes.Split('|'))
                             {
                                 string[] fields = packageType.Split(':');
                                 if (fields.Length > 0)
@@ -301,7 +300,6 @@ namespace NuGet.Indexing
                             jsonWriter.WriteEndArray();
                             jsonWriter.Flush();
                             textWriter.Flush();
-
                             var packageTypes = textWriter.ToString();
 
                             AddField(document, "packageTypes", packageTypes, Field.Index.NOT_ANALYZED);
@@ -310,6 +308,8 @@ namespace NuGet.Indexing
                 }
             }
 
+            // remove the trailing space from the index before saving
+            searchIndex.Length--;
             AddField(document, "PackageTypesIndex", searchIndex.ToString(), Field.Index.ANALYZED);
         }
 

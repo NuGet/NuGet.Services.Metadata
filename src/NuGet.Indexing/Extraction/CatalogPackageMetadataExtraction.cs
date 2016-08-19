@@ -128,23 +128,11 @@ namespace NuGet.Indexing
             private void AddFlattenedPackageTypes()
             {
                 var packageTypes = _reader.GetPackageTypes();
-
-                var builder = new StringBuilder();
-                for (var index = 0; index < packageTypes.Count; index++)
+                
+                if (packageTypes.Count > 0)
                 {
-                    var packageType = packageTypes[index];
-                    if (!string.IsNullOrWhiteSpace(packageType.Name))
-                    {
-                        builder.Append(packageType.Name);
-                        builder.Append(":");
-                        builder.Append(packageType.Version.ToString());
-                        builder.Append(index < packageTypes.Count-1 ? "|" : "");
-                    }
-                }
-
-                if (builder.Length > 0)
-                {
-                    _metadata["flattenedPackageTypes"] = builder.ToString();
+                    _metadata["flattenedPackageTypes"] = string.Join("|", 
+                        packageTypes.Select(packageType => packageType.Name + ":" + packageType.Version.ToString()));
                 }
             }
 

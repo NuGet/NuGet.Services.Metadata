@@ -135,7 +135,7 @@ namespace Ng
 
             foreach (JObject catalogItem in catalogItems)
             {
-                _logger.LogInformation($"Process CatalogItem {catalogItem["@id"]}", catalogItem["@id"]);
+                _logger.LogInformation("Process CatalogItem {CatalogItem}", catalogItem["@id"]);
 
                 NormalizeId(catalogItem);
 

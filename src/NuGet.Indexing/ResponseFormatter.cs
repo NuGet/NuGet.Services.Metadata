@@ -79,7 +79,6 @@ namespace NuGet.Indexing
                 WriteDocumentValue(jsonWriter, "licenseUrl", document, "LicenseUrl");
                 WriteDocumentValue(jsonWriter, "projectUrl", document, "ProjectUrl");
                 WriteDocumentValueAsArray(jsonWriter, "tags", document, "Tags");
-                // WriteDocumentValueAsArray(jsonWriter, "packageTypes", document, "PackageTypes");
                 WritePackageTypes(jsonWriter, document);
                 WriteDocumentValueAsArray(jsonWriter, "authors", document, "Authors", true);
                 WriteProperty(jsonWriter, "totalDownloads", searcher.Versions[scoreDoc.Doc].VersionDetails.Select(item => item.Downloads).Sum());
