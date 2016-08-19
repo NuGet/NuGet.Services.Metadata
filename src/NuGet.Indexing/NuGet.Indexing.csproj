@@ -222,6 +222,7 @@
     <Compile Include="Extraction\NupkgPackageMetadataExtraction.cs" />
     <Compile Include="Handlers\OwnersHandler.cs" />
     <Compile Include="OwnersResult.cs" />
+    <Compile Include="PackageTypesAnalyzer.cs" />
     <Compile Include="QueryField.cs" />
     <Compile Include="Querys\DownloadsBoostedQuery.cs" />
     <Compile Include="Querys\DownloadsScoreProvider.cs" />

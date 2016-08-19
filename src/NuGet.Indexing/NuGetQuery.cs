@@ -223,6 +223,7 @@ namespace NuGet.Indexing
             DescriptionClause(query, analyzer, values, Occur.SHOULD);
             SummaryClause(query, analyzer, values, Occur.SHOULD);
             TagClause(query, analyzer, values, Occur.SHOULD);
+            PackageTypeClause(query, analyzer, values, Occur.SHOULD);
             AuthorClause(query, analyzer, values, Occur.SHOULD);
         }
 
