@@ -1,8 +1,8 @@
 /*
  *  To run 
  *  1. Install node.js from: https://nodejs.org/en/download/, skip this if you have node installed
- *  2. In C2RVerification folder run below command to install dependencies
- *          npm install
+ *  2. Do not run npm install. Use the node_modules checked in with the project to execute it. It
+ *     has modified deep-equal library to ignore keys.
  *  3. Execute below command to invoke folder comparison.
  *          node index.js <Path to Registration folder1> <Path to Registration folder2> [optional: -showNonJsonFiles]
  *      eg: node index.js e:\nuget\assets\reg0-graph e:\nuget\assets\reg0-rawjson -showNonJsonFiles
@@ -59,12 +59,6 @@ function compare(folder1, folder2) {
 
     var result = dirCompare.compareSync(folder1, folder2, options);
 
-    console.log('equal: ' + result.equal);
-    console.log('distinct: ' + result.distinct);
-    console.log('left: ' + result.left);
-    console.log('right: ' + result.right);
-    console.log('differences: ' + result.differences);
-    console.log('same: ' + result.same);
     var format = require('util').format;
     result.diffSet.forEach(function (entry) {
         if (entry.state == "equal") return;
@@ -80,6 +74,14 @@ function compare(folder1, folder2) {
         var name2 = entry.name2 ? entry.name2 : '';
         console.log(format('%s(%s)%s%s(%s)', name1, entry.type1, state, name2, entry.type2));
     });
+
+    console.log("~~~~~~~~~~~STATS~~~~~~~~~~~");
+    console.log('Equal: ' + result.equal);
+    console.log('Distinct: ' + result.distinct);
+    console.log('Left: ' + result.left);
+    console.log('Right: ' + result.right);
+    console.log('Differences: ' + result.differences);
+    console.log('Same: ' + result.same);
 }
 
 run();
