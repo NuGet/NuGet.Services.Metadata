@@ -309,7 +309,11 @@ namespace NuGet.Indexing
             }
 
             // remove the trailing space from the index before saving
-            searchIndex.Length--;
+            if (searchIndex.Length > 0)
+            {
+                searchIndex.Length--;
+            }
+
             AddField(document, "PackageTypesIndex", searchIndex.ToString(), Field.Index.ANALYZED);
         }
 
