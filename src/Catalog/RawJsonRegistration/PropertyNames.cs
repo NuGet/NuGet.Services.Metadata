@@ -6,6 +6,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
     {
         public static string SchemaId = "@id";
         public static string SchemaType = "@type";
+        public static string SchemaContext = "@context";
 
         public static string Items = "items";
         public static string CatalogEntry = "catalogEntry";
@@ -20,6 +21,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
         public static string CommitId = "commitId";
         public static string CommitTimeStamp = "commitTimeStamp";
 
+        public static string Parent = "parent";
         public static string Count = "count";
         public static string Lower = "lower";
         public static string Upper = "upper";

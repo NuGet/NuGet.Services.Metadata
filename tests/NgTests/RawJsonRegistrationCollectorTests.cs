@@ -1,3 +1,6 @@
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System;
 using System.Linq;
 using System.Net;
@@ -24,33 +27,7 @@ namespace NgTests
         }
 
         [Fact]
-        public async Task CreatesRegistrationsAndRespectsDeletes_Benchmark_NoConcurrentBatches()
-        {
-            using (new StopwatchMeasurement("Benchmark - 50 runs - no concurrent batches", _output))
-            {
-                for (int i = 0; i < 50; i++)
-                {
-                    await CreatesRegistrationsAndRespectsDeletes(false);
-                }
-            }
-        }
-
-        [Fact]
-        public async Task CreatesRegistrationsAndRespectsDeletes_Benchmark_ConcurrentBatches()
-        {
-            using (new StopwatchMeasurement("Benchmark - 50 runs - concurrent batches", _output))
-            {
-                for (int i = 0; i < 50; i++)
-                {
-                    await CreatesRegistrationsAndRespectsDeletes(true);
-                }
-            }
-        }
-        
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task CreatesRegistrationsAndRespectsDeletes(bool processBatchesConcurrent)
+        public async Task CreatesRegistrationsAndRespectsDeletes()
         {
             // Arrange
             var catalogStorage = Catalogs.CreateTestCatalogWithThreePackagesAndDelete();
@@ -66,15 +43,14 @@ namespace NgTests
             var target = new RawJsonRegistrationCollector(new Uri("http://tempuri.org/index.json"), catalogToRegistrationStorageFactory, () => mockServer)
             {
                 ContentBaseAddress = new Uri("http://tempuri.org/packages"),
-                PackagePathProvider =  new PackagesFolderPackagePathProvider(prefix: null),
-                ProcessBatchesConcurrent = processBatchesConcurrent
+                PackagePathProvider = new PackagesFolderPackagePathProvider(prefix: null)
             };
             
             ReadWriteCursor front = new DurableCursor(catalogToRegistrationStorage.ResolveUri("cursor.json"), catalogToRegistrationStorage, MemoryCursor.MinValue);
             ReadCursor back = MemoryCursor.CreateMax();
 
             // Act
-            using (new StopwatchMeasurement("Run collector (concurrent: " + processBatchesConcurrent + ")", _output))
+            using (new StopwatchMeasurement("Run collector", _output))
             {
                 await target.Run(front, back, CancellationToken.None);
             }

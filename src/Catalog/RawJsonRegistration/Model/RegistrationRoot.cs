@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using NuGet.Services.Metadata.Catalog.Json;
 using NuGet.Services.Metadata.Catalog.Persistence;
 
 namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
@@ -56,9 +57,17 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             {
                 // Only one page? Then our first page is the index root...
                 var page = Pages.First();
+                var itemsContent = page.CreateContent(partitionSize, commitId, commitTimeStamp).Content
+                    .SkipClone(new [] { PropertyNames.SchemaContext }); // drop "@context"
+
+                itemsContent[PropertyNames.SchemaId] = new Uri($"{page.Lower.RegistrationBaseAddress}{page.Lower.Id}/index.json#page/{page.Lower.Version}/{page.Upper.Version}");
+                itemsContent[PropertyNames.SchemaType] = "catalog:CatalogPage";
+                itemsContent[PropertyNames.Parent] = new Uri($"{page.Lower.RegistrationBaseAddress}{page.Lower.Id}/index.json");
+                itemsContent[PropertyNames.Lower] = page.Lower.Version;
+                itemsContent[PropertyNames.Upper] = page.Upper.Version;
 
                 registrationContext.Add(PropertyNames.Count, 1);
-                registrationContext.Add(PropertyNames.Items, page.CreateContent(partitionSize, commitId, commitTimeStamp).Content);
+                registrationContext.Add(PropertyNames.Items, new JArray(itemsContent));
                 
                 registrationContext.Add(PropertyNames.Lower, page.Lower.Version);
                 registrationContext.Add(PropertyNames.Upper, page.Upper.Version);
