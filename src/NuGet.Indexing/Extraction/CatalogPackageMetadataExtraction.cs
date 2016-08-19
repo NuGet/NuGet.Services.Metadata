@@ -138,7 +138,7 @@ namespace NuGet.Indexing
                         builder.Append(packageType.Name);
                         builder.Append(":");
                         builder.Append(packageType.Version.ToString());
-                        builder.Append(index < packageTypes.Count-1 ? " " : "");
+                        builder.Append(index < packageTypes.Count-1 ? "|" : "");
                     }
                 }
 

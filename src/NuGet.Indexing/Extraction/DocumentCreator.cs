@@ -278,7 +278,7 @@ namespace NuGet.Indexing
                         using (var jsonWriter = new JsonTextWriter(textWriter))
                         {
                             jsonWriter.WriteStartArray();
-                            foreach (var packageType in value.Split(' '))
+                            foreach (var packageType in value.Split('|'))
                             {
                                 string[] fields = packageType.Split(':');
                                 if (fields.Length > 0)
