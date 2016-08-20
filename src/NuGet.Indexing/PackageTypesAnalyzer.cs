@@ -10,7 +10,7 @@ namespace NuGet.Indexing
     {
         public override TokenStream TokenStream(string fieldName, TextReader reader)
         {
-            return new LowerCaseFilter(new DotTokenizer(reader));
+            return new LowerCaseFilter(new KeywordTokenizer(reader));
         }
     }
 }
