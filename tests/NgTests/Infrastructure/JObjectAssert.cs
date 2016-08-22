@@ -31,7 +31,16 @@ namespace NgTests.Infrastructure
                     {
                         JProperty targetProp = targetJObject.Property(sourceProperty.Key);
 
-                        if (!JToken.DeepEquals(sourceProperty.Value, targetProp.Value))
+                        if (targetProp == null)
+                        {
+                            yield return new Difference
+                            {
+                                Path = "(missing property) " + sourceProperty.Value.Path,
+                                Left = sourceProperty.Value.ToString(),
+                                Right = "(missing)"
+                            };
+                        }
+                        else if (!JToken.DeepEquals(sourceProperty.Value, targetProp.Value))
                         {
                             // Compare based on type
                             if (sourceProperty.Value.Type == JTokenType.Array && targetProp.Value.Type == JTokenType.Array)

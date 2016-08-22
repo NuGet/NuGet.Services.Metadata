@@ -572,6 +572,19 @@
     "catalog:Permalink"
   ],
   "authors": "NuGet",
+  "dependencyGroups":[
+  {
+    "@id":"http://tempuri.org/data/2015.10.12.10.08.54/unlistedpackage.1.0.0.json#dependencygroup/.netframework4.6.1",
+    "@type":"PackageDependencyGroup",
+    "dependencies":[
+      {
+        "@id":"http://tempuri.org/data/2015.10.12.10.08.54/unlistedpackage.1.0.0.json#dependencygroup/.netframework4.6.1/listedpackage",
+        "@type":"PackageDependency",
+        "id":"ListedPackage",
+        "range":"[1.0.0, )"
+       }],
+    "targetFramework":".NETFramework4.6.1"
+  }],
   "catalog:commitId": "9a37734f-1960-4c07-8934-c8bc797e35c1",
   "catalog:commitTimeStamp": "2015-10-12T10:08:54.1506742Z",
   "created": "2015-01-01T00:00:00Z",

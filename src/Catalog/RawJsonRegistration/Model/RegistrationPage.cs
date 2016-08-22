@@ -102,6 +102,28 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 if (catalogEntry["title"] == null) catalogEntry["title"] = string.Empty;
                 if (catalogEntry["tags"] == null) catalogEntry["tags"] = new JArray(string.Empty);
 
+                // Loop dependency groups and make sure they all have a registration URL property
+                var dependencyGroupsEntry = catalogEntry["dependencyGroups"] as JArray;
+                if (dependencyGroupsEntry != null)
+                {
+                    foreach (var dependencyGroupEntry in dependencyGroupsEntry)
+                    {
+                        var dependenciesEntry = dependencyGroupEntry["dependencies"] as JArray;
+                        if (dependenciesEntry != null)
+                        {
+                            foreach (var dependencyEntry in dependenciesEntry)
+                            {
+                                var dependencyId = dependencyEntry[PropertyNames.Id];
+                                if (dependencyId != null)
+                                {
+                                    dependencyEntry[PropertyNames.Registration] =
+                                        $"{registrationBaseAddress}{dependencyId}/index.json".ToLowerInvariant();
+                                }
+                            }
+                        }
+                    }
+                }
+
                 registrationVersionContext.Add(PropertyNames.CatalogEntry, catalogEntry);
 
                 registrationVersionContext.Add(PropertyNames.PackageContent, packageContentUrl);
