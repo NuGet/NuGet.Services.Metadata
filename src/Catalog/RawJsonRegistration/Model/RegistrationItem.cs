@@ -35,8 +35,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
 
         public JTokenStorageContent CreateContent(Guid commitId, DateTime commitTimeStamp)
         {
-            var packageJsonLdContext = Utils.GetResource("context.Package.json");
-            var packageContext = JObject.Parse(packageJsonLdContext);
+            var packageContext = new JObject();
 
             packageContext.Add(PropertyNames.SchemaId, RegistrationVersionUri.ToString().ToLowerInvariant());
             packageContext.Add(PropertyNames.SchemaType, new JArray(
@@ -48,6 +47,8 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             packageContext.Add(PropertyNames.Published, Subject[PropertyNames.Published]);
             packageContext.Add(PropertyNames.PackageContent, $"{ContentBaseAddress.ToString().TrimEnd('/')}/{PackagePath}".ToLowerInvariant());
             packageContext.Add(PropertyNames.Registration, $"{RegistrationBaseAddress}{Id}/index.json".ToLowerInvariant());
+
+            packageContext.Add(PropertyNames.SchemaContext, JsonLdContext.Package[PropertyNames.SchemaContext]);
 
             return new JTokenStorageContent(packageContext, ContentTypes.ApplicationJson, "no-store");
         }

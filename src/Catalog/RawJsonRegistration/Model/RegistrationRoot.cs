@@ -37,12 +37,10 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             Uri = uri;
             Pages = pages;
         }
-
+        
         public JTokenStorageContent CreateContent(int partitionSize, Guid commitId, DateTime commitTimeStamp)
         {
-            var registrationJsonLdContext = Utils.GetResource("context.Registration.json");
-
-            var registrationContext = JObject.Parse(registrationJsonLdContext);
+            var registrationContext = new JObject();
 
             registrationContext.Add(PropertyNames.SchemaId, Uri.ToString().ToLowerInvariant());
             registrationContext.Add(PropertyNames.SchemaType, new JArray(
@@ -92,7 +90,9 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 registrationContext.Add(PropertyNames.Count, pagesContext.Count);
                 registrationContext.Add(PropertyNames.Items, pagesContext);
             }
-            
+
+            registrationContext.Add(PropertyNames.SchemaContext, JsonLdContext.Registration[PropertyNames.SchemaContext]);
+
             return new JTokenStorageContent(registrationContext, ContentTypes.ApplicationJson, "no-store");
         }
     }

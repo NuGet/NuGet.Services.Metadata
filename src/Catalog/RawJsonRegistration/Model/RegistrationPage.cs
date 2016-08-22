@@ -42,9 +42,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             var registrationBaseAddress = Lower.RegistrationBaseAddress;
             var contentBaseAddress = Lower.ContentBaseAddress;
             
-            var registrationJsonLdContext = Utils.GetResource("context.Registration.json");
-
-            var registrationContext = JObject.Parse(registrationJsonLdContext);
+            var registrationContext = new JObject();
 
             registrationContext.Add(PropertyNames.SchemaId, PageUri.ToString().ToLowerInvariant());
             registrationContext.Add(PropertyNames.SchemaType, "catalog:CatalogPage");
@@ -114,6 +112,8 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 
             registrationContext.Add(PropertyNames.Count, registrationItemsContext.Count);
             registrationContext.Add(PropertyNames.Items, registrationItemsContext);
+
+            registrationContext.Add(PropertyNames.SchemaContext, JsonLdContext.Registration[PropertyNames.SchemaContext]);
 
             return new JTokenStorageContent(registrationContext, ContentTypes.ApplicationJson, "no-store");
         }
