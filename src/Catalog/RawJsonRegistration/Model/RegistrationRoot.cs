@@ -74,7 +74,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 foreach (var page in Pages)
                 {
                     var pageContext = new JObject();
-                    pageContext.Add(PropertyNames.SchemaId, page.PageUri.ToString().ToLowerInvariant()); // TODO verify correctness
+                    pageContext.Add(PropertyNames.SchemaId, page.PageUri.ToString().ToLowerInvariant());
                     pageContext.Add(PropertyNames.SchemaType, "catalog:CatalogPage");
 
                     pageContext.Add(PropertyNames.CommitId, commitId);

@@ -59,8 +59,6 @@ namespace NuGet.Services.Metadata.Catalog.Registration
                     group.Min(item => item.CommitTimeStamp),
                     group));
 
-            // TODO: do we want to limit the number of batches that can be processed at once?
-
             return Task.FromResult(batches);
         }
 

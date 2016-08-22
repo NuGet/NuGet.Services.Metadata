@@ -56,7 +56,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 var packageContentUrl = $"{contentBaseAddress.ToString().TrimEnd('/')}/{registrationVersion.PackagePath}".ToLowerInvariant();
 
                 var registrationVersionContext = new JObject();
-                registrationVersionContext.Add(PropertyNames.SchemaId, $"{registrationBaseAddress}{id}/{registrationVersion.Version}.json".ToLowerInvariant()); // TODO verify correctness
+                registrationVersionContext.Add(PropertyNames.SchemaId, $"{registrationBaseAddress}{id}/{registrationVersion.Version}.json".ToLowerInvariant());
                 registrationVersionContext.Add(PropertyNames.SchemaType, "Package");
 
                 registrationVersionContext.Add(PropertyNames.CommitId, commitId);
@@ -127,7 +127,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 registrationVersionContext.Add(PropertyNames.CatalogEntry, catalogEntry);
 
                 registrationVersionContext.Add(PropertyNames.PackageContent, packageContentUrl);
-                registrationVersionContext.Add(PropertyNames.Registration, $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant()); // TODO
+                registrationVersionContext.Add(PropertyNames.Registration, $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant());
 
                 registrationItemsContext.Add(registrationVersionContext);
             }
