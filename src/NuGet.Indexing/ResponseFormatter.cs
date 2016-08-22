@@ -99,11 +99,31 @@ namespace NuGet.Indexing
 
         private static void WritePackageTypes(JsonWriter jsonWriter, Document document)
         {
-            var value = document.Get("packageTypes");
-            if (!string.IsNullOrEmpty(value))
+            var flattenedPackageTypes = document.Get("FlattenedPackageTypes");
+            if (!string.IsNullOrEmpty(flattenedPackageTypes))
             {
                 jsonWriter.WritePropertyName("packageTypes");
-                jsonWriter.WriteRawValue(value);
+                jsonWriter.WriteStartArray();
+                foreach (var packageType in flattenedPackageTypes.Split('|'))
+                {
+                    string[] fields = packageType.Split(':');
+                    if (fields.Length > 0)
+                    {
+                        jsonWriter.WriteStartObject();
+                        jsonWriter.WritePropertyName("Type");
+                        jsonWriter.WriteValue(fields[0]);
+                        if (fields.Length > 1)
+                        {
+                            jsonWriter.WritePropertyName("Version");
+                            jsonWriter.WriteValue(fields[1]);
+                        }
+
+                        jsonWriter.WriteEndObject();
+                    }
+                }
+
+                jsonWriter.WriteEndArray();
+                // jsonWriter.WriteRawValue(flattenedPackageTypes);
             }
         }
 

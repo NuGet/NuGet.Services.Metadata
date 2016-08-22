@@ -272,37 +272,13 @@ namespace NuGet.Indexing
                 {
                     AddField(document, "FlattenedPackageTypes", flattenedPackageTypes, Field.Index.NOT_ANALYZED);
 
-                    using (var textWriter = new StringWriter())
+                    foreach (var packageType in flattenedPackageTypes.Split('|'))
                     {
-                        using (var jsonWriter = new JsonTextWriter(textWriter))
+                        string[] fields = packageType.Split(':');
+                        if (fields.Length > 0)
                         {
-                            jsonWriter.WriteStartArray();
-                            foreach (var packageType in flattenedPackageTypes.Split('|'))
-                            {
-                                string[] fields = packageType.Split(':');
-                                if (fields.Length > 0)
-                                {
-                                    jsonWriter.WriteStartObject();
-                                    jsonWriter.WritePropertyName("Type");
-                                    jsonWriter.WriteValue(fields[0]);
-                                    searchIndex.Append(fields[0]);
-                                    searchIndex.Append(" ");
-                                    if (fields.Length > 1)
-                                    {
-                                        jsonWriter.WritePropertyName("Version");
-                                        jsonWriter.WriteValue(fields[1]);
-                                    }
-
-                                    jsonWriter.WriteEndObject();
-                                }
-                            }
-
-                            jsonWriter.WriteEndArray();
-                            jsonWriter.Flush();
-                            textWriter.Flush();
-                            var packageTypes = textWriter.ToString();
-
-                            AddField(document, "packageTypes", packageTypes, Field.Index.NOT_ANALYZED);
+                            searchIndex.Append(fields[0]);
+                            searchIndex.Append(" ");
                         }
                     }
                 }
