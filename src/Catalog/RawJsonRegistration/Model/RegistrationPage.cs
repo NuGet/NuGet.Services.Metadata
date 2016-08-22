@@ -42,9 +42,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             var registrationBaseAddress = Lower.RegistrationBaseAddress;
             var contentBaseAddress = Lower.ContentBaseAddress;
             
-            var registrationJsonLdContext = Utils.GetResource("context.Registration.json");
-
-            var registrationContext = JObject.Parse(registrationJsonLdContext);
+            var registrationContext = new JObject();
 
             registrationContext.Add(PropertyNames.SchemaId, PageUri.ToString().ToLowerInvariant());
             registrationContext.Add(PropertyNames.SchemaType, "catalog:CatalogPage");
@@ -58,7 +56,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 var packageContentUrl = $"{contentBaseAddress.ToString().TrimEnd('/')}/{registrationVersion.PackagePath}".ToLowerInvariant();
 
                 var registrationVersionContext = new JObject();
-                registrationVersionContext.Add(PropertyNames.SchemaId, $"{registrationBaseAddress}{id}/{registrationVersion.Version}.json".ToLowerInvariant()); // TODO verify correctness
+                registrationVersionContext.Add(PropertyNames.SchemaId, $"{registrationBaseAddress}{id}/{registrationVersion.Version}.json".ToLowerInvariant());
                 registrationVersionContext.Add(PropertyNames.SchemaType, "Package");
 
                 registrationVersionContext.Add(PropertyNames.CommitId, commitId);
@@ -104,16 +102,40 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 if (catalogEntry["title"] == null) catalogEntry["title"] = string.Empty;
                 if (catalogEntry["tags"] == null) catalogEntry["tags"] = new JArray(string.Empty);
 
+                // Loop dependency groups and make sure they all have a registration URL property
+                var dependencyGroupsEntry = catalogEntry["dependencyGroups"] as JArray;
+                if (dependencyGroupsEntry != null)
+                {
+                    foreach (var dependencyGroupEntry in dependencyGroupsEntry)
+                    {
+                        var dependenciesEntry = dependencyGroupEntry["dependencies"] as JArray;
+                        if (dependenciesEntry != null)
+                        {
+                            foreach (var dependencyEntry in dependenciesEntry)
+                            {
+                                var dependencyId = dependencyEntry[PropertyNames.Id];
+                                if (dependencyId != null)
+                                {
+                                    dependencyEntry[PropertyNames.Registration] =
+                                        $"{registrationBaseAddress}{dependencyId}/index.json".ToLowerInvariant();
+                                }
+                            }
+                        }
+                    }
+                }
+
                 registrationVersionContext.Add(PropertyNames.CatalogEntry, catalogEntry);
 
                 registrationVersionContext.Add(PropertyNames.PackageContent, packageContentUrl);
-                registrationVersionContext.Add(PropertyNames.Registration, $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant()); // TODO
+                registrationVersionContext.Add(PropertyNames.Registration, $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant());
 
                 registrationItemsContext.Add(registrationVersionContext);
             }
                 
             registrationContext.Add(PropertyNames.Count, registrationItemsContext.Count);
             registrationContext.Add(PropertyNames.Items, registrationItemsContext);
+
+            registrationContext.Add(PropertyNames.SchemaContext, JsonLdContext.Registration[PropertyNames.SchemaContext]);
 
             return new JTokenStorageContent(registrationContext, ContentTypes.ApplicationJson, "no-store");
         }

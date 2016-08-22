@@ -261,15 +261,13 @@ namespace NgTests.Data {
         ///    &quot;catalog:Permalink&quot;
         ///  ],
         ///  &quot;authors&quot;: &quot;NuGet&quot;,
-        ///  &quot;catalog:commitId&quot;: &quot;9a37734f-1960-4c07-8934-c8bc797e35c1&quot;,
-        ///  &quot;catalog:commitTimeStamp&quot;: &quot;2015-10-12T10:08:54.1506742Z&quot;,
-        ///  &quot;created&quot;: &quot;2015-01-01T00:00:00Z&quot;,
-        ///  &quot;description&quot;: &quot;Package description.&quot;,
-        ///  &quot;id&quot;: &quot;UnlistedPackage&quot;,
-        ///  &quot;isPrerelease&quot;: false,
-        ///  &quot;lastEdited&quot;: &quot;2015-01-01T00:00:00Z&quot;,
-        ///  &quot;licenseNames&quot;: &quot;&quot;,
-        ///  &quot;licenseR [rest of string was truncated]&quot;;.
+        ///  &quot;dependencyGroups&quot;:[
+        ///  {
+        ///    &quot;@id&quot;:&quot;http://tempuri.org/data/2015.10.12.10.08.54/unlistedpackage.1.0.0.json#dependencygroup/.netframework4.6.1&quot;,
+        ///    &quot;@type&quot;:&quot;PackageDependencyGroup&quot;,
+        ///    &quot;dependencies&quot;:[
+        ///      {
+        ///        &quot;@id&quot;:&quot;http://tempuri.org/data/2015.10.12.10.08.54/unlistedpackage.1.0.0.json#dependencygroup/.netframework [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string TestCatalogStorageWithThreePackagesUnlistedPackage100 {
             get {

@@ -152,6 +152,7 @@
     <Compile Include="Pipeline\XmlStage.cs" />
     <Compile Include="RawJsonRegistration\EnumerableExtensions.cs" />
     <Compile Include="RawJsonRegistration\IRawJsonRegistrationPersistence.cs" />
+    <Compile Include="RawJsonRegistration\Model\JsonLdContext.cs" />
     <Compile Include="RawJsonRegistration\PropertyNames.cs" />
     <Compile Include="RawJsonRegistration\RawJsonRegistrationCatalogEntry.cs" />
     <Compile Include="RawJsonRegistration\RawJsonRegistrationCollector.cs" />
