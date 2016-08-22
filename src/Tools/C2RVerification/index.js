@@ -12,7 +12,7 @@ var fs = require("fs");
 var dirCompare = require("dir-compare");
 var showJsonFiles = false;
 var deepEqual = require("deep-equal");
-var ignoreKeys = ["commitTimeStamp", "commitId"];
+var ignoreKeys = ["commitTimeStamp", "commitId", "tags"];
 
 function run() {
     var dirPath1 = process.argv[2];

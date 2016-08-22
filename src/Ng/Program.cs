@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using NuGet.Services.Logging;
 using Serilog.Context;
 using Serilog.Events;
+using System.Globalization;
 
 namespace Ng
 {
@@ -34,6 +35,7 @@ namespace Ng
                 Debugger.Launch();
             }
 
+            Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("is-IS");
             Action printToolUsage = PrintUsage;
 
             try

@@ -52,14 +52,21 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
             {
                 foreach (var registrationEntry in registrationEntries)
                 {
-                    var resourceUri = registrationEntry[PropertyNames.SchemaId].ToString().ToLowerInvariant();
+                    try
+                    {
+                        var resourceUri = registrationEntry[PropertyNames.SchemaId].ToString().ToLowerInvariant();
 
-                    var id = registrationEntry[PropertyNames.CatalogEntry][PropertyNames.Id].ToString().ToLowerInvariant();
-                    var version = registrationEntry[PropertyNames.CatalogEntry][PropertyNames.Version].ToString().ToLowerInvariant();
+                        var id = registrationEntry[PropertyNames.CatalogEntry][PropertyNames.Id].ToString().ToLowerInvariant();
+                        var version = registrationEntry[PropertyNames.CatalogEntry][PropertyNames.Version].ToString().ToLowerInvariant();
 
-                    resources.Add(
-                        new RegistrationEntryKey(new RegistrationKey(id), version),
-                        new RawJsonRegistrationCatalogEntry(id, version, resourceUri, (JObject)registrationEntry[PropertyNames.CatalogEntry], true));
+                        resources.Add(
+                            new RegistrationEntryKey(new RegistrationKey(id), version),
+                            new RawJsonRegistrationCatalogEntry(id, version, resourceUri, (JObject)registrationEntry[PropertyNames.CatalogEntry], true));
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine("Error in GetResources: " + registrationEntry.ToString() + " \nException :" + ex.ToString());
+                    }
                 }
             }
 
