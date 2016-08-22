@@ -68,9 +68,6 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
 
                 registrationContext.Add(PropertyNames.Count, 1);
                 registrationContext.Add(PropertyNames.Items, new JArray(itemsContent));
-                
-                registrationContext.Add(PropertyNames.Lower, page.Lower.Version);
-                registrationContext.Add(PropertyNames.Upper, page.Upper.Version);
             }
             else
             {
