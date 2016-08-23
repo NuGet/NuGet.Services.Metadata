@@ -12,7 +12,7 @@ var fs = require("fs");
 var dirCompare = require("dir-compare");
 var showJsonFiles = false;
 var deepEqual = require("deep-equal");
-var ignoreKeys = ["commitTimeStamp", "commitId", "tags"];
+var ignoreKeys = ["commitTimeStamp", "commitId", "tags", "dependencies"];
 
 function run() {
     var dirPath1 = process.argv[2];
@@ -72,7 +72,10 @@ function compare(folder1, folder2) {
 
         var name1 = entry.name1 ? entry.name1 : '';
         var name2 = entry.name2 ? entry.name2 : '';
-        console.log(format('%s(%s)%s%s(%s)', name1, entry.type1, state, name2, entry.type2));
+        //console.log(format('%s(%s)%s%s(%s)', name1, entry.type1, state, name2, entry.type2));
+        if (entry.state == "distinct") {
+            console.log("Distinct file: " + entry.relativePath + "/" + name1);
+        }
     });
 
     console.log("~~~~~~~~~~~STATS~~~~~~~~~~~");

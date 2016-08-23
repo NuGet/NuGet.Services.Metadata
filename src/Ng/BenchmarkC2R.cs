@@ -19,7 +19,7 @@ namespace Ng
             CommandHelpers.TryGetArgument(arguments, Constants.StorageBaseAddress, out BaseDirectoryAddress);
 
             TextWriterTraceListener myListener = new TextWriterTraceListener("E:\\Nuget\\Assets\\benchmark_output.log", "myListener");
-            myListener.WriteLine($"Window(1 hour/period)\tRawJson - Concurrent");
+            myListener.WriteLine($"Window(1 hour/period)\tRawJson");
             var catalog2Registration = new Catalog2Registration(loggerFactory);
             var runC2R = new Action<IDictionary<string, string>, CancellationToken, bool>(catalog2Registration.Run);
             DateTime WaveCursorTime = DateTime.Parse(WaveCursorTimeValue);
