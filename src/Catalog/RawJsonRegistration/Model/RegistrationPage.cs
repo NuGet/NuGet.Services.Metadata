@@ -91,6 +91,10 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 catalogEntry[PropertyNames.SchemaType] = "PackageDetails";
                 catalogEntry[PropertyNames.PackageContent] = packageContentUrl;
 
+                // Ensure id and version are present
+                if (catalogEntry[PropertyNames.Id] == null) catalogEntry[PropertyNames.Id] = id;
+                if (catalogEntry[PropertyNames.Version] == null) catalogEntry[PropertyNames.Version] = registrationVersion.Version;
+
                 // Ensure default values are present
                 // TODO: Check if this is needed for the client or not. If not, remove the following checks and assignments as they are ballast...
                 if (catalogEntry["iconUrl"] == null) catalogEntry["iconUrl"] = string.Empty;
@@ -101,6 +105,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 if (catalogEntry["summary"] == null) catalogEntry["summary"] = string.Empty;
                 if (catalogEntry["title"] == null) catalogEntry["title"] = string.Empty;
                 if (catalogEntry["tags"] == null) catalogEntry["tags"] = new JArray(string.Empty);
+                if (catalogEntry["requireLicenseAcceptance"] == null) catalogEntry["requireLicenseAcceptance"] = bool.FalseString;
 
                 // Loop dependency groups and make sure they all have a registration URL property
                 var dependencyGroupsEntry = catalogEntry["dependencyGroups"] as JArray;

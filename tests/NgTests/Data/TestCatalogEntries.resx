@@ -421,7 +421,7 @@
   "packageHashAlgorithm": "SHA512",
   "packageSize": 2529,
   "published": "2015-01-01T00:00:00Z",
-  "requireLicenseAcceptance": false,
+  "requireLicenseAcceptance": true,
   "verbatimVersion": "1.0.1",
   "version": "1.0.1",
   "@context": {
