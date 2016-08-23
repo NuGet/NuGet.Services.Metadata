@@ -109,7 +109,7 @@ namespace NuGet.Indexing
         {
             try
             {
-                Query query = NuGetQuery.MakeQuery(q, searcher.Owners, searcher.PackageTypes);
+                Query query = NuGetQuery.MakeQuery(q, searcher.Owners);
                 Query boostedQuery = new DownloadsBoostedQuery(query,
                     searcher.DocIdMapping,
                     searcher.Downloads,

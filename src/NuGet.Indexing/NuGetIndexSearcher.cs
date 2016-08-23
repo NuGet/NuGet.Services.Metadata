@@ -29,8 +29,7 @@ namespace NuGet.Indexing
             QueryBoostingContext context,
             OpenBitSet latestBitSet,
             OpenBitSet latestStableBitSet,
-            OwnersResult owners,
-            PackageTypesResult packageTypes)
+            OwnersResult owners)
             : base(reader)
         {
             Manager = manager;
@@ -50,7 +49,6 @@ namespace NuGet.Indexing
             LatestBitSet = latestBitSet;
             LatestStableBitSet = latestStableBitSet;
             Owners = owners;
-            PackageTypes = packageTypes;
             QueryBoostingContext = context;
             LastReopen = DateTime.UtcNow;
         }
@@ -63,7 +61,6 @@ namespace NuGet.Indexing
         public OpenBitSet LatestBitSet { get; }
         public OpenBitSet LatestStableBitSet { get; }
         public OwnersResult Owners { get; }
-        public PackageTypesResult PackageTypes { get; }
         public DateTime LastReopen { get; }
         public IReadOnlyDictionary<string, int[]> DocIdMapping { get; }
         public QueryBoostingContext QueryBoostingContext { get; }

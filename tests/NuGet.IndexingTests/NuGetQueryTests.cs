@@ -60,7 +60,7 @@ namespace NuGet.IndexingTests
             var queryText = $"{inputField}:dot";
 
             // act
-            var actual = NuGetQuery.MakeQuery(queryText, owners, null);
+            var actual = NuGetQuery.MakeQuery(queryText, owners);
 
             // assert
             Assert.Contains("filtered(*:*)->NuGet.Indexing.OwnersFilter", actual.ToString());
@@ -142,39 +142,7 @@ namespace NuGet.IndexingTests
                 new OwnersFilter(owners, "Microsoft"));
 
             // act
-            var actual = NuGetQuery.MakeQuery(queryText, owners, null);
-
-            // assert
-            Assert.Equal(expected.ToString(), actual.ToString());
-        }
-
-        [Fact]
-        public void CanMixTermsWithAndWithoutPackageTypeFieldLabels()
-        {
-            // arrange
-            var packageTypes = CreatePackageTypesResult(new Dictionary<string, HashSet<string>>
-                {
-                    {  "dot", new HashSet<string> { "dependency" } }
-                });
-
-            var queryText = "dot packageType:dependency";
-            var expected = new FilteredQuery(
-                new BooleanQuery
-                {
-                    new BooleanClause(new BooleanQuery { Clauses = { new BooleanClause(new TermQuery(new Term("Id", "dot")), Occur.SHOULD) }, Boost = 8 }, Occur.SHOULD),
-                    new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("ShingledId", "dot")), Occur.SHOULD) }, Occur.SHOULD),
-                    new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("TokenizedId", "dot")), Occur.SHOULD) }, Occur.SHOULD),
-                    new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Version", "dot")), Occur.SHOULD) }, Occur.SHOULD),
-                    new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Title", "dot")), Occur.SHOULD) }, Occur.SHOULD),
-                    new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Description", "dot")), Occur.SHOULD) }, Occur.SHOULD),
-                    new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Summary", "dot")), Occur.SHOULD) }, Occur.SHOULD),
-                    new BooleanClause(new BooleanQuery { Clauses = { new BooleanClause(new TermQuery(new Term("Tags", "dot")), Occur.SHOULD) }, Boost = 2 }, Occur.SHOULD),
-                    new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Authors", "dot")), Occur.SHOULD) }, Occur.SHOULD)
-                },
-                new PackageTypeFilter(packageTypes, "dependency"));
-
-            // act
-            var actual = NuGetQuery.MakeQuery(queryText, null, packageTypes);
+            var actual = NuGetQuery.MakeQuery(queryText, owners);
 
             // assert
             Assert.Equal(expected.ToString(), actual.ToString());
@@ -203,31 +171,6 @@ namespace NuGet.IndexingTests
             }
 
             return new OwnersResult(knownOwners, packagesWithOwners, mappings);
-        }
-
-        private PackageTypesResult CreatePackageTypesResult(Dictionary<string, HashSet<string>> originalPackagesWithPackageTypes)
-        {
-            var knownPackageTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var packagesWithPackageTypes = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
-            var mappings = new Dictionary<string, IDictionary<string, DynamicDocIdSet>>(StringComparer.OrdinalIgnoreCase)
-            {
-                { "", new Dictionary<string, DynamicDocIdSet>(StringComparer.OrdinalIgnoreCase) }
-            };
-
-            foreach (var originalPackageWithPackageType in originalPackagesWithPackageTypes)
-            {
-                var originalOwners = new HashSet<string>();
-
-                foreach (var packageType in originalPackageWithPackageType.Value)
-                {
-                    knownPackageTypes.Add(packageType);
-                    originalOwners.Add(packageType);
-                }
-
-                packagesWithPackageTypes.Add(originalPackageWithPackageType.Key, originalOwners);
-            }
-
-            return new PackageTypesResult(knownPackageTypes, packagesWithPackageTypes, mappings);
         }
 
         [Fact]

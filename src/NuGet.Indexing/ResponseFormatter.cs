@@ -123,7 +123,6 @@ namespace NuGet.Indexing
                 }
 
                 jsonWriter.WriteEndArray();
-                // jsonWriter.WriteRawValue(flattenedPackageTypes);
             }
         }
 

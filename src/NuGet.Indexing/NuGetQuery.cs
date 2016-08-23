@@ -15,10 +15,10 @@ namespace NuGet.Indexing
     {
         public static Query MakeQuery(string q)
         {
-            return MakeQuery(q, null, null);
+            return MakeQuery(q, null);
         }
 
-        public static Query MakeQuery(string q, OwnersResult owners, PackageTypesResult packageTypes)
+        public static Query MakeQuery(string q, OwnersResult owners)
         {
             var queryParser = new NuGetQueryParser();
             var grouping = queryParser.ParseQuery(q);
@@ -28,12 +28,12 @@ namespace NuGet.Indexing
                 return new MatchAllDocsQuery();
             }
 
-            return ConstructQuery(grouping, owners, packageTypes);
+            return ConstructQuery(grouping, owners);
         }
 
         // Lucene Query creation logic
 
-        private static Query ConstructQuery(Dictionary<QueryField, HashSet<string>> clauses, OwnersResult owners, PackageTypesResult packageTypes)
+        private static Query ConstructQuery(Dictionary<QueryField, HashSet<string>> clauses, OwnersResult owners)
         {
             Analyzer analyzer = new PackageAnalyzer();
 
@@ -75,11 +75,9 @@ namespace NuGet.Indexing
                         }
                         break;
                     case QueryField.PackageType:
-                        // PackageTypeClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
-                        if (packageTypes != null)
-                        {
-                            filters.AddRange(PackageTypeFilters(packageTypes, clause.Value));
-                        }
+                        filters.Add(
+                            new QueryWrapperFilter(
+                                ConstructClauseQuery(analyzer, "PackageTypesIndex", clause.Value, Occur.MUST)));
                         break;
                     default:
                         AnyClause(booleanQuery, analyzer, clause.Value);
@@ -90,15 +88,6 @@ namespace NuGet.Indexing
                             if (ownerFilters.Any())
                             {
                                 booleanQuery.Add(ConstructFilteredQuery(new MatchAllDocsQuery(), ownerFilters), Occur.SHOULD);
-                            }
-                        }
-
-                        if (packageTypes != null)
-                        {
-                            var packageTypeFilters = PackageTypeFilters(packageTypes, clause.Value).ToList();
-                            if (packageTypeFilters.Any())
-                            {
-                                booleanQuery.Add(ConstructFilteredQuery(new MatchAllDocsQuery(), packageTypeFilters), Occur.SHOULD);
                             }
                         }
 
@@ -224,19 +213,6 @@ namespace NuGet.Indexing
                 if (owners.KnownOwners.Contains(owner)) // don't filter if we have no such owner
                 {
                     yield return new OwnersFilter(owners, owner);
-                }
-            }
-        }
-
-        private static IEnumerable<Filter> PackageTypeFilters(
-            PackageTypesResult packageTypes,
-            HashSet<string> value)
-        {
-            foreach (var packageType in value)
-            {
-                if (packageTypes.KnownPackageTypes.Contains(packageType))
-                {
-                    yield return new PackageTypeFilter(packageTypes, packageType);
                 }
             }
         }

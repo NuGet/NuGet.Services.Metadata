@@ -202,7 +202,6 @@
     <Compile Include="Extraction\JTokenExtensions.cs" />
     <Compile Include="Extraction\PackageEntityMetadataExtraction.cs" />
     <Compile Include="Handlers\DownloadDocIdMappingHandler.cs" />
-    <Compile Include="Handlers\PackageTypesHandler.cs" />
     <Compile Include="Handlers\SegmentToMainReaderMappingHandler.cs" />
     <Compile Include="IAcronymExpansionProvider.cs" />
     <Compile Include="IConfiguration.cs" />
@@ -223,9 +222,7 @@
     <Compile Include="Extraction\NupkgPackageMetadataExtraction.cs" />
     <Compile Include="Handlers\OwnersHandler.cs" />
     <Compile Include="OwnersResult.cs" />
-    <Compile Include="PackageTypeFilter.cs" />
     <Compile Include="PackageTypesAnalyzer.cs" />
-    <Compile Include="PackageTypesResult.cs" />
     <Compile Include="QueryField.cs" />
     <Compile Include="Querys\DownloadsBoostedQuery.cs" />
     <Compile Include="Querys\DownloadsScoreProvider.cs" />
