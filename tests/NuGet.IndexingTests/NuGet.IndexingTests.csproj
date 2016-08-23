@@ -74,6 +74,7 @@
     <Compile Include="Extraction\CatalogPackageMetadataExtractorTests.cs" />
     <Compile Include="Extraction\DocumentCreatorTests.cs" />
     <Compile Include="NuGetQueryTests.cs" />
+    <Compile Include="PackageTypesAnalyzerTests.cs" />
     <Compile Include="VersionAnalyzerTests.cs" />
     <Compile Include="OwnerAnalyzerTests.cs" />
     <Compile Include="TagsAnalyzerTests.cs" />

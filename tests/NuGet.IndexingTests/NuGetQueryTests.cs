@@ -50,7 +50,7 @@ namespace NuGet.IndexingTests
 
         [Theory]
         [MemberData(nameof(MakesFilteredQueriesSupportingFieldAliasesData))]
-        public void MakesFilteredQueriesSupportingFieldAliases(string inputField, string expectedField)
+        public void MakesFilteredQueriesSupportingFieldAliases(string inputField, string expectedField, string checkFor)
         {
             // arrange
             var owners = CreateOwnersResult(new Dictionary<string, HashSet<string>>
@@ -63,7 +63,9 @@ namespace NuGet.IndexingTests
             var actual = NuGetQuery.MakeQuery(queryText, owners);
 
             // assert
-            Assert.Contains("filtered(*:*)->NuGet.Indexing.OwnersFilter", actual.ToString());
+            var actualString = actual.ToString();
+            Assert.Contains(expectedField, actualString);
+            Assert.Contains(checkFor, actualString);
         }
 
         [Fact]
@@ -377,6 +379,7 @@ namespace NuGet.IndexingTests
                 yield return new object[] { "description", "Description" };
                 yield return new object[] { "tag", "Tags" };
                 yield return new object[] { "tags", "Tags" };
+                yield return new object[] { "packageTypes", "PackageTypesIndex" };
                 yield return new object[] { "author", "Authors" };
                 yield return new object[] { "authors", "Authors" };
                 yield return new object[] { "summary", "Summary" };
@@ -387,10 +390,12 @@ namespace NuGet.IndexingTests
         {
             get
             {
-                yield return new object[] { "owner", "Owner" };
-                yield return new object[] { "owners", "Owner" };
-                yield return new object[] { "OWNER", "Owner" };
-                yield return new object[] { "OWNERS", "Owner" };
+                yield return new object[] { "owner", "Owner", "filtered(*:*)->NuGet.Indexing.OwnersFilter" };
+                yield return new object[] { "owners", "Owner", "filtered(*:*)->NuGet.Indexing.OwnersFilter" };
+                yield return new object[] { "OWNER", "Owner", "filtered(*:*)->NuGet.Indexing.OwnersFilter" };
+                yield return new object[] { "OWNERS", "Owner", "filtered(*:*)->NuGet.Indexing.OwnersFilter" };
+                yield return new object[] { "packageType", "PackageTypesIndex", "filtered(*:*)->QueryWrapperFilter" };
+                yield return new object[] { "PackageType", "PackageTypesIndex", "filtered(*:*)->QueryWrapperFilter" };
             }
         }
 
