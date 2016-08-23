@@ -26,6 +26,7 @@ namespace NuGet.Indexing
 
         private DateTime _auxiliaryDataReloaded = DateTime.MinValue;
         private readonly IDictionary<string, HashSet<string>> _owners = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        private readonly IDictionary<string, HashSet<string>> _packageTypes = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
         private readonly IDictionary<string, HashSet<string>> _curatedFeeds = new Dictionary<string, HashSet<string>>();
         private readonly Downloads _downloads = new Downloads();
         private IReadOnlyDictionary<string, int> _rankings;
@@ -217,6 +218,9 @@ namespace NuGet.Indexing
                 var ownersHandler = new OwnersHandler(_owners);
                 indexReaderProcessor.AddHandler(ownersHandler);
 
+                var packageTypesHandler = new PackageTypesHandler(_packageTypes);
+                indexReaderProcessor.AddHandler(packageTypesHandler);
+
                 // We want to be able to filter on unlisted/prerelease, so let's prepare building those filters.
                 // Filters must be in terms of the structure of the underlying IndexReader. Specifically if the underlying
                 // reader is Segmented then the filter must be too. Theoretically Lucene should be able to store a cached version of the
@@ -281,7 +285,8 @@ namespace NuGet.Indexing
                     _queryBoostingContext,
                     latestBitSet,
                     latestStableBitSet,
-                    ownersHandler.Result);
+                    ownersHandler.Result,
+                    packageTypesHandler.Result);
             }
             catch (Exception ex)
             {
@@ -294,6 +299,7 @@ namespace NuGet.Indexing
         {
             if (_auxiliaryDataReloaded < DateTime.UtcNow - AuxiliaryDataRefreshRate)
             {
+                IndexingUtils.Load("packageTypes.json", _loader, _logger, _packageTypes);
                 IndexingUtils.Load("owners.json", _loader, _logger, _owners);
                 IndexingUtils.Load("curatedfeeds.json", _loader, _logger, _curatedFeeds);
                 _downloads.Load("downloads.v1.json", _loader, _logger);
@@ -313,7 +319,7 @@ namespace NuGet.Indexing
             searcher.Search(new MatchAllDocsQuery(), 1);
 
             // Warmup search (query for a specific term with rankings)
-            var query = NuGetQuery.MakeQuery("newtonsoft.json", searcher.Owners);
+            var query = NuGetQuery.MakeQuery("newtonsoft.json", searcher.Owners, searcher.PackageTypes);
 
             var boostedQuery = new DownloadsBoostedQuery(query,
                 searcher.DocIdMapping,

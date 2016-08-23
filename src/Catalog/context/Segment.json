@@ -1,12 +1,15 @@
-﻿{ 
-	"@context" : { 
-		"@vocab" : "http://schema.nuget.org/catalog#",
-		"nuget" : "http://schema.nuget.org/schema#",
-		"id" : "nuget:id",
-		"version" : "nuget:version",
-		"description" : "nuget:description",
-		"registration" : { "@id" : "nuget:registration", "@type" : "@id" },
-        "entry" : { "@container" : "@set" },
-		"url" : "@id"
-	}
+﻿{
+  "@context": {
+    "@vocab": "http://schema.nuget.org/catalog#",
+    "nuget": "http://schema.nuget.org/schema#",
+    "id": "nuget:id",
+    "version": "nuget:version",
+    "description": "nuget:description",
+    "registration": {
+      "@id": "nuget:registration",
+      "@type": "@id"
+    },
+    "entry": { "@container": "@set" },
+    "url": "@id"
+  }
 }

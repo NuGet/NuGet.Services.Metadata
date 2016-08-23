@@ -15,10 +15,10 @@ namespace NuGet.Indexing
     {
         public static Query MakeQuery(string q)
         {
-            return MakeQuery(q, null);
+            return MakeQuery(q, null, null);
         }
 
-        public static Query MakeQuery(string q, OwnersResult owners)
+        public static Query MakeQuery(string q, OwnersResult owners, PackageTypesResult packageTypes)
         {
             var queryParser = new NuGetQueryParser();
             var grouping = queryParser.ParseQuery(q);
@@ -28,12 +28,12 @@ namespace NuGet.Indexing
                 return new MatchAllDocsQuery();
             }
 
-            return ConstructQuery(grouping, owners);
+            return ConstructQuery(grouping, owners, packageTypes);
         }
 
         // Lucene Query creation logic
 
-        private static Query ConstructQuery(Dictionary<QueryField, HashSet<string>> clauses, OwnersResult owners)
+        private static Query ConstructQuery(Dictionary<QueryField, HashSet<string>> clauses, OwnersResult owners, PackageTypesResult packageTypes)
         {
             Analyzer analyzer = new PackageAnalyzer();
 
@@ -75,7 +75,11 @@ namespace NuGet.Indexing
                         }
                         break;
                     case QueryField.PackageType:
-                        PackageTypeClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
+                        // PackageTypeClause(booleanQuery, analyzer, clause.Value, Occur.MUST);
+                        if (packageTypes != null)
+                        {
+                            filters.AddRange(PackageTypeFilters(packageTypes, clause.Value));
+                        }
                         break;
                     default:
                         AnyClause(booleanQuery, analyzer, clause.Value);
@@ -86,6 +90,15 @@ namespace NuGet.Indexing
                             if (ownerFilters.Any())
                             {
                                 booleanQuery.Add(ConstructFilteredQuery(new MatchAllDocsQuery(), ownerFilters), Occur.SHOULD);
+                            }
+                        }
+
+                        if (packageTypes != null)
+                        {
+                            var packageTypeFilters = PackageTypeFilters(packageTypes, clause.Value).ToList();
+                            if (packageTypeFilters.Any())
+                            {
+                                booleanQuery.Add(ConstructFilteredQuery(new MatchAllDocsQuery(), packageTypeFilters), Occur.SHOULD);
                             }
                         }
 
@@ -215,6 +228,19 @@ namespace NuGet.Indexing
             }
         }
 
+        private static IEnumerable<Filter> PackageTypeFilters(
+            PackageTypesResult packageTypes,
+            HashSet<string> value)
+        {
+            foreach (var packageType in value)
+            {
+                if (packageTypes.KnownPackageTypes.Contains(packageType))
+                {
+                    yield return new PackageTypeFilter(packageTypes, packageType);
+                }
+            }
+        }
+
         private static void AnyClause(BooleanQuery query, Analyzer analyzer, IEnumerable<string> values)
         {
             IdClause(query, analyzer, values, Occur.SHOULD);
@@ -223,7 +249,6 @@ namespace NuGet.Indexing
             DescriptionClause(query, analyzer, values, Occur.SHOULD);
             SummaryClause(query, analyzer, values, Occur.SHOULD);
             TagClause(query, analyzer, values, Occur.SHOULD);
-            PackageTypeClause(query, analyzer, values, Occur.SHOULD);
             AuthorClause(query, analyzer, values, Occur.SHOULD);
         }
 

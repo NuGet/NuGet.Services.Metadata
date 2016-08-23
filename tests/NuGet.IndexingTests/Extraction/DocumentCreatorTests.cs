@@ -128,6 +128,22 @@ namespace NuGet.IndexingTests
         }
 
         [Fact]
+        public void MissingPackageTypesElementsAreOmitted()
+        {
+            // Arrange
+            var package = GetPackage();
+            package["flattenedPackageTypes"] = string.Empty;
+
+            // Act
+            var document = DocumentCreator.CreateDocument(package);
+
+            // Assert
+            Assert.Equal("", document.GetFieldable("PackageTypesIndex").StringValue);
+            Assert.Equal(null, document.GetField("packageTypes"));
+            Assert.Equal(null, document.GetField("FlattenedPackageTypes"));
+        }
+
+        [Fact]
         public void DefaultsMissingLastEditedToValueOfPublished()
         {
             // Arrange
@@ -179,7 +195,6 @@ namespace NuGet.IndexingTests
                 new KeyValuePair<string, string>("Tags", "dot net zip"),
                 new KeyValuePair<string, string>("Authors", "Justin Bieber, Nick Jonas"),
                 new KeyValuePair<string, string>("FlattenedPackageTypes", "dependency:1.0.0"),
-                new KeyValuePair<string, string>("packageTypes", "[{\"Type\":\"dependency\",\"Version\":\"1.0.0\"}]"),
                 new KeyValuePair<string, string>("PackageTypesIndex", "dependency"),
                 new KeyValuePair<string, string>("Listed", "true"),
                 new KeyValuePair<string, string>("OriginalCreated", "2001-01-01T00:00:00.0000000Z"),

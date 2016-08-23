@@ -1,16 +1,16 @@
 ﻿{
-    "@context": {
-        "@vocab": "http://schema.nuget.org/schema#",
-        "catalog": "http://schema.nuget.org/catalog#",
-        "xsd": "http://www.w3.org/2001/XMLSchema#",
-        "details": "catalog:details",
-        "catalog:commitTimeStamp": { "@type": "xsd:dateTime" },
-        "published": { "@type": "xsd:dateTime" },
-        "categories": { "@container" : "@set" },
-        "entries": { "@container" : "@set" },
-        "links": { "@container" : "@set" },
-      "tags": { "@container": "@set" },
-      "packageTypes": {"@container":  "@set" },
-        "packageContent": { "@type": "@id" }
-    }
+  "@context": {
+    "@vocab": "http://schema.nuget.org/schema#",
+    "catalog": "http://schema.nuget.org/catalog#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "details": "catalog:details",
+    "catalog:commitTimeStamp": { "@type": "xsd:dateTime" },
+    "published": { "@type": "xsd:dateTime" },
+    "categories": { "@container": "@set" },
+    "entries": { "@container": "@set" },
+    "links": { "@container": "@set" },
+    "tags": { "@container": "@set" },
+    "packageTypes": { "@container": "@set" },
+    "packageContent": { "@type": "@id" }
+  }
 }
