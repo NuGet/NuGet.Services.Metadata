@@ -105,6 +105,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 if (catalogEntry["summary"] == null) catalogEntry["summary"] = string.Empty;
                 if (catalogEntry["title"] == null) catalogEntry["title"] = string.Empty;
                 if (catalogEntry["tags"] == null) catalogEntry["tags"] = new JArray(string.Empty);
+                if (catalogEntry["requireLicenseAcceptance"] == null) catalogEntry["requireLicenseAcceptance"] = bool.FalseString;
 
                 // Loop dependency groups and make sure they all have a registration URL property
                 var dependencyGroupsEntry = catalogEntry["dependencyGroups"] as JArray;
