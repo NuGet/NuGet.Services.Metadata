@@ -91,6 +91,10 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 catalogEntry[PropertyNames.SchemaType] = "PackageDetails";
                 catalogEntry[PropertyNames.PackageContent] = packageContentUrl;
 
+                // Ensure id and version are present
+                if (catalogEntry[PropertyNames.Id] == null) catalogEntry[PropertyNames.Id] = id;
+                if (catalogEntry[PropertyNames.Version] == null) catalogEntry[PropertyNames.Version] = registrationVersion.Version;
+
                 // Ensure default values are present
                 // TODO: Check if this is needed for the client or not. If not, remove the following checks and assignments as they are ballast...
                 if (catalogEntry["iconUrl"] == null) catalogEntry["iconUrl"] = string.Empty;
