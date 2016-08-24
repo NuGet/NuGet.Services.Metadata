@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NuGet.Services.Metadata.Catalog.Persistence;
 using NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model;
+using NuGet.Versioning;
 
 namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
 {
@@ -133,7 +134,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
                 // When we are within the range of one page, create the page but do not store it.
                 // The registration index will simply embed the page in this case.
                 var registrationPage = new RegistrationPage(
-                    ConvertToDictionary(itemEntries), partitioned: false);
+                    ConvertToVersionOrderedDictionary(itemEntries), partitioned: false);
 
                 if (!pages.TryAdd(registrationPage.PageUri.AbsoluteUri, registrationPage))
                 {
@@ -148,7 +149,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
                 foreach (var pageOfItemEntries in itemEntries.Paged(partitionSize))
                 {
                     var registrationPage = new RegistrationPage(
-                        ConvertToDictionary(pageOfItemEntries), partitioned: true);
+                        ConvertToVersionOrderedDictionary(pageOfItemEntries), partitioned: true);
 
                     ResourceSaveOperation saveOperationForItem = null;
 
@@ -218,11 +219,11 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
             return saveOperation;
         }
 
-        private static Dictionary<string, RegistrationItem> ConvertToDictionary(IEnumerable<KeyValuePair<string, RegistrationItem>> itemEntries)
+        private static Dictionary<string, RegistrationItem> ConvertToVersionOrderedDictionary(IEnumerable<KeyValuePair<string, RegistrationItem>> itemEntries)
         {
             var mappedPageOfItemEntries = new Dictionary<string, RegistrationItem>();
 
-            foreach (var pageOfItemEntry in itemEntries)
+            foreach (var pageOfItemEntry in itemEntries.OrderBy(entry => NuGetVersion.Parse(entry.Value.Version)))
             {
                 mappedPageOfItemEntries.Add(pageOfItemEntry.Key, pageOfItemEntry.Value);
             }
