@@ -37,16 +37,16 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
         {
             var packageContext = new JObject();
 
-            packageContext.Add(PropertyNames.SchemaId, RegistrationVersionUri.ToString().ToLowerInvariant());
+            packageContext.Add(PropertyNames.SchemaId, RegistrationVersionUri.ToAbsoluteString());
             packageContext.Add(PropertyNames.SchemaType, new JArray(
                 "Package",
                 Schema.DataTypes.Permalink));
 
-            packageContext.Add(PropertyNames.CatalogEntry, RegistrationUri);
+            packageContext.Add(PropertyNames.CatalogEntry, RegistrationUri.ToAbsoluteString());
             packageContext.Add(PropertyNames.Listed, Subject[PropertyNames.Listed]);
             packageContext.Add(PropertyNames.Published, Subject[PropertyNames.Published]);
-            packageContext.Add(PropertyNames.PackageContent, $"{ContentBaseAddress.ToString().TrimEnd('/')}/{PackagePath}".ToLowerInvariant());
-            packageContext.Add(PropertyNames.Registration, $"{RegistrationBaseAddress}{Id}/index.json".ToLowerInvariant());
+            packageContext.Add(PropertyNames.PackageContent, new Uri($"{ContentBaseAddress.ToString().TrimEnd('/')}/{PackagePath}").ToAbsoluteString());
+            packageContext.Add(PropertyNames.Registration, new Uri($"{RegistrationBaseAddress}{Uri.EscapeUriString(Id)}/index.json").ToAbsoluteString());
 
             packageContext.Add(PropertyNames.SchemaContext, JsonLdContext.Package[PropertyNames.SchemaContext]);
 

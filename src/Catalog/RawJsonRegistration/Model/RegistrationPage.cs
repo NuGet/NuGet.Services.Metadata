@@ -30,8 +30,8 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             var registrationBaseAddress = Lower.RegistrationBaseAddress;
 
             PageUri = partitioned
-                ? new Uri($"{registrationBaseAddress}page/{Lower.Version}/{Upper.Version}.json")
-                : new Uri($"{registrationBaseAddress}index.json");
+                ? new Uri($"{registrationBaseAddress}page/{Lower.Version}/{Upper.Version}.json".ToLowerInvariant())
+                : new Uri($"{registrationBaseAddress}index.json".ToLowerInvariant());
 
             Items = items;
         }
@@ -44,7 +44,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             
             var registrationContext = new JObject();
 
-            registrationContext.Add(PropertyNames.SchemaId, PageUri.ToString().ToLowerInvariant());
+            registrationContext.Add(PropertyNames.SchemaId, PageUri.ToAbsoluteString());
             registrationContext.Add(PropertyNames.SchemaType, "catalog:CatalogPage");
 
             registrationContext.Add(PropertyNames.CommitId, commitId);
@@ -53,10 +53,10 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             var registrationItemsContext = new JArray();
             foreach (var registrationVersion in Items.Values)
             {
-                var packageContentUrl = $"{contentBaseAddress.ToString().TrimEnd('/')}/{registrationVersion.PackagePath}".ToLowerInvariant();
+                var packageContentUrl = new Uri($"{contentBaseAddress.ToString().TrimEnd('/')}/{registrationVersion.PackagePath}");
 
                 var registrationVersionContext = new JObject();
-                registrationVersionContext.Add(PropertyNames.SchemaId, $"{registrationBaseAddress}{id}/{registrationVersion.Version}.json".ToLowerInvariant());
+                registrationVersionContext.Add(PropertyNames.SchemaId, new Uri($"{registrationBaseAddress}{id}/{registrationVersion.Version}.json").ToAbsoluteString());
                 registrationVersionContext.Add(PropertyNames.SchemaType, "Package");
 
                 registrationVersionContext.Add(PropertyNames.CommitId, commitId);
@@ -89,7 +89,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
 
                 // Update catalog entry
                 catalogEntry[PropertyNames.SchemaType] = "PackageDetails";
-                catalogEntry[PropertyNames.PackageContent] = packageContentUrl;
+                catalogEntry[PropertyNames.PackageContent] = packageContentUrl.ToAbsoluteString();
 
                 // Ensure id and version are present
                 if (catalogEntry[PropertyNames.Id] == null) catalogEntry[PropertyNames.Id] = id;
@@ -122,7 +122,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                                 if (dependencyId != null)
                                 {
                                     dependencyEntry[PropertyNames.Registration] =
-                                        $"{registrationBaseAddress}{dependencyId}/index.json".ToLowerInvariant();
+                                        new Uri($"{registrationBaseAddress}{dependencyId}/index.json").ToAbsoluteString();
                                 }
                             }
                         }
@@ -131,8 +131,8 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
 
                 registrationVersionContext.Add(PropertyNames.CatalogEntry, catalogEntry);
 
-                registrationVersionContext.Add(PropertyNames.PackageContent, packageContentUrl);
-                registrationVersionContext.Add(PropertyNames.Registration, $"{registrationBaseAddress}{registrationVersion.Id}/index.json".ToLowerInvariant());
+                registrationVersionContext.Add(PropertyNames.PackageContent, packageContentUrl.ToAbsoluteString());
+                registrationVersionContext.Add(PropertyNames.Registration, new Uri($"{registrationBaseAddress}{registrationVersion.Id}/index.json").ToAbsoluteString());
 
                 registrationItemsContext.Add(registrationVersionContext);
             }

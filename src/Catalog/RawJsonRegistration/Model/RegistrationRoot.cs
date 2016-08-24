@@ -7,6 +7,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using NuGet.Services.Metadata.Catalog.Json;
 using NuGet.Services.Metadata.Catalog.Persistence;
+using VDS.RDF;
 
 namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
 {
@@ -42,7 +43,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
         {
             var registrationContext = new JObject();
 
-            registrationContext.Add(PropertyNames.SchemaId, Uri.ToString().ToLowerInvariant());
+            registrationContext.Add(PropertyNames.SchemaId, Uri.ToAbsoluteString());
             registrationContext.Add(PropertyNames.SchemaType, new JArray(
                 "catalog:CatalogRoot",
                 "PackageRegistration",
@@ -58,9 +59,9 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 var itemsContent = page.CreateContent(partitionSize, commitId, commitTimeStamp).Content
                     .SkipClone(new [] { PropertyNames.SchemaContext }); // drop "@context"
 
-                itemsContent[PropertyNames.SchemaId] = new Uri($"{page.Lower.RegistrationBaseAddress}{page.Lower.Id}/index.json#page/{page.Lower.Version}/{page.Upper.Version}");
+                itemsContent[PropertyNames.SchemaId] = new Uri($"{page.Lower.RegistrationBaseAddress}{page.Lower.Id}/index.json#page/{page.Lower.Version}/{page.Upper.Version}").ToAbsoluteString();
                 itemsContent[PropertyNames.SchemaType] = "catalog:CatalogPage";
-                itemsContent[PropertyNames.Parent] = new Uri($"{page.Lower.RegistrationBaseAddress}{page.Lower.Id}/index.json");
+                itemsContent[PropertyNames.Parent] = new Uri($"{page.Lower.RegistrationBaseAddress}{page.Lower.Id}/index.json").ToAbsoluteString();
                 itemsContent[PropertyNames.Lower] = page.Lower.Version;
                 itemsContent[PropertyNames.Upper] = page.Upper.Version;
 
@@ -74,7 +75,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 foreach (var page in Pages)
                 {
                     var pageContext = new JObject();
-                    pageContext.Add(PropertyNames.SchemaId, page.PageUri.ToString().ToLowerInvariant());
+                    pageContext.Add(PropertyNames.SchemaId, page.PageUri.ToAbsoluteString());
                     pageContext.Add(PropertyNames.SchemaType, "catalog:CatalogPage");
 
                     pageContext.Add(PropertyNames.CommitId, commitId);

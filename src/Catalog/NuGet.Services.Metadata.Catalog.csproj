@@ -122,6 +122,7 @@
     <Compile Include="DeleteCatalogItem.cs" />
     <Compile Include="Dnx\DnxCatalogCollector.cs" />
     <Compile Include="Dnx\DnxMaker.cs" />
+    <Compile Include="UriExtensions.cs" />
     <Compile Include="Json\InterceptingJsonReader.cs" />
     <Compile Include="Json\JTokenExtensions.cs" />
     <Compile Include="Json\PropertyFilteringJsonReader.cs" />
