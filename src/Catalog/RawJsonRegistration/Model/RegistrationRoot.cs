@@ -56,8 +56,10 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             {
                 // Only one page? Then our first page is the index root...
                 var page = Pages.First();
-                var itemsContent = page.CreateContent(partitionSize, commitId, commitTimeStamp).Content
-                    .SkipClone(new [] { PropertyNames.SchemaContext }); // drop "@context"
+                var itemsContent = page.CreateContent(partitionSize, commitId, commitTimeStamp).Content;
+                if (itemsContent[PropertyNames.SchemaContext] != null) {
+                    ((JObject)itemsContent).Property(PropertyNames.SchemaContext).Remove(); // drop "@context"
+                }
 
                 itemsContent[PropertyNames.SchemaId] = new Uri($"{page.Lower.RegistrationBaseAddress}{page.Lower.Id}/index.json#page/{page.Lower.Version}/{page.Upper.Version}").ToAbsoluteString();
                 itemsContent[PropertyNames.SchemaType] = "catalog:CatalogPage";
