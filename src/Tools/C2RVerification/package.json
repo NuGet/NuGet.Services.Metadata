@@ -10,6 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "deep-equal": "^1.0.1",
-    "dir-compare": "^1.0.1"
+    "dir-compare": "^1.0.1",
+    "sort-object": "^3.0.2"
   }
 }

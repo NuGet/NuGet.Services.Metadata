@@ -12,7 +12,34 @@ var fs = require("fs");
 var dirCompare = require("dir-compare");
 var showJsonFiles = false;
 var deepEqual = require("deep-equal");
-var ignoreKeys = ["commitTimeStamp", "commitId", "tags", "dependencies", "dependencyGroups"];
+var sortObject = require("sort-object");
+var ignoreKeys = ["commitTimeStamp", "commitId"];
+
+var stringArraySorter = function (arrayObject) {
+    if( Object.prototype.toString.call(arrayObject) === '[object Array]' ) {
+        arrayObject.sort();
+    }
+}
+
+var dependenciesSorter = function (dependenciesObject) {
+    if( Object.prototype.toString.call(dependenciesObject) === '[object Array]' ) {
+        dependenciesObject.sort(function (dependency1, dependency2) {
+            if (dependency1["@id"]) {
+                if(dependency1["@id"] < dependency2["@id"]) {
+                    return -1;
+                } else if (dependency1["@id"] > dependency2["@id"]) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            } else {
+                return 0;
+            }
+        });
+    }
+}
+
+var keySorters = { "tags": stringArraySorter, "dependencyGroups": dependenciesSorter, "dependencies": dependenciesSorter };
 
 function run() {
     var dirPath1 = process.argv[2];
@@ -45,7 +72,7 @@ function fileComparator(filePath1, stat1, filePath2, stat2) {
     var contentsOfFile1 = require(filePath1);
     var contentsOfFile2 = require(filePath2);
 
-    var result = deepEqual(contentsOfFile1, contentsOfFile2, { strict: true, ignoreKeys: ignoreKeys });
+    var result = deepEqual(contentsOfFile1, contentsOfFile2, { strict: true, ignoreKeys: ignoreKeys, keySorters: keySorters });
     return result;
 }
 
