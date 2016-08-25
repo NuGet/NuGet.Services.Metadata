@@ -19,7 +19,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
         public RegistrationItem Lower { get; }
         public RegistrationItem Upper { get; }
 
-        public RegistrationPage(Dictionary<string, RegistrationItem> items, bool partitioned)
+        public RegistrationPage(Dictionary<string, RegistrationItem> items, PartitioningType partitioningType)
         {
             if (items.Count == 0)
             {
@@ -31,14 +31,23 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
 
             var registrationBaseAddress = Lower.RegistrationBaseAddress;
 
-            PageUri = partitioned
-                ? new Uri($"{registrationBaseAddress}page/{Lower.Version}/{Upper.Version}.json".ToLowerInvariant())
-                : new Uri($"{registrationBaseAddress}index.json".ToLowerInvariant());
+            switch (partitioningType)
+            {
+                case PartitioningType.Page:
+                    PageUri = new Uri($"{registrationBaseAddress}page/{Lower.Version}/{Upper.Version}.json".ToLowerInvariant());
+                    break;
+                case PartitioningType.Partition:
+                    PageUri = new Uri($"{registrationBaseAddress}index.json#page/{Lower.Version}/{Upper.Version}".ToLowerInvariant());
+                    break;
+                default:
+                    PageUri = new Uri($"{registrationBaseAddress}index.json".ToLowerInvariant());
+                    break;
+            }
 
             Items = items;
         }
-
-        public JTokenStorageContent CreateContent(int partitionSize, Guid commitId, DateTime commitTimeStamp)
+        
+        public JTokenStorageContent CreateContent(Guid commitId, DateTime commitTimeStamp)
         {
             var id = Lower.Id;
             var registrationBaseAddress = Lower.RegistrationBaseAddress;
