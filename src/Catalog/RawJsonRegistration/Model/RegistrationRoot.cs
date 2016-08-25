@@ -5,9 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using NuGet.Services.Metadata.Catalog.Json;
 using NuGet.Services.Metadata.Catalog.Persistence;
-using VDS.RDF;
 
 namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
 {
@@ -56,19 +54,43 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
             {
                 // Only one page? Then our first page is the index root...
                 var page = Pages.First();
-                var itemsContent = page.CreateContent(partitionSize, commitId, commitTimeStamp).Content;
-                if (itemsContent[PropertyNames.SchemaContext] != null) {
-                    ((JObject)itemsContent).Property(PropertyNames.SchemaContext).Remove(); // drop "@context"
+
+                // Partition items
+                JArray items = new JArray();
+                foreach (var partition in page.Items.Paged(partitionSize))
+                {
+                    var partitionedPage = new RegistrationPage(
+                        partition.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                        partitioningType: PartitioningType.Partition);
+
+                    var partitionContent = partitionedPage.CreateContent(commitId, commitTimeStamp).Content;
+                    if (partitionContent[PropertyNames.SchemaContext] != null)
+                    {
+                        ((JObject)partitionContent).Property(PropertyNames.SchemaContext).Remove(); // drop "@context"
+                    }
+
+                    partitionContent[PropertyNames.SchemaId] = new Uri($"{partitionedPage.Lower.RegistrationBaseAddress}{partitionedPage.Lower.Id}/index.json#page/{partitionedPage.Lower.Version}/{partitionedPage.Upper.Version}").ToAbsoluteString();
+                    partitionContent[PropertyNames.SchemaType] = "catalog:CatalogPage";
+                    partitionContent[PropertyNames.Parent] = new Uri($"{partitionedPage.Lower.RegistrationBaseAddress}{partitionedPage.Lower.Id}/index.json").ToAbsoluteString();
+                    partitionContent[PropertyNames.Lower] = partitionedPage.Lower.Version;
+                    partitionContent[PropertyNames.Upper] = partitionedPage.Upper.Version;
+
+                    items.Add(partitionContent);
                 }
 
-                itemsContent[PropertyNames.SchemaId] = new Uri($"{page.Lower.RegistrationBaseAddress}{page.Lower.Id}/index.json#page/{page.Lower.Version}/{page.Upper.Version}").ToAbsoluteString();
-                itemsContent[PropertyNames.SchemaType] = "catalog:CatalogPage";
-                itemsContent[PropertyNames.Parent] = new Uri($"{page.Lower.RegistrationBaseAddress}{page.Lower.Id}/index.json").ToAbsoluteString();
-                itemsContent[PropertyNames.Lower] = page.Lower.Version;
-                itemsContent[PropertyNames.Upper] = page.Upper.Version;
+                //var itemsContent = page.CreateContent(commitId, commitTimeStamp).Content;
+                //if (itemsContent[PropertyNames.SchemaContext] != null) {
+                //    ((JObject)itemsContent).Property(PropertyNames.SchemaContext).Remove(); // drop "@context"
+                //}
 
-                registrationContext.Add(PropertyNames.Count, 1);
-                registrationContext.Add(PropertyNames.Items, new JArray(itemsContent));
+                //itemsContent[PropertyNames.SchemaId] = new Uri($"{page.Lower.RegistrationBaseAddress}{page.Lower.Id}/index.json#page/{page.Lower.Version}/{page.Upper.Version}").ToAbsoluteString();
+                //itemsContent[PropertyNames.SchemaType] = "catalog:CatalogPage";
+                //itemsContent[PropertyNames.Parent] = new Uri($"{page.Lower.RegistrationBaseAddress}{page.Lower.Id}/index.json").ToAbsoluteString();
+                //itemsContent[PropertyNames.Lower] = page.Lower.Version;
+                //itemsContent[PropertyNames.Upper] = page.Upper.Version;
+
+                registrationContext.Add(PropertyNames.Count, items.Count);
+                registrationContext.Add(PropertyNames.Items, items);
             }
             else
             {

@@ -123,6 +123,7 @@
     <Compile Include="Dnx\DnxCatalogCollector.cs" />
     <Compile Include="Dnx\DnxMaker.cs" />
     <Compile Include="Json\JObjectExtensions.cs" />
+    <Compile Include="RawJsonRegistration\Model\PartitioningType.cs" />
     <Compile Include="UriExtensions.cs" />
     <Compile Include="Json\InterceptingJsonReader.cs" />
     <Compile Include="Json\JTokenExtensions.cs" />

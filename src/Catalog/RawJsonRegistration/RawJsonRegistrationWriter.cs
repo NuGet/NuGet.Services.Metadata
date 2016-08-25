@@ -134,7 +134,7 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
                 // When we are within the range of one page, create the page but do not store it.
                 // The registration index will simply embed the page in this case.
                 var registrationPage = new RegistrationPage(
-                    ConvertToVersionOrderedDictionary(itemEntries), partitioned: false);
+                    ConvertToVersionOrderedDictionary(itemEntries), partitioningType: PartitioningType.None);
 
                 if (!pages.TryAdd(registrationPage.PageUri.AbsoluteUri, registrationPage))
                 {
@@ -149,13 +149,13 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
                 foreach (var pageOfItemEntries in itemEntries.Paged(partitionSize))
                 {
                     var registrationPage = new RegistrationPage(
-                        ConvertToVersionOrderedDictionary(pageOfItemEntries), partitioned: true);
+                        ConvertToVersionOrderedDictionary(pageOfItemEntries), partitioningType: PartitioningType.Page);
 
                     ResourceSaveOperation saveOperationForItem = null;
 
                     try
                     {
-                        saveOperationForItem = CreateSaveOperationForPage(Storage, registrationPage, partitionSize, commitId, commitTimeStamp, cancellationToken);
+                        saveOperationForItem = CreateSaveOperationForPage(Storage, registrationPage, commitId, commitTimeStamp, cancellationToken);
                         if (saveOperationForItem.SaveTask != null)
                         {
                             saveTasks.Add(saveOperationForItem.SaveTask);
@@ -210,11 +210,11 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration
             return saveOperation;
         }
 
-        private ResourceSaveOperation CreateSaveOperationForPage(IStorage storage, RegistrationPage page, int partitionSize, Guid commitId, DateTime commitTimeStamp, CancellationToken cancellationToken)
+        private ResourceSaveOperation CreateSaveOperationForPage(IStorage storage, RegistrationPage page, Guid commitId, DateTime commitTimeStamp, CancellationToken cancellationToken)
         {
             var saveOperation = new ResourceSaveOperation();
             saveOperation.ResourceUri = page.PageUri;
-            saveOperation.SaveTask = storage.Save(saveOperation.ResourceUri, page.CreateContent(partitionSize, commitId, commitTimeStamp), cancellationToken);
+            saveOperation.SaveTask = storage.Save(saveOperation.ResourceUri, page.CreateContent(commitId, commitTimeStamp), cancellationToken);
 
             return saveOperation;
         }
