@@ -12,6 +12,8 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
 {
     public class RegistrationPage
     {
+        private static readonly JArray DefaultTagsArrayValue = new JArray(string.Empty);
+
         public Uri PageUri { get; }
         public Dictionary<string, RegistrationItem> Items { get; }
         public RegistrationItem Lower { get; }
@@ -62,50 +64,33 @@ namespace NuGet.Services.Metadata.Catalog.RawJsonRegistration.Model
                 registrationVersionContext.Add(PropertyNames.CommitId, commitId);
                 registrationVersionContext.Add(PropertyNames.CommitTimeStamp, commitTimeStamp);
 
-                // Copy catalog entry
-                var catalogEntry = registrationVersion.Subject.FilterClone(
-                    new[]
-                    {
-                        "@id",
-                        "@type",
-                        "authors",
-                        "dependencyGroups",
-                        "dependencyGroups[*].*",
-                        "description",
-                        "iconUrl",
-                        "id",
-                        "language",
-                        "licenseUrl",
-                        "listed",
-                        "minClientVersion",
-                        "projectUrl",
-                        "published",
-                        "requireLicenseAcceptance",
-                        "summary",
-                        "tags",
-                        "title",
-                        "version"
-                    });
-
-                // Update catalog entry
+                // Create catalog entry
+                var catalogEntry = new JObject();
                 catalogEntry[PropertyNames.SchemaType] = "PackageDetails";
                 catalogEntry[PropertyNames.PackageContent] = packageContentUrl.ToAbsoluteString();
 
+                // Copy properties from original entry
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "@id");
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "authors");
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "dependencyGroups");
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "description");
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "iconUrl", fallbackValue: string.Empty);
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "id");
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "language", fallbackValue: string.Empty);
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "licenseUrl", fallbackValue: string.Empty);
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "listed");
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "minClientVersion", fallbackValue: string.Empty);
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "projectUrl", fallbackValue: string.Empty);
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "published");
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "requireLicenseAcceptance", fallbackValue: false);
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "summary", fallbackValue: string.Empty);
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "tags", fallbackValue: DefaultTagsArrayValue);
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "title", fallbackValue: string.Empty);
+                catalogEntry.CopyPropertyFrom(registrationVersion.Subject, "version");
+                
                 // Ensure id and version are present
                 if (catalogEntry[PropertyNames.Id] == null) catalogEntry[PropertyNames.Id] = id;
                 if (catalogEntry[PropertyNames.Version] == null) catalogEntry[PropertyNames.Version] = registrationVersion.Version;
-
-                // Ensure default values are present
-                // TODO: Check if this is needed for the client or not. If not, remove the following checks and assignments as they are ballast...
-                if (catalogEntry["iconUrl"] == null) catalogEntry["iconUrl"] = string.Empty;
-                if (catalogEntry["licenseUrl"] == null) catalogEntry["licenseUrl"] = string.Empty;
-                if (catalogEntry["projectUrl"] == null) catalogEntry["projectUrl"] = string.Empty;
-                if (catalogEntry["minClientVersion"] == null) catalogEntry["minClientVersion"] = string.Empty;
-                if (catalogEntry["language"] == null) catalogEntry["language"] = string.Empty;
-                if (catalogEntry["summary"] == null) catalogEntry["summary"] = string.Empty;
-                if (catalogEntry["title"] == null) catalogEntry["title"] = string.Empty;
-                if (catalogEntry["tags"] == null) catalogEntry["tags"] = new JArray(string.Empty);
-                if (catalogEntry["requireLicenseAcceptance"] == null) catalogEntry["requireLicenseAcceptance"] = false;
 
                 // Loop dependency groups and make sure they all have a registration URL property
                 var dependencyGroupsEntry = catalogEntry["dependencyGroups"] as JArray;

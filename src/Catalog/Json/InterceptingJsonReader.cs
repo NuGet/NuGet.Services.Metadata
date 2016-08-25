@@ -36,8 +36,7 @@ namespace NuGet.Services.Metadata.Catalog.Json
             {
                 var pattern = jsonPath
                     .Replace("[*]", @"\[\d+\]")
-                    .Replace(".", @"\.")
-                    .Replace("\\.*", @"\..*");
+                    .Replace(".", @"\.");
 
                 expression = new Regex("^" + pattern + "$");
 

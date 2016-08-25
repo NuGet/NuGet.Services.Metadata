@@ -8,16 +8,6 @@ namespace NuGet.Services.Metadata.Catalog.Json
 {
     public static class JTokenExtensions
     {
-        public static JToken FilterClone(this JToken original, string[] jsonPaths)
-        {
-            return JToken.Load(original.CreateReader().FilterPaths(jsonPaths));
-        }
-
-        public static JsonReader FilterPaths(this JsonReader original, string[] jsonPaths)
-        {
-            return new PropertyFilteringJsonReader(original, jsonPaths);
-        }
-
         public static JToken SkipClone(this JToken original, string[] jsonPaths)
         {
             return JToken.Load(original.CreateReader().SkipPaths(jsonPaths));
