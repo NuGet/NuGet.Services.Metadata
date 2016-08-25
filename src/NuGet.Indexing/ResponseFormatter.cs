@@ -110,11 +110,11 @@ namespace NuGet.Indexing
                     if (fields.Length > 0)
                     {
                         jsonWriter.WriteStartObject();
-                        jsonWriter.WritePropertyName("Type");
+                        jsonWriter.WritePropertyName("name");
                         jsonWriter.WriteValue(fields[0]);
                         if (fields.Length > 1)
                         {
-                            jsonWriter.WritePropertyName("Version");
+                            jsonWriter.WritePropertyName("version");
                             jsonWriter.WriteValue(fields[1]);
                         }
 
