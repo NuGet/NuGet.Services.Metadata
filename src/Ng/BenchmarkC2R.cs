@@ -19,17 +19,17 @@ namespace Ng
             CommandHelpers.TryGetArgument(arguments, Constants.StorageBaseAddress, out BaseDirectoryAddress);
 
             TextWriterTraceListener myListener = new TextWriterTraceListener("E:\\Nuget\\Assets\\benchmark_output.log", "myListener");
-            myListener.WriteLine($"Window(1 hour/period)\tRawJson");
+            myListener.WriteLine($"Window(1 day/period)\tGraph");
             var catalog2Registration = new Catalog2Registration(loggerFactory);
             var runC2R = new Action<IDictionary<string, string>, CancellationToken, bool>(catalog2Registration.Run);
             DateTime WaveCursorTime = DateTime.Parse(WaveCursorTimeValue);
             DateTime EndCursorTime = WaveCursorTime;
             ResetFrontCursor(arguments);
-            for (var commitPeriod = 1; commitPeriod <= 24; commitPeriod++)
+            for (var commitPeriod = 1; commitPeriod <= 7; commitPeriod++)
             {
                 //ResetFrontCursor(arguments);
                 //CleanUp();
-                EndCursorTime = EndCursorTime.AddHours(1);
+                EndCursorTime = EndCursorTime.AddDays(1);
                 UpdateEndCursorTime(arguments, EndCursorTime.ToString());
                 var timeWithRawJson = Time(runC2R, arguments, token, isGraph: false);
                 myListener.WriteLine($"{commitPeriod}\t\t\t\t\t\t{timeWithRawJson}");
