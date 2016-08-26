@@ -31,12 +31,12 @@ namespace Ng
                 //CleanUp();
                 EndCursorTime = EndCursorTime.AddDays(1);
                 UpdateEndCursorTime(arguments, EndCursorTime.ToString());
-                var timeWithRawJson = Time(runC2R, arguments, token, isGraph: false);
-                myListener.WriteLine($"{commitPeriod}\t\t\t\t\t\t{timeWithRawJson}");
+                var timeWithGraph = Time(runC2R, arguments, token, isGraph: true);
+                myListener.WriteLine($"{commitPeriod}\t\t\t\t\t\t{timeWithGraph}");
                 //ResetFrontCursor(arguments);
                 //CleanUp();
-                //var timeWithGraph = Time(runC2R, arguments, token, isGraph: true);
-                //myListener.WriteLine($"{commitPeriod}\t\t\t\t\t\t{timeWithGraph}");
+                //var timeWithRawJson = Time(runC2R, arguments, token, isGraph: false);
+                //myListener.WriteLine($"{commitPeriod}\t\t\t\t\t\t{timeWithRawJson}");
                 //myListener.WriteLine($"{commitPeriod}\t\t\t\t{timeWithConcurrentProcessing}\t{timeWithNonConcurrentProcessing}");
 
                 myListener.Flush();
