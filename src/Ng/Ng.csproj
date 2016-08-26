@@ -204,10 +204,6 @@
       <HintPath>..\..\packages\NuGet.Common.3.5.0-beta2-1484\lib\net45\NuGet.Common.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NuGet.Core, Version=2.8.60318.667, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\nuget.core.2.8.5\lib\net40-Client\NuGet.Core.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="NuGet.Services.KeyVault, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\NuGet.Services.KeyVault.1.0.0.0\lib\net45\NuGet.Services.KeyVault.dll</HintPath>
       <Private>True</Private>
