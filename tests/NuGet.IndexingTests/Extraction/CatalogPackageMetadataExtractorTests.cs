@@ -51,6 +51,22 @@ namespace NuGet.IndexingTests.Extraction
             Assert.Equal(expected, metadata["flattenedDependencies"]);
         }
 
+
+        [Theory, MemberData(nameof(AddsFlattenedPackageTypesData))]
+        public void AddsFlattenedPackageTypes(object catalogEntry, string expected)
+        {
+            // Arrange
+            var catalogEntryJObject = CatalogEntry(catalogEntry);
+
+            // Act
+            var metadata = CatalogPackageMetadataExtraction.MakePackageMetadata(catalogEntryJObject);
+
+            // Assert
+            Assert.Contains("flattenedPackageTypes", metadata.Keys);
+            Assert.Equal(expected, metadata["flattenedPackageTypes"]);
+
+        }
+
         public static IEnumerable<object[]> AddsListedData
         {
             get
@@ -87,7 +103,7 @@ namespace NuGet.IndexingTests.Extraction
                     },
                     "net40-client|net40|net45"
                 };
-                
+
                 // a single framework assembly
                 yield return new object[] { new { frameworkAssemblyGroup = new { targetFramework = ".NETFramework4.0, .NETFramework4.5" } }, "net40|net45" };
 
@@ -284,6 +300,113 @@ namespace NuGet.IndexingTests.Extraction
                         }
                     },
                     "Newtonsoft.Json:4.5.11"
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> AddsFlattenedPackageTypesData
+        {
+            get
+            {
+                // single packageType no versions
+                yield return new object[]
+                {
+                    new
+                    {
+                        packageTypes = new object[]
+                        {
+                            new
+                            {
+                                type = "dependency"
+                            }
+                        }
+
+                    },
+                    "dependency:0.0"
+                };
+
+                // single packageType defined version
+                yield return new object[]
+                {
+                    new
+                    {
+                        packageTypes = new object[]
+                        {
+                            new
+                            {
+                                type = "dependency",
+                                version = "1.0.0"
+                            }
+                        }
+
+                    },
+                    "dependency:1.0.0"
+                };
+
+                // multiple packageType no versions
+                yield return new object[]
+                {
+                    new
+                    {
+                        packageTypes = new object[]
+                        {
+                            new
+                            {
+                                type = "dependency"
+                            },
+                            new
+                            {
+                                type = "DotNetCliTool"
+                            }
+                        }
+
+                    },
+                    "dependency:0.0|DotNetCliTool:0.0"
+                };
+
+                // multiple packageType all versions
+                yield return new object[]
+                {
+                    new
+                    {
+                        packageTypes = new object[]
+                        {
+                            new
+                            {
+                                type = "dependency",
+                                version = "1.0.0"
+                            },
+                            new
+                            {
+                                type = "DotNetCliTool",
+                                version = "2.1.0"
+                            }
+                        }
+
+                    },
+                    "dependency:1.0.0|DotNetCliTool:2.1.0"
+                };
+
+                // multiple packageType mixed versions/no versions
+                yield return new object[]
+                {
+                    new
+                    {
+                        packageTypes = new object[]
+                        {
+                            new
+                            {
+                                type = "dependency"
+                            },
+                            new
+                            {
+                                type = "DotNetCliTool",
+                                version = "2.1.0"
+                            }
+                        }
+
+                    },
+                    "dependency:0.0|DotNetCliTool:2.1.0"
                 };
             }
         }

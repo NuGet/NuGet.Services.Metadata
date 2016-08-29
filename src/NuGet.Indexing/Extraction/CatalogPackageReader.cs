@@ -57,7 +57,8 @@ namespace NuGet.Indexing
 
             foreach (var entry in array)
             {
-                packageTypes.Add(new PackageType((string)entry["type"], new Version((string)entry["version"])));
+                var versionString = (string)entry["version"];
+                packageTypes.Add(new PackageType((string)entry["type"], versionString != null ? new Version(versionString) : new Version()));
             }
 
             return packageTypes;
