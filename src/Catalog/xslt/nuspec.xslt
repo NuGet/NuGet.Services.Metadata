@@ -227,7 +227,7 @@
               <xsl:value-of select="obj:NormalizeVersion(@version)"/>
             </xsl:when>
             <xsl:otherwise>
-              <xsl:text>1.0.0</xsl:text>
+              <xsl:text>0.0</xsl:text>
             </xsl:otherwise>
           </xsl:choose>
         </ng:version>
