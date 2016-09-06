@@ -12,7 +12,9 @@ using Lucene.Net.Store.Azure;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using NuGet.Services.KeyVault;
 using FrameworkLogger = Microsoft.Extensions.Logging.ILogger;
+using System.Threading.Tasks;
 
 namespace NuGet.Indexing
 {
@@ -22,7 +24,6 @@ namespace NuGet.Indexing
 
         private readonly ILoader _loader;
         private readonly FrameworkLogger _logger;
-        private readonly AzureDirectorySynchronizer _azureDirectorySynchronizer;
 
         private DateTime _auxiliaryDataReloaded = DateTime.MinValue;
         private readonly IDictionary<string, HashSet<string>> _owners = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
@@ -35,8 +36,7 @@ namespace NuGet.Indexing
         public NuGetSearcherManager(string indexName,
             FrameworkLogger logger,
             Lucene.Net.Store.Directory directory,
-            ILoader loader,
-            AzureDirectorySynchronizer azureDirectorySynchronizer)
+            ILoader loader)
             : base(directory)
         {
             if (logger == null)
@@ -50,14 +50,13 @@ namespace NuGet.Indexing
             RegistrationBaseAddress = new Dictionary<string, Uri>();
 
             _loader = loader;
-            _azureDirectorySynchronizer = azureDirectorySynchronizer;
         }
 
         public string IndexName { get; private set; }
         public IDictionary<string, Uri> RegistrationBaseAddress { get; }
 
         /// <summary>Initializes a <see cref="NuGetSearcherManager"/> instance.</summary>
-        /// <param name="configuration">
+        /// <param name="arguments">
         /// The configuration to read which primarily determines whether the resulting instance will read from the local
         /// disk or from blob storage.
         /// </param>
@@ -73,7 +72,7 @@ namespace NuGet.Indexing
         /// Optionally, the logger factory defined by the consuming application.
         /// </param>
         /// <returns>The resulting <see cref="NuGetSearcherManager"/> instance.</returns>
-        public static NuGetSearcherManager Create(IConfiguration configuration,
+        public static async Task<NuGetSearcherManager> Create(IArgumentsDictionary arguments,
             ILoggerFactory loggerFactory,
             Lucene.Net.Store.Directory directory = null,
             ILoader loader = null)
@@ -86,55 +85,48 @@ namespace NuGet.Indexing
             LoggerFactory = loggerFactory;
 
             NuGetSearcherManager searcherManager;
-            var luceneDirectory = configuration.Get("Local.Lucene.Directory");
+            var luceneDirectory = await arguments.GetOrDefault<string>("Local.Lucene.Directory");
 
             if (!string.IsNullOrEmpty(luceneDirectory))
             {
-                string dataDirectory = configuration.Get("Local.Data.Directory");
+                var dataDirectory = await arguments.GetOrDefault<string>("Local.Data.Directory");
 
                 searcherManager = new NuGetSearcherManager(
                     luceneDirectory,
                     loggerFactory.CreateLogger<NuGetSearcherManager>(),
                     directory ?? new SimpleFSDirectory(new DirectoryInfo(luceneDirectory)),
-                    loader ?? new FileLoader(dataDirectory),
-                    azureDirectorySynchronizer: null);
+                    loader ?? new FileLoader(dataDirectory));
             }
             else
             {
-                string storagePrimary = configuration.Get("Storage.Primary");
-                string indexContainer = configuration.Get("Search.IndexContainer");
-                string dataContainer = configuration.Get("Search.DataContainer");
+                var indexContainer = await arguments.GetOrDefault<string>("Search.IndexContainer", "ng-search-index");
+                var dataContainer = await arguments.GetOrDefault<string>("Search.DataContainer", "ng-search-data");
 
-                CloudStorageAccount storageAccount = CloudStorageAccount.Parse(storagePrimary);
-
-                if (string.IsNullOrEmpty(indexContainer))
+                Func<Task<Tuple<CloudStorageAccount, AzureDirectorySynchronizer>>> createCloud = new Func<Task<Tuple<CloudStorageAccount, AzureDirectorySynchronizer>>>(async () =>
                 {
-                    indexContainer = "ng-search-index";
-                }
+                    string storagePrimary = await arguments.GetOrThrow<string>("Storage.Primary");
+                    var storageAccount = CloudStorageAccount.Parse(storagePrimary);
 
-                if (string.IsNullOrEmpty(dataContainer))
-                {
-                    dataContainer = "ng-search-data";
-                }
+                    AzureDirectorySynchronizer azureDirectorySynchronizer = null;
+                    if (directory == null)
+                    {
+                        var sourceDirectory = new AzureDirectory(storageAccount, indexContainer);
+                        directory = new RAMDirectory(sourceDirectory); // initial copy from storage to RAM
 
-                AzureDirectorySynchronizer azureDirectorySynchronizer = null;
-                if (directory == null)
-                {
-                    var sourceDirectory = new AzureDirectory(storageAccount, indexContainer);
-                    directory = new RAMDirectory(sourceDirectory); // initial copy from storage to RAM
+                        azureDirectorySynchronizer = new AzureDirectorySynchronizer(sourceDirectory, directory);
+                    }
 
-                    azureDirectorySynchronizer = new AzureDirectorySynchronizer(sourceDirectory, directory);
-                }
+                    return new Tuple<CloudStorageAccount, AzureDirectorySynchronizer>(storageAccount, azureDirectorySynchronizer);
+                });
 
                 searcherManager = new NuGetSearcherManager(
                     indexContainer,
                     loggerFactory.CreateLogger<NuGetSearcherManager>(),
                     directory,
-                    loader ?? new StorageLoader(storageAccount, dataContainer, loggerFactory.CreateLogger<StorageLoader>()),
-                    azureDirectorySynchronizer: azureDirectorySynchronizer);
+                    loader ?? await StorageLoader.CreateStorageLoader(createCloud, dataContainer, loggerFactory.CreateLogger<StorageLoader>()));
             }
 
-            string registrationBaseAddress = configuration.Get("Search.RegistrationBaseAddress");
+            string registrationBaseAddress = await arguments.GetOrDefault<string>("Search.RegistrationBaseAddress");
             searcherManager.RegistrationBaseAddress["http"] = MakeRegistrationBaseAddress("http", registrationBaseAddress);
             searcherManager.RegistrationBaseAddress["https"] = MakeRegistrationBaseAddress("https", registrationBaseAddress);
 
@@ -145,11 +137,11 @@ namespace NuGet.Indexing
 
         protected override IndexReader Reopen(IndexSearcher searcher)
         {
-            if (_azureDirectorySynchronizer != null)
+            if (_loader.GetSynchronizer() != null)
             {
                 try
                 {
-                    _azureDirectorySynchronizer.Sync();
+                    _loader.GetSynchronizer().Sync();
                 }
                 catch (Exception ex)
                 {
@@ -174,7 +166,7 @@ namespace NuGet.Indexing
         /// absolutely must be kept in sync with the underlying IndexReader. This is because the shared key across
         /// all in-memory data is the Lucene docID and this can change following an index refresh.
         /// </summary>
-        protected override NuGetIndexSearcher CreateSearcher(IndexReader reader)
+        protected override async Task<NuGetIndexSearcher> CreateSearcher(IndexReader reader)
         {
             _logger.LogInformation("NuGetSearcherManager.CreateSearcher");
 
@@ -183,7 +175,7 @@ namespace NuGet.Indexing
                 // (Re)load all the auxilliary data (if needed)
                 try
                 {
-                    ReloadAuxiliaryDataIfExpired();
+                    await ReloadAuxiliaryDataIfExpired();
                 }
                 catch (Exception e)
                 {
@@ -290,10 +282,12 @@ namespace NuGet.Indexing
             }
         }
 
-        private void ReloadAuxiliaryDataIfExpired()
+        private async Task ReloadAuxiliaryDataIfExpired()
         {
             if (_auxiliaryDataReloaded < DateTime.UtcNow - AuxiliaryDataRefreshRate)
             {
+                await _loader.Reload();
+
                 IndexingUtils.Load("owners.json", _loader, _logger, _owners);
                 IndexingUtils.Load("curatedfeeds.json", _loader, _logger, _curatedFeeds);
                 _downloads.Load("downloads.v1.json", _loader, _logger);

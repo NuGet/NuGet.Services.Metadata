@@ -3,19 +3,20 @@
 
 using NuGet.Indexing;
 using NuGet.Services.KeyVault;
+using System.Threading.Tasks;
 
 namespace NuGet.Services.BasicSearch
 {
-    internal class EmptySecretReaderFactory : ISecretReaderFactory
+    public class EmptySecretReaderFactory : ISecretReaderFactory
     {
         public ISecretInjector CreateSecretInjector(ISecretReader secretReader)
         {
             return new SecretInjector(secretReader);
         }
 
-        public ISecretReader CreateSecretReader(IConfiguration configuration)
+        public Task<ISecretReader> CreateSecretReader(IArgumentsDictionary arguments)
         {
-            return new EmptySecretReader();
+            return Task.FromResult<ISecretReader>(new EmptySecretReader());
         }
     }
 }

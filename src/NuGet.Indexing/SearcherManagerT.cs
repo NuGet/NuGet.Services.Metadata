@@ -6,6 +6,7 @@ using System.Threading;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
+using System.Threading.Tasks;
 
 namespace NuGet.Indexing
 {
@@ -23,15 +24,16 @@ namespace NuGet.Indexing
             Directory = directory;
         }
 
-        public void Open()
+        public async Task Open()
         {
             if (_currentSearcher == null)
             {
+                var tempSearcher = await CreateSearcher(IndexReader.Open(Directory, true));
                 lock (_sync)
                 {
                     if (_currentSearcher == null)
                     {
-                        _currentSearcher = CreateSearcher(IndexReader.Open(Directory, true));
+                        _currentSearcher = tempSearcher;
                         if (_currentSearcher == null)
                         {
                             throw new Exception("Unable to create IndexSearcher");
@@ -50,7 +52,7 @@ namespace NuGet.Indexing
             return newReader != currentSearcher.IndexReader;
         }
 
-        protected abstract TIndexSearcher CreateSearcher(IndexReader reader);
+        protected abstract Task<TIndexSearcher> CreateSearcher(IndexReader reader);
 
         protected virtual void Warm(TIndexSearcher searcher)
         {
@@ -76,7 +78,7 @@ namespace NuGet.Indexing
                 Monitor.PulseAll(_sync);
             }
         }
-        public void MaybeReopen()
+        public async Task MaybeReopen()
         {
             StartReopen();
 
@@ -89,7 +91,7 @@ namespace NuGet.Indexing
 
                     if (RequiresNewSearcher(newReader, _currentSearcher))
                     {
-                        var newSearcher = CreateSearcher(newReader);
+                        var newSearcher = await CreateSearcher(newReader);
                         if (newSearcher != null)
                         {
                             Warm(newSearcher);

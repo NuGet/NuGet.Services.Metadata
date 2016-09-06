@@ -12,6 +12,7 @@ using Lucene.Net.Store;
 using Microsoft.Owin.Hosting;
 using Newtonsoft.Json;
 using NuGet.Services.BasicSearch;
+using NuGet.Services.KeyVault;
 
 namespace NuGet.Services.BasicSearchTests.TestSupport
 {
@@ -48,11 +49,11 @@ namespace NuGet.Services.BasicSearchTests.TestSupport
             var luceneDirectory = _luceneDirectoryInitializer.GetInitializedDirectory(enumeratedPackages);
 
             // set up the configuration
-            var configuration = new InMemoryConfiguration
+            var configuration = new RefreshingConfigurationDictionary(new SecretReaderFactory().CreateSecretInjector(new EmptySecretReader()), new Dictionary<string, string>()
             {
                 { "Local.Lucene.Directory", (luceneDirectory as FSDirectory)?.Directory.FullName ?? "RAM" },
                 { "Search.RegistrationBaseAddress", _settings.RegistrationBaseAddress }
-            };
+            });
 
             // set up the data directory
             var loader = new InMemoryLoader

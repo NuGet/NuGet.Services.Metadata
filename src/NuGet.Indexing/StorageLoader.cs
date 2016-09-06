@@ -7,21 +7,34 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using FrameworkLogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace NuGet.Indexing
 {
     public class StorageLoader : ILoader
     {
-        private readonly CloudStorageAccount _storageAccount;
         private readonly string _containerName;
         private readonly FrameworkLogger _logger;
 
-        public StorageLoader(CloudStorageAccount storageAccount, string containerName, FrameworkLogger logger)
+        private CloudStorageAccount _storageAccount;
+        private AzureDirectorySynchronizer _synchronizer;
+        private Func<Task<Tuple<CloudStorageAccount, AzureDirectorySynchronizer>>> _createCloud;
+
+        public static async Task<StorageLoader> CreateStorageLoader(Func<Task<Tuple<CloudStorageAccount, AzureDirectorySynchronizer>>> createCloud, string containerName, FrameworkLogger logger)
+        {
+            var storageLoader = new StorageLoader(createCloud, containerName, logger);
+            await storageLoader.Reload();
+            return storageLoader;
+        }
+
+        private StorageLoader(Func<Task<Tuple<CloudStorageAccount, AzureDirectorySynchronizer>>> createCloud, string containerName, FrameworkLogger logger)
         {
             logger.LogInformation("StorageLoader container: {ContainerName}", containerName);
-            _storageAccount = storageAccount;
+
+            _createCloud = createCloud;
             _containerName = containerName;
+
             _logger = logger;
         }
 
@@ -41,6 +54,18 @@ namespace NuGet.Indexing
                 _logger.LogError($"Exception {e.Message} attempting to load {name}", e);
                 throw;
             }
+        }
+
+        public async Task Reload()
+        {
+            var cloudTuple = await _createCloud();
+            _storageAccount = cloudTuple.Item1;
+            _synchronizer = cloudTuple.Item2;
+        }
+
+        public AzureDirectorySynchronizer GetSynchronizer()
+        {
+            return _synchronizer;
         }
     }
 }

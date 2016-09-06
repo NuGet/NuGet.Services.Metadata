@@ -3,13 +3,14 @@
 
 using NuGet.Indexing;
 using NuGet.Services.KeyVault;
+using System.Threading.Tasks;
 
 namespace NuGet.Services.BasicSearch
 {
-    internal interface ISecretReaderFactory
+    public interface ISecretReaderFactory
     {
         ISecretInjector CreateSecretInjector(ISecretReader secretReader);
 
-        ISecretReader CreateSecretReader(IConfiguration configuration);
+        Task<ISecretReader> CreateSecretReader(IArgumentsDictionary configuration);
     }
 }

@@ -23,6 +23,7 @@ using Owin;
 using Serilog.Events;
 using SerilogWeb.Classic;
 using SerilogWeb.Classic.Enrichers;
+using NuGet.Services.KeyVault;
 
 [assembly: OwinStartup("NuGet.Services.BasicSearch", typeof(NuGet.Services.BasicSearch.Startup))]
 
@@ -37,10 +38,10 @@ namespace NuGet.Services.BasicSearch
         private ResponseWriter _responseWriter;
         private SearchTelemetryClient _searchTelemetryClient;
 
-        public void Configuration(IAppBuilder app, IConfiguration configuration, Directory directory, ILoader loader)
+        public async void Configuration(IAppBuilder app, IArgumentsDictionary arguments, Directory directory, ILoader loader)
         {
             // Configure
-            Logging.ApplicationInsights.Initialize(configuration.Get("serilog:ApplicationInsightsInstrumentationKey"));
+            Logging.ApplicationInsights.Initialize(await arguments.GetOrDefault<string>("serilog:ApplicationInsightsInstrumentationKey"));
 
             // Create telemetry sink
             _searchTelemetryClient = new SearchTelemetryClient();
@@ -98,7 +99,7 @@ namespace NuGet.Services.BasicSearch
             }));
 
             // Start the service running - the Lucene index needs to be reopened regularly on a background thread
-            var searchIndexRefresh = configuration.Get("Search.IndexRefresh") ?? "300";
+            var searchIndexRefresh = await arguments.GetOrDefault<string>("Search.IndexRefresh", "300");
             int seconds;
             if (!int.TryParse(searchIndexRefresh, out seconds))
             {
@@ -107,7 +108,7 @@ namespace NuGet.Services.BasicSearch
 
             _logger.LogInformation(LogMessages.SearchIndexRefreshConfiguration, seconds);
 
-            if (InitializeSearcherManager(configuration, directory, loader, loggerFactory))
+            if (await InitializeSearcherManager(arguments, directory, loader, loggerFactory))
             {
                 var intervalInMs = seconds * 1000;
 
@@ -120,16 +121,19 @@ namespace NuGet.Services.BasicSearch
             app.Run(InvokeAsync);
         }
 
-        public void Configuration(IAppBuilder app)
+        public async void Configuration(IAppBuilder app)
         {
             ServicePointManager.DefaultConnectionLimit = Int32.MaxValue;
             ServicePointManager.Expect100Continue = false;
             ServicePointManager.UseNagleAlgorithm = false;
+            
+            var secretReaderFactory = new SecretReaderFactory();
+            var secretReader = await secretReaderFactory.CreateSecretReader(new RefreshingConfigurationDictionary(secretReaderFactory.CreateSecretInjector(new EmptySecretReader())));
 
-            Configuration(app, new ConfigurationService(new SecretReaderFactory()), null, null);
+            Configuration(app, new RefreshingConfigurationDictionary(secretReaderFactory.CreateSecretInjector(secretReader)), null, null);
         }
 
-        private void ReopenCallback(object state)
+        private async void ReopenCallback(object state)
         {
             try
             {
@@ -147,7 +151,7 @@ namespace NuGet.Services.BasicSearch
                 {
                     var stopwatch = Stopwatch.StartNew();
 
-                    _searcherManager.MaybeReopen();
+                    await _searcherManager.MaybeReopen();
 
                     stopwatch.Stop();
 
@@ -172,18 +176,18 @@ namespace NuGet.Services.BasicSearch
             }
         }
 
-        private bool InitializeSearcherManager(IConfiguration configuration, Directory directory, ILoader loader, ILoggerFactory loggerFactory)
+        private async Task<bool> InitializeSearcherManager(IArgumentsDictionary arguments, Directory directory, ILoader loader, ILoggerFactory loggerFactory)
         {
             const int maxRetries = 10;
 
             try
             {
                 Retry.Incremental(
-                    () =>
+                    async () =>
                     {
                         var stopwatch = Stopwatch.StartNew();
 
-                        _searcherManager = NuGetSearcherManager.Create(configuration, loggerFactory, directory, loader);
+                        _searcherManager = await NuGetSearcherManager.Create(arguments, loggerFactory, directory, loader);
                         _searcherManager.Open();
 
                         stopwatch.Stop();
