@@ -199,11 +199,6 @@ namespace NuGet.Indexing
             query.Add(ConstructClauseQuery(analyzer, "Authors", values), occur);
         }
 
-        private static void PackageTypeClause(BooleanQuery query, Analyzer analyzer, IEnumerable<string> values, Occur occur)
-        {
-            query.Add(ConstructClauseQuery(analyzer, "PackageTypesIndex", values), occur);
-        }
-
         private static IEnumerable<Filter> OwnerFilters(
             OwnersResult owners,
             HashSet<string> value)
