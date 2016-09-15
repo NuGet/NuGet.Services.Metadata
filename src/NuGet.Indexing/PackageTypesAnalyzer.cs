@@ -6,7 +6,7 @@ using System.IO;
 
 namespace NuGet.Indexing
 {
-    class PackageTypesAnalyzer : Analyzer
+    public class PackageTypesAnalyzer : Analyzer
     {
         public override TokenStream TokenStream(string fieldName, TextReader reader)
         {

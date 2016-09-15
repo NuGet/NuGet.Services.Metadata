@@ -26,7 +26,7 @@ namespace NuGet.Indexing
                 { "Authors", new DescriptionAnalyzer() },
                 { "Owner", new OwnerAnalyzer() },
                 { "Tags", new TagsAnalyzer() },
-                { "PackageTypes", new PackageTypesAnalyzer() }
+                { "PackageTypesIndex", new PackageTypesAnalyzer() }
             };
         }
 
