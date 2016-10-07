@@ -5,11 +5,15 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Owin;
 using NuGet.Indexing;
+using static NuGet.Services.BasicSearch.SearchTelemetryClient;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace NuGet.Services.BasicSearch
 {
     public class ServiceEndpoints
     {
+        private static SearchTelemetryClient _searchTelemetryClient = new SearchTelemetryClient();
         public static async Task V3SearchAsync(IOwinContext context, NuGetSearcherManager searcherManager, ResponseWriter responseWriter)
         {
             var skip = GetSkip(context);
@@ -25,6 +29,8 @@ namespace NuGet.Services.BasicSearch
                 context,
                 HttpStatusCode.OK,
                 jsonWriter => ServiceImpl.Search(jsonWriter, searcherManager, scheme, q, includePrerelease, skip, take, feed, includeExplanation));
+
+            _searchTelemetryClient.TrackMetric(MetricName.SearchQueryV3, 0, GetQueryProperties(context));
         }
 
         public static async Task AutoCompleteAsync(IOwinContext context, NuGetSearcherManager searcherManager, ResponseWriter responseWriter)
@@ -45,6 +51,8 @@ namespace NuGet.Services.BasicSearch
                 context,
                 HttpStatusCode.OK,
                 jsonWriter => ServiceImpl.AutoComplete(jsonWriter, searcherManager, q, id, includePrerelease, skip, take, explanation));
+
+            _searchTelemetryClient.TrackMetric(MetricName.AutoCompleteQuery, 0, GetQueryProperties(context));
         }
 
         public static async Task FindAsync(IOwinContext context, NuGetSearcherManager searcherManager, ResponseWriter responseWriter)
@@ -56,6 +64,8 @@ namespace NuGet.Services.BasicSearch
                 context,
                 HttpStatusCode.OK,
                 jsonWriter => ServiceImpl.Find(jsonWriter, searcherManager, id, scheme));
+
+            _searchTelemetryClient.TrackMetric(MetricName.FindQuery, 0, GetQueryProperties(context));
         }
 
         public static async Task V2SearchAsync(IOwinContext context, NuGetSearcherManager searcherManager, ResponseWriter responseWriter)
@@ -76,6 +86,8 @@ namespace NuGet.Services.BasicSearch
                 context,
                 HttpStatusCode.OK,
                 jsonWriter => GalleryServiceImpl.Search(jsonWriter, searcherManager, q, countOnly, includePrerelease, sortBy, skip, take, feed, ignoreFilter, luceneQuery));
+
+            _searchTelemetryClient.TrackMetric(MetricName.SearchQueryV2, 0, GetQueryProperties(context));
         }
 
         public static async Task RankingsAsync(IOwinContext context, NuGetSearcherManager searcherManager, ResponseWriter responseWriter)
@@ -169,6 +181,18 @@ namespace NuGet.Services.BasicSearch
             }
 
             return countOnly;
+        }
+
+        private static IDictionary<string, string> GetQueryProperties(IOwinContext context)
+        {
+            Dictionary<string, string> properties = new Dictionary<string, string>();
+            properties.Add("User-Agent", context.Request.Headers.Get("User-Agent"));
+            properties.Add("Feed", context.Request.Query["feed"]);
+            properties.Add("Query", context.Request.Query["q"]);
+            properties.Add("Id", context.Request.Query["id"]);
+            properties.Add("SortBy", context.Request.Query["sortBy"]);
+            properties.Add("IncludePrerelease", GetIncludePrerelease(context).ToString());
+            return properties;
         }
     }
 }

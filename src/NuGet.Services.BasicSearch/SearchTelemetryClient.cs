@@ -21,7 +21,13 @@ namespace NuGet.Services.BasicSearch
             public static readonly string LuceneLoadLag = "LuceneLoadLag";
             public static readonly string LuceneLastReopen = "LuceneLastReopen";
             public static readonly string LuceneCommitTimestamp = "LuceneCommitTimestamp";
+
+            public static readonly string SearchQueryV3 = "SearchQueryV3";
+            public static readonly string FindQuery = "FindQuery";
+            public static readonly string AutoCompleteQuery = " AutoCompleteQuery";
+            public static readonly string SearchQueryV2 = "SearchQueryV2";
         }
+
 
         public SearchTelemetryClient()
         {
