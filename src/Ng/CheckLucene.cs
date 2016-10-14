@@ -23,11 +23,12 @@ namespace Ng
         {
             Lucene.Net.Store.Directory directory = CommandHelpers.GetLuceneDirectory(arguments);
 
-            using (IndexReader reader = IndexReader.Open(directory, true))
+            using (var reader = DirectoryReader.Open(directory))
             {
-                Console.WriteLine("Lucene index contains: {0} documents", reader.NumDocs());
+                Console.WriteLine("Lucene index contains: {0} documents", reader.NumDocs);
 
-                IDictionary<string, string> commitUserData = reader.CommitUserData;
+                // TODO: Fix this null. Ignoring commit user data for now
+                IDictionary<string, string> commitUserData = null;
 
                 if (commitUserData == null)
                 {

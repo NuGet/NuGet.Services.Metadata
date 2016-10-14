@@ -14,7 +14,7 @@ namespace NuGet.Indexing
     {
         private readonly IAcronymExpansionProvider _acronymExpansionProvider;
 
-        private readonly ITermAttribute _termAttribute;
+        private readonly ICharTermAttribute _termAttribute;
         private readonly IPositionIncrementAttribute _positionIncrementAttribute;
         private readonly Queue<string> _tokenSet;
         private readonly HashSet<string> _recognizedTokens;
@@ -25,18 +25,19 @@ namespace NuGet.Indexing
         {
             _acronymExpansionProvider = acronymExpansionProvider;
 
-            _termAttribute = AddAttribute<ITermAttribute>();
+            _termAttribute = AddAttribute<ICharTermAttribute>();
             _positionIncrementAttribute = AddAttribute<IPositionIncrementAttribute>();
             _tokenSet = new Queue<string>();
             _recognizedTokens = new HashSet<string>();
         }
 
-        public override bool IncrementToken()
+        public sealed override bool IncrementToken()
         {
             if (_tokenSet.Count > 0)
             {
+                var nextToken = _tokenSet.Dequeue();
                 RestoreState(_currentState);
-                _termAttribute.SetTermBuffer(_tokenSet.Dequeue());
+                _termAttribute.CopyBuffer(nextToken.ToCharArray(), 0, nextToken.Length);
                 _positionIncrementAttribute.PositionIncrement = 0;
 
                 return true;
@@ -54,10 +55,11 @@ namespace NuGet.Indexing
                 return false;
             }
 
-            if (!string.IsNullOrEmpty(_termAttribute.Term))
+            var term = _termAttribute.ToString();
+            if (!string.IsNullOrEmpty(term))
             {
                 var acronyms = _acronymExpansionProvider.GetKnownAcronyms()
-                    .Where(a => _termAttribute.Term.IndexOf(a, StringComparison.OrdinalIgnoreCase) >= 0);
+                    .Where(a => term.IndexOf(a, StringComparison.OrdinalIgnoreCase) >= 0);
 
                 foreach (var acronym in acronyms)
                 {
@@ -71,7 +73,7 @@ namespace NuGet.Indexing
                     }
 
                     // Add original term without the acronym (xamlbehaviors with xaml acronym => behaviors)
-                    var termWithoutAcronym = RemoveSubstring(_termAttribute.Term, acronym);
+                    var termWithoutAcronym = RemoveSubstring(term, acronym);
                     if (!string.IsNullOrEmpty(termWithoutAcronym))
                     {
                         if (_recognizedTokens.Add(termWithoutAcronym))

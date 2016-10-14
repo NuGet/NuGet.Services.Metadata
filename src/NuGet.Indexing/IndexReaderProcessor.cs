@@ -34,10 +34,11 @@ namespace NuGet.Indexing
                 handler.Begin(indexReader);
             }
 
-            if (_enumerateSubReaders && indexReader.GetSequentialSubReaders() != null)
+            if (_enumerateSubReaders && indexReader.Context.Children != null)
             {
-                foreach (SegmentReader segmentReader in indexReader.GetSequentialSubReaders())
+                foreach (var segmentContext in indexReader.Context.Children)
                 {
+                    var segmentReader = (SegmentReader)segmentContext.Reader;
                     ProcessReader(segmentReader, segmentReader.SegmentName, ref perIndexDocumentNumber);
                 }
             }
@@ -56,7 +57,7 @@ namespace NuGet.Indexing
         {
             for (int perReaderDocumentNumber = 0; perReaderDocumentNumber < indexReader.MaxDoc; perReaderDocumentNumber++)
             {
-                if (indexReader.IsDeleted(perReaderDocumentNumber))
+                if (indexReader.Document(perReaderDocumentNumber) == null)
                 {
                     ProcessDocument(indexReader, readerName, perReaderDocumentNumber, perIndexDocumentNumber, null, isDelete: true);
                 }

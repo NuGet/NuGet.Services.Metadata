@@ -221,7 +221,7 @@ namespace NuGet.Services.BasicSearch
             try
             {
                 // Track number of documents in index
-                searchTelemetryClient.TrackMetric(SearchTelemetryClient.MetricName.LuceneNumDocs, searcher.IndexReader.NumDocs());
+                searchTelemetryClient.TrackMetric(SearchTelemetryClient.MetricName.LuceneNumDocs, searcher.IndexReader.NumDocs);
 
                 // Track time between Lucene commit and reopen
                 string temp;

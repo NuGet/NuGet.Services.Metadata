@@ -25,10 +25,11 @@ namespace NuGet.Indexing
 
         public void Begin(IndexReader indexReader)
         {
-            if (indexReader.GetSequentialSubReaders() != null)
+            if (indexReader.Context.Children != null)
             {
-                foreach (SegmentReader segmentReader in indexReader.GetSequentialSubReaders())
+                foreach (var segmentContext in indexReader.Context.Children)
                 {
+                    var segmentReader = (SegmentReader)segmentContext.Reader;
                     _mapping[segmentReader.SegmentName] = new int[segmentReader.MaxDoc];
                 }
             }

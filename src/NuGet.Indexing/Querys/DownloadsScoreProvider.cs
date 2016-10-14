@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using Lucene.Net.Index;
-using Lucene.Net.Search.Function;
+using Lucene.Net.Queries;
 
 namespace NuGet.Indexing
 {
@@ -19,13 +19,13 @@ namespace NuGet.Indexing
 
         private readonly string _readerName;
 
-        public DownloadsScoreProvider(IndexReader reader,
+        public DownloadsScoreProvider(AtomicReaderContext atomicReaderContext,
             IReadOnlyDictionary<string, int[]> idMapping,
             Downloads downloads,
             RankingResult ranking,
             QueryBoostingContext context,
             double baseBoost)
-            : base(reader)
+            : base(atomicReaderContext)
         {
             _idMapping = idMapping;
             _downloads = downloads;
@@ -38,7 +38,7 @@ namespace NuGet.Indexing
             //
             // If no segments are present (small index) we use an empty string, which is what
             // Lucene also uses internally.
-            var segmentReader = reader as SegmentReader;
+            var segmentReader = atomicReaderContext.Reader as SegmentReader;
 
             _readerName = segmentReader != null
                 ? segmentReader.SegmentName
@@ -81,7 +81,7 @@ namespace NuGet.Indexing
         public static float DownloadScore(long totalDownloads,
             QueryBoostingContext context)
         {
-            if (!context.BoostByDownloads)
+            if (context == null || !context.BoostByDownloads)
             {
                 return 1.0f;
             }

@@ -8,6 +8,7 @@ using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Tokenattributes;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
+using static Lucene.Net.Search.BooleanClause;
 
 namespace NuGet.Indexing
 {
@@ -222,8 +223,10 @@ namespace NuGet.Indexing
         {
             TokenStream tokenStream = analyzer.TokenStream(field, new StringReader(text));
 
-            ITermAttribute termAttribute = tokenStream.AddAttribute<ITermAttribute>();
-            IPositionIncrementAttribute positionIncrementAttribute = tokenStream.AddAttribute<IPositionIncrementAttribute>();
+            tokenStream.Reset();
+
+            var positionIncrementAttribute = tokenStream.AddAttribute<IPositionIncrementAttribute>();
+            var termAttribute = tokenStream.AddAttribute<ICharTermAttribute>();
 
             List<List<Term>> terms = new List<List<Term>>();
             List<Term> current = null;
@@ -236,9 +239,11 @@ namespace NuGet.Indexing
                 }
                 if (current != null)
                 {
-                    current.Add(new Term(field, termAttribute.Term));
+                    current.Add(new Term(field, termAttribute.ToString()));
                 }
             }
+            
+            tokenStream.End();
 
             if (terms.Count == 1 && terms[0].Count == 1)
             {

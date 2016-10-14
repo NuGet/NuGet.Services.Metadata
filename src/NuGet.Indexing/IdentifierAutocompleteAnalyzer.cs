@@ -1,16 +1,22 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-﻿using Lucene.Net.Analysis;
-using Lucene.Net.Analysis.NGram;
+using System;
 using System.IO;
+using Lucene.Net.Analysis;
+using Lucene.Net.Analysis.Core;
+using Lucene.Net.Analysis.Ngram;
+using Lucene.Net.Util;
 
 namespace NuGet.Indexing
 {
     public class IdentifierAutocompleteAnalyzer : Analyzer
     {
-        public override TokenStream TokenStream(string fieldName, TextReader reader)
+        public override TokenStreamComponents CreateComponents(string fieldName, TextReader reader)
         {
-            return new EdgeNGramTokenFilter(new LowerCaseFilter(new CamelCaseFilter(new DotTokenizer(reader))), Side.FRONT, 1, 8);
+            var source = new DotTokenizer(reader);
+            var filter = new EdgeNGramTokenFilter(LuceneVersion.LUCENE_48, new LowerCaseFilter(LuceneVersion.LUCENE_48, new CamelCaseFilter(source)), 1, 8);
+
+            return new TokenStreamComponents(source, filter);
         }
     }
 }

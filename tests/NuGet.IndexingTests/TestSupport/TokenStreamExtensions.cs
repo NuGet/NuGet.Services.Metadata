@@ -13,7 +13,7 @@ namespace NuGet.IndexingTests.TestSupport
     {
         public static IEnumerable<TokenAttributes> Tokenize(this TokenStream tokenStream)
         {
-            var term = tokenStream.GetAttribute<ITermAttribute>();
+            var term = tokenStream.GetAttribute<ICharTermAttribute>();
             var offset = tokenStream.GetAttribute<IOffsetAttribute>();
 
             IPositionIncrementAttribute positionIncrement = null;
@@ -25,7 +25,7 @@ namespace NuGet.IndexingTests.TestSupport
 
             while (tokenStream.IncrementToken())
             {
-                var tokenAttributes = new TokenAttributes(term.Term, offset.StartOffset, offset.EndOffset);
+                var tokenAttributes = new TokenAttributes(term.ToString(), offset.StartOffset(), offset.EndOffset());
 
                 if (positionIncrement != null)
                 {

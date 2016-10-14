@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Lucene.Net.Index;
 using Microsoft.Extensions.Logging;
 using NuGet.Indexing;
+using Lucene.Net.Util;
 
 namespace Ng
 {
@@ -60,7 +61,7 @@ namespace Ng
 
         internal static IndexWriter CreateIndexWriter(Lucene.Net.Store.Directory directory)
         {
-            bool create = !IndexReader.IndexExists(directory);
+            bool create = DirectoryReader.IndexExists(directory);
 
             directory.EnsureOpen();
 
@@ -72,11 +73,10 @@ namespace Ng
                 }
             }
 
-            IndexWriter indexWriter = new IndexWriter(directory, new PackageAnalyzer(), create, IndexWriter.MaxFieldLength.UNLIMITED);
-
-            NuGetMergePolicyApplyer.ApplyTo(indexWriter);
-
-            indexWriter.SetSimilarity(new CustomSimilarity());
+            var writerConfig = new IndexWriterConfig(LuceneVersion.LUCENE_48, new PackageAnalyzer())
+                .SetSimilarity(new CustomSimilarity())
+                .SetMergePolicy(NuGetMergePolicy.GetMergePolicy());
+            IndexWriter indexWriter = new IndexWriter(directory, writerConfig);
 
             return indexWriter;
         }

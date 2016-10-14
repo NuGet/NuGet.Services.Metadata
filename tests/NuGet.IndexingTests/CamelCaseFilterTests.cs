@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Util;
 using NuGet.Indexing;
 using NuGet.IndexingTests.TestSupport;
@@ -19,14 +18,18 @@ namespace NuGet.IndexingTests
         public void TokenizingReturnsExpectedTermAndOffsets(string text, TokenAttributes[] expected)
         {
             // arrange
-            var tokenStream = new StandardTokenizer(Version.LUCENE_30, new StringReader(text));
+            var tokenStream = new DotTokenizer(new StringReader(text));
             var filter = new CamelCaseFilter(tokenStream);
-            
+
+            tokenStream.Reset();
+
             // act
             var actual = filter.Tokenize().ToArray();
 
             // assert
             Assert.Equal(expected, actual);
+
+            tokenStream.End();
         }
 
         public static IEnumerable<object[]> TokenizingReturnsExpectedTermAndOffsetsData

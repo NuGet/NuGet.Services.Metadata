@@ -4,6 +4,7 @@ using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Util;
 using System;
+using static Lucene.Net.Search.BooleanClause;
 
 namespace NuGet.Indexing
 {

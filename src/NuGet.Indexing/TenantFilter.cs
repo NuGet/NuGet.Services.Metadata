@@ -3,7 +3,6 @@
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Util;
-using System;
 
 namespace NuGet.Indexing
 {
@@ -22,15 +21,17 @@ namespace NuGet.Indexing
             _tenantId = tenantId;
         }
 
-        public override DocIdSet GetDocIdSet(IndexReader reader)
+        public override DocIdSet GetDocIdSet(AtomicReaderContext context, Bits acceptDocs)
         {
-            OpenBitSet bitSet = new OpenBitSet(reader.NumDocs());
-            TermDocs termDocs = reader.TermDocs(new Term("TenantId", _tenantId));
-            while (termDocs.Next())
+            var reader = context.AtomicReader;
+            var bitSet = new OpenBitSet(reader.NumDocs);
+            var termsEnum = reader.TermDocsEnum(new Term("TenantId", _tenantId));
+
+            while (termsEnum.NextDoc() != DocIdSetIterator.NO_MORE_DOCS)
             {
-                if (termDocs.Freq > 0)
+                if (termsEnum.Freq() > 0)
                 {
-                    bitSet.Set(termDocs.Doc);
+                    bitSet.Set(termsEnum.DocID());
                 }
             }
             return bitSet;

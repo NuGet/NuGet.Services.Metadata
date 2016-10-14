@@ -1,9 +1,10 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-using Lucene.Net.Analysis.Standard;
-using Lucene.Net.Index;
 using System;
 using System.Collections.Generic;
+using Lucene.Net.Index;
+using Lucene.Net.Util;
+using NuGet.Indexing;
 
 namespace Ng
 {
@@ -24,12 +25,14 @@ namespace Ng
         {
             Lucene.Net.Store.Directory directory = CommandHelpers.GetLuceneDirectory(arguments);
 
-            if (IndexReader.IndexExists(directory))
+            if (DirectoryReader.IndexExists(directory))
             {
-                using (IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(Lucene.Net.Util.Version.LUCENE_30), true, IndexWriter.MaxFieldLength.UNLIMITED))
+                var writerConfig = new IndexWriterConfig(LuceneVersion.LUCENE_48, new PackageAnalyzer());
+                using (IndexWriter writer = new IndexWriter(directory, writerConfig))
                 {
                     writer.DeleteAll();
-                    writer.Commit(new Dictionary<string, string>());
+                    writer.CommitData = new Dictionary<string, string>();
+                    writer.Commit();
                 }
             }
 

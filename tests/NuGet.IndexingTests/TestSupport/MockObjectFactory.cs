@@ -33,8 +33,8 @@ namespace NuGet.IndexingTests.TestSupport
             var numDocs = numberOfDocs;
 
             mockIndexReader.Setup(x => x.MaxDoc).Returns(numDocs);
-            mockIndexReader.Setup(x => x.TermDocs()).Returns((TermDocs)null);
-            mockIndexReader.Setup(x => x.NumDocs()).Returns(numDocs);
+            //mockIndexReader.Setup(x => x.TermDocs()).Returns((TermDocs)null);
+            mockIndexReader.Setup(x => x.NumDocs).Returns(numDocs);
 
             return mockIndexReader;
         }

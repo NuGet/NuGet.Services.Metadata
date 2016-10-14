@@ -6,6 +6,7 @@ using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Tokenattributes;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
+using Lucene.Net.Util;
 using NuGet.Versioning;
 
 namespace NuGet.Indexing
@@ -21,9 +22,9 @@ namespace NuGet.Indexing
             _owner = owner;
         }
 
-        public override DocIdSet GetDocIdSet(IndexReader reader)
+        public override DocIdSet GetDocIdSet(AtomicReaderContext context, Bits acceptDocs)
         {
-            SegmentReader segmentReader = reader as SegmentReader;
+            SegmentReader segmentReader = context.Reader as SegmentReader;
 
             var readerName = segmentReader != null
                     ? segmentReader.SegmentName
@@ -44,22 +45,22 @@ namespace NuGet.Indexing
     }
     public class SemanticVersionFilter : TokenFilter
     {
-        ITermAttribute _termAttribute;
+        ICharTermAttribute _termAttribute;
 
         public SemanticVersionFilter(TokenStream stream)
             : base(stream)
         {
-            _termAttribute = AddAttribute<ITermAttribute>();
+            _termAttribute = AddAttribute<ICharTermAttribute>();
         }
 
-        public override bool IncrementToken()
+        public sealed override bool IncrementToken()
         {
             if (!input.IncrementToken())
             {
                 return false;
             }
 
-            string version = _termAttribute.Term;
+            string version = _termAttribute.ToString();
 
             NuGetVersion nuGetVersion;
             if (NuGetVersion.TryParse(version, out nuGetVersion))
@@ -67,7 +68,7 @@ namespace NuGet.Indexing
                 version = nuGetVersion.ToNormalizedString();
             }
 
-            _termAttribute.SetTermBuffer(version);
+            _termAttribute.CopyBuffer(version.ToCharArray(), 0, version.Length);
 
             return true;
         }

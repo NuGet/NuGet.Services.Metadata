@@ -14,11 +14,17 @@ namespace NuGet.IndexingTests
         [MemberData(nameof(TokenizerLowercasesNGramsAndCamelCasesInputData))]
         public void TokenizerLowercasesNGramsAndCamelCasesInput(string text, TokenAttributes[] expected)
         {
+            // arrange
+            var tokenStream = new IdentifierAutocompleteAnalyzer().TokenStream("", text);
+
             // arrange, act
             var actual = new IdentifierAutocompleteAnalyzer().Tokenize(text);
 
             // assert
             Assert.Equal(expected, actual);
+
+            // clean up
+            tokenStream.End();
         }
 
         public static IEnumerable<object[]> TokenizerLowercasesNGramsAndCamelCasesInputData

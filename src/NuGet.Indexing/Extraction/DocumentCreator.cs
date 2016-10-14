@@ -7,6 +7,7 @@ using System.IO;
 using System.Text;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
+using Lucene.Net.Util;
 using Newtonsoft.Json;
 using NuGet.Versioning;
 
@@ -19,11 +20,12 @@ namespace NuGet.Indexing
 
         public static IndexWriter CreateIndexWriter(Lucene.Net.Store.Directory directory, bool create)
         {
-            IndexWriter indexWriter = new IndexWriter(directory, new PackageAnalyzer(), create, IndexWriter.MaxFieldLength.UNLIMITED);
-            indexWriter.MergeFactor = MergeFactor;
-            indexWriter.MaxMergeDocs = MaxMergeDocs;
+            var writerConfig = new IndexWriterConfig(LuceneVersion.LUCENE_48, new PackageAnalyzer())
+                .SetSimilarity(new CustomSimilarity())
+                .SetMergePolicy(NuGetMergePolicy.GetMergePolicy());
 
-            indexWriter.SetSimilarity(new CustomSimilarity());
+            var indexWriter = new IndexWriter(directory, writerConfig);
+
             return indexWriter;
         }
 
@@ -336,20 +338,21 @@ namespace NuGet.Indexing
 
         private static void DetermineLanguageBoost(Document document, IDictionary<string, string> package)
         {
-            string id;
-            string language;
-            if (package.TryGetValue("id", out id) && package.TryGetValue("language", out language))
-            {
-                if (!string.IsNullOrWhiteSpace(language))
-                {
-                    string languageSuffix = "." + language.Trim();
-                    if (id.EndsWith(languageSuffix, StringComparison.OrdinalIgnoreCase))
-                    {
-                        document.Boost = 0.1f;
-                    }
-                }
-                document.Boost = 1.0f;
-            }
+            // TODO: Re-enable language boost
+            //string id;
+            //string language;
+            //if (package.TryGetValue("id", out id) && package.TryGetValue("language", out language))
+            //{
+            //    if (!string.IsNullOrWhiteSpace(language))
+            //    {
+            //        string languageSuffix = "." + language.Trim();
+            //        if (id.EndsWith(languageSuffix, StringComparison.OrdinalIgnoreCase))
+            //        {
+            //            document.Boost = 0.1f;
+            //        }
+            //    }
+            //    document.Boost = 1.0f;
+            //}
         }
 
         private static void CheckErrors(List<string> errors)
@@ -386,7 +389,7 @@ namespace NuGet.Indexing
 
         private static void AddDateField(Document document, string destination, DateTimeOffset date)
         {
-            document.Add(new NumericField(destination, Field.Store.YES, true).SetIntValue(int.Parse(date.ToString("yyyyMMdd"))));
+            document.Add(new IntField(destination, int.Parse(date.ToString("yyyyMMdd")), Field.Store.YES));
         }
 
         private static void AddField(Document document, string destination, string value, Field.Index index, float boost = 1.0f)

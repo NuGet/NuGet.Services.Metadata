@@ -259,19 +259,17 @@ namespace NuGet.Indexing
             {
                 using (var writer = DocumentCreator.CreateIndexWriter(directory, true))
                 {
-                    NuGetMergePolicyApplyer.ApplyTo(writer);
-
                     var partitions = tasks.Select(t => new SimpleFSDirectory(new DirectoryInfo(t.Result))).ToArray();
                     
-                    writer.AddIndexesNoOptimize(partitions);
+                    writer.AddIndexes(partitions);
 
                     foreach (var partition in partitions)
                     {
                         partition.Dispose();
                     }
 
-                    writer.Commit(DocumentCreator.CreateCommitMetadata(DateTime.UtcNow, "from SQL", writer.NumDocs(), Guid.NewGuid().ToString())
-                        .ToDictionary());
+                    writer.CommitData = DocumentCreator.CreateCommitMetadata(DateTime.UtcNow, "from SQL", writer.NumDocs(), Guid.NewGuid().ToString()).ToDictionary();
+                    writer.Commit();
                 }
             }
 

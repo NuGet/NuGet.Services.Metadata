@@ -1,11 +1,12 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
 using System.Net;
 using Lucene.Net.Index;
-using Lucene.Net.QueryParsers;
 using Lucene.Net.Search;
+using Lucene.Net.Util;
 using Newtonsoft.Json;
 
 namespace NuGet.Indexing
@@ -30,13 +31,16 @@ namespace NuGet.Indexing
 
                 Filter filter = null;
 
+                TopDocs topDocs;
                 if (searcher.TryGetFilter(false, includePrerelease, feed, out filter))
                 {
                     // Filter before running the query (make the search set smaller)
-                    query = new FilteredQuery(query, filter);
+                    topDocs = searcher.Search(query, filter, skip + take);
                 }
-
-                TopDocs topDocs = searcher.Search(query, skip + take);
+                else
+                {
+                    topDocs = searcher.Search(query, skip + take);
+                }
 
                 ResponseFormatter.WriteSearchResult(jsonWriter, searcher, scheme, topDocs, skip, take, includePrerelease, includeExplanation, query);
             }
@@ -118,7 +122,7 @@ namespace NuGet.Indexing
 
                 return boostedQuery;
             }
-            catch (ParseException)
+            catch (Exception)
             {
                 throw new ClientException(HttpStatusCode.BadRequest, "Invalid query format");
             }
@@ -135,11 +139,9 @@ namespace NuGet.Indexing
                 return new MatchAllDocsQuery();
             }
 
-            var queryParser = new QueryParser(Lucene.Net.Util.Version.LUCENE_30,
-                "IdAutocomplete",
-                new PackageAnalyzer());
+            var queryBuilder = new QueryBuilder(new PackageAnalyzer());
 
-            Query query = queryParser.Parse(q);
+            Query query = queryBuilder.CreatePhraseQuery("IdAutocomplete", q);
             Query boostedQuery = new DownloadsBoostedQuery(query,
                 docIdMapping,
                 downloads,

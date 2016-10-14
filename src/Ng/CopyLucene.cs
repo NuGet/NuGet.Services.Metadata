@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Lucene.Net.Store;
 using Lucene.Net.Store.Azure;
 
 namespace Ng
@@ -32,10 +33,10 @@ namespace Ng
 
         public static void Run(IDictionary<string, string> arguments)
         {
-            Lucene.Net.Store.Directory srcDirectory = CommandHelpers.GetCopySrcLuceneDirectory(arguments);
-            Lucene.Net.Store.Directory destDirectory = CommandHelpers.GetCopyDestLuceneDirectory(arguments);
+            Directory srcDirectory = CommandHelpers.GetCopySrcLuceneDirectory(arguments);
+            Directory destDirectory = CommandHelpers.GetCopyDestLuceneDirectory(arguments);
 
-            Lucene.Net.Store.Directory.Copy(srcDirectory, destDirectory, true);
+            srcDirectory.Copy(destDirectory, arguments[Constants.SrcPath], arguments[Constants.DestPath], IOContext.DEFAULT);
 
             if (destDirectory is AzureDirectory)
             {
@@ -44,7 +45,7 @@ namespace Ng
                 if (!destDirectory.ListAll().Any(f =>
                     String.Equals(f, "write.lock", StringComparison.OrdinalIgnoreCase)))
                 {
-                    var writeLock = destDirectory.CreateOutput("write.lock");
+                    var writeLock = destDirectory.CreateOutput("write.lock", IOContext.DEFAULT);
                     writeLock.Dispose();
                 }
             }

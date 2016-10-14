@@ -72,11 +72,11 @@ namespace NuGet.IndexingTests
             var document = DocumentCreator.CreateDocument(package);
 
             // Assert
-            foreach (var fieldable in document.GetFields().Where(f => f.IsTokenized && !(f is NumericField)))
+            foreach (var fieldable in document.Fields.Where(f => f.FieldType.Tokenized && !(f is IntField)))
             {
-                Assert.True(fieldable.IsTermVectorStored, $"{fieldable.Name} should have its term vector stored.");
-                Assert.True(fieldable.IsStoreOffsetWithTermVector, $"{fieldable.Name} should store offsets with its term vector.");
-                Assert.True(fieldable.IsStorePositionWithTermVector, $"{fieldable.Name} should store positions with its term vector.");
+                Assert.True(fieldable.FieldType.StoreTermVectors, $"{fieldable.Name} should have its term vector stored.");
+                Assert.True(fieldable.FieldType.StoreTermVectorOffsets, $"{fieldable.Name} should store offsets with its term vector.");
+                Assert.True(fieldable.FieldType.StoreTermVectorPositions, $"{fieldable.Name} should store positions with its term vector.");
             }
         }
 
@@ -90,10 +90,10 @@ namespace NuGet.IndexingTests
             var document = DocumentCreator.CreateDocument(package);
 
             // Assert
-            foreach (var field in document.GetFields())
+            foreach (var field in document.Fields)
             {
-                Assert.True(field.IsStored, $"{field.Name} should be stored.");
-                Assert.True(field.IsIndexed, $"{field.Name} should be indexed.");
+                Assert.True(field.FieldType.Stored, $"{field.Name} should be stored.");
+                Assert.True(field.FieldType.Indexed, $"{field.Name} should be indexed.");
             }
         }
 
@@ -108,8 +108,8 @@ namespace NuGet.IndexingTests
             var document = DocumentCreator.CreateDocument(package);
 
             // Assert
-            Assert.Equal("DotNetZip", document.GetFieldable("Title").StringValue);
-            Assert.Equal("dotnetzip", document.GetFieldable("SortableTitle").StringValue);
+            Assert.Equal("DotNetZip", document.GetField("Title").StringValue);
+            Assert.Equal("dotnetzip", document.GetField("SortableTitle").StringValue);
         }
 
         [Fact]
@@ -123,8 +123,8 @@ namespace NuGet.IndexingTests
             var document = DocumentCreator.CreateDocument(package);
 
             // Assert
-            Assert.Equal("DotNetZip", document.GetFieldable("Title").StringValue);
-            Assert.Equal("dotnetzip", document.GetFieldable("SortableTitle").StringValue);
+            Assert.Equal("DotNetZip", document.GetField("Title").StringValue);
+            Assert.Equal("dotnetzip", document.GetField("SortableTitle").StringValue);
         }
 
         [Fact]
@@ -140,8 +140,8 @@ namespace NuGet.IndexingTests
             // Assert
             Assert.Equal("2002-02-02T00:00:00.0000000Z", document.GetField("OriginalPublished").StringValue);
             Assert.Null(document.GetField("OriginalLastEdited"));
-            Assert.Equal("20020202", document.GetFieldable("PublishedDate").StringValue);
-            Assert.Equal("20020202", document.GetFieldable("LastEditedDate").StringValue);
+            Assert.Equal("20020202", document.GetField("PublishedDate").StringValue);
+            Assert.Equal("20020202", document.GetField("LastEditedDate").StringValue);
         }
 
         [Fact]
@@ -156,8 +156,8 @@ namespace NuGet.IndexingTests
             var document = DocumentCreator.CreateDocument(package);
 
             // Assert
-            Assert.Equal("1.02.003", document.GetFieldable("OriginalVersion").StringValue);
-            Assert.Equal("1.2.3", document.GetFieldable("Version").StringValue);
+            Assert.Equal("1.02.003", document.GetField("OriginalVersion").StringValue);
+            Assert.Equal("1.2.3", document.GetField("Version").StringValue);
         }
 
         [Fact]
@@ -205,7 +205,7 @@ namespace NuGet.IndexingTests
             var document = DocumentCreator.CreateDocument(package);
 
             // Assert
-            var actual = document.GetFields().Select(f => new KeyValuePair<string, string>(f.Name, f.StringValue)).ToArray();
+            var actual = document.Fields.Select(f => new KeyValuePair<string, string>(f.Name, f.StringValue)).ToArray();
             Assert.Equal(expected.Length, actual.Length);
             for (int i = 0; i < expected.Length; i++)
             {

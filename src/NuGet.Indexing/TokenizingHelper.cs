@@ -2,6 +2,9 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 using System;
 using System.Collections.Generic;
+using Lucene.Net.Analysis.Util;
+using Lucene.Net.Util;
+
 
 namespace NuGet.Indexing
 {
@@ -53,9 +56,9 @@ namespace NuGet.Indexing
             "was", "we", "will", "with"
         };
 
-        public static ISet<string> GetStopWords()
+        public static CharArraySet GetStopWords()
         {
-            return _stopWords;
+            return new CharArraySet(LuceneVersion.LUCENE_48, _stopWords, true);
         }
     }
 }

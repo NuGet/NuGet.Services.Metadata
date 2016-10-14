@@ -32,10 +32,11 @@ namespace NuGet.Indexing
         {
             _rankingBySegmentReaderName = new RankingBySegment();
 
-            if (indexReader.GetSequentialSubReaders() != null)
+            if (indexReader.Context.Children != null)
             {
-                foreach (SegmentReader segmentReader in indexReader.GetSequentialSubReaders())
+                foreach (var segmentContext in indexReader.Context.Children)
                 {
+                    var segmentReader = (SegmentReader)segmentContext.Reader;
                     _rankingBySegmentReaderName[segmentReader.SegmentName] = new Ranking[segmentReader.MaxDoc];
                 }
             }

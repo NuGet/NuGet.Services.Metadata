@@ -5,6 +5,7 @@ using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Util;
 using System.Collections.Generic;
+using System;
 
 namespace NuGet.Indexing
 {
@@ -17,12 +18,12 @@ namespace NuGet.Indexing
             _bitSetLookup = bitSetLookup;
         }
 
-        public override DocIdSet GetDocIdSet(IndexReader reader)
+        public override DocIdSet GetDocIdSet(AtomicReaderContext context, Bits acceptDocs)
         {
-            SegmentReader segmentReader = reader as SegmentReader;
+            SegmentReader segmentReader = context.Reader as SegmentReader;
 
             string readerName = segmentReader != null
-                ? segmentReader.SegmentName 
+                ? segmentReader.SegmentName
                 : string.Empty;
 
             OpenBitSet docIdSet;

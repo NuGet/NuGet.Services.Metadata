@@ -21,11 +21,16 @@ namespace NuGet.IndexingTests
             var tokenizer = new DotTokenizer(new StringReader(text));
             var expected = new[] { new TokenAttributes("Dot", 0, 3), new TokenAttributes("NET", 4, 7) };
 
+            tokenizer.Reset();
+
             // act
             var actual = tokenizer.Tokenize().ToArray();
 
             // assert
             Assert.Equal(expected, actual);
+
+            // clean up
+            tokenizer.End();
         }
 
         public static IEnumerable<object[]> SplitsTextIntoTokensOnCorrectCharactersData

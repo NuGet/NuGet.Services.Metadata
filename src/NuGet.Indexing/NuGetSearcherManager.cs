@@ -121,7 +121,7 @@ namespace NuGet.Indexing
                 if (directory == null)
                 {
                     var sourceDirectory = new AzureDirectory(storageAccount, indexContainer);
-                    directory = new RAMDirectory(sourceDirectory); // initial copy from storage to RAM
+                    directory = new RAMDirectory(sourceDirectory, IOContext.DEFAULT); // initial copy from storage to RAM
 
                     azureDirectorySynchronizer = new AzureDirectorySynchronizer(sourceDirectory, directory);
                 }
@@ -160,7 +160,7 @@ namespace NuGet.Indexing
             _logger.LogInformation("NuGetSearcherManager.Reopen: refreshing original IndexReader.");
 
             var stopwatch = Stopwatch.StartNew();
-            var indexReader = searcher.IndexReader.Reopen();
+            var indexReader = searcher.IndexReader;
             stopwatch.Stop();
 
             _logger.LogInformation("NuGetSearcherManager.Reopen: refreshed original IndexReader in {IndexReaderReopenDuration} seconds.", stopwatch.Elapsed.TotalSeconds);
@@ -271,7 +271,7 @@ namespace NuGet.Indexing
                 return new NuGetIndexSearcher(
                     this,
                     reader,
-                    reader.CommitUserData,
+                    new Dictionary<string, string>(),
                     curatedFeedHandler.Result,
                     latest,
                     mappingHandler.Result,
@@ -324,10 +324,10 @@ namespace NuGet.Indexing
             searcher.Search(boostedQuery, 5);
 
             // Warmup search (with a sort so Lucene field caches are populated)
-            var sort1 = new Sort(new SortField("LastEditedDate", SortField.INT, reverse: true));
-            var sort2 = new Sort(new SortField("PublishedDate", SortField.INT, reverse: true));
-            var sort3 = new Sort(new SortField("SortableTitle", SortField.STRING, reverse: false));
-            var sort4 = new Sort(new SortField("SortableTitle", SortField.STRING, reverse: true));
+            var sort1 = new Sort(new SortField("LastEditedDate", SortField.Type_e.INT, reverse: true));
+            var sort2 = new Sort(new SortField("PublishedDate", SortField.Type_e.INT, reverse: true));
+            var sort3 = new Sort(new SortField("SortableTitle", SortField.Type_e.STRING, reverse: false));
+            var sort4 = new Sort(new SortField("SortableTitle", SortField.Type_e.STRING, reverse: true));
 
             var topDocs1 = searcher.Search(boostedQuery, null, 250, sort1);
             var topDocs2 = searcher.Search(boostedQuery, null, 250, sort2);

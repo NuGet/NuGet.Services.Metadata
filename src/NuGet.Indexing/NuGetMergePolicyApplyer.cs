@@ -5,7 +5,7 @@ using Lucene.Net.Index;
 
 namespace NuGet.Indexing
 {
-    public class NuGetMergePolicyApplyer
+    public class NuGetMergePolicy
     {
         //  Define the size of a file in a level (exponentially) and the count of files that constitue a level
         public const int MergeFactor = 10;
@@ -23,20 +23,16 @@ namespace NuGet.Indexing
         // Note this does not apply when calling .Optimize()
         // ReSharper disable once InconsistentNaming
         public const double MaxMergeMB = 50.0;
-
-        public static void ApplyTo(IndexWriter writer)
+        
+        public static MergePolicy GetMergePolicy()
         {
-            writer.MergeFactor = MergeFactor;
-            writer.MaxMergeDocs = MaxMergeDocs;
-
-            var mergePolicy = new LogByteSizeMergePolicy(writer)
+            return new LogByteSizeMergePolicy()
             {
                 MaxMergeDocs = MaxMergeDocs,
                 MergeFactor = MergeFactor,
                 MinMergeMB = MinMergeMB,
                 MaxMergeMB = MaxMergeMB
             };
-            writer.SetMergePolicy(mergePolicy);
-        }           
+        }         
     }
 }

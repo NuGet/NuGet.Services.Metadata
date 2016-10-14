@@ -1,15 +1,16 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 using Lucene.Net.Search;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
+using Lucene.Net.Index;
+using static Lucene.Net.Search.FieldCache;
 
 namespace NuGet.Indexing
 {
     public class KeyCollector : Collector
     {
-        private int[] _keys;
-        private int[] _checksums;
+        private Ints _keys;
+        private Ints _checksums;
         private IList<DocumentKey> _pairs;
 
         public KeyCollector(IList<DocumentKey> pairs)
@@ -17,24 +18,28 @@ namespace NuGet.Indexing
             _pairs = pairs;
         }
 
-        public override bool AcceptsDocsOutOfOrder
+        public override AtomicReaderContext NextReader
         {
-            get { return true; }
+            set
+            {
+                _keys = DEFAULT.GetInts(value.AtomicReader, "Keys", false);
+                _checksums = DEFAULT.GetInts(value.AtomicReader, "Checksum", false);
+            }
+        }
+
+        public override Scorer Scorer
+        {
+            set { }
+        }
+
+        public override bool AcceptsDocsOutOfOrder()
+        {
+            return true;
         }
 
         public override void Collect(int docID)
         {
-            _pairs.Add(new DocumentKey(_keys[docID], docID, _checksums[docID]));
-        }
-
-        public override void SetNextReader(Lucene.Net.Index.IndexReader reader, int docBase)
-        {
-            _keys = FieldCache_Fields.DEFAULT.GetInts(reader, "Key");
-            _checksums = FieldCache_Fields.DEFAULT.GetInts(reader, "Checksum");
-        }
-
-        public override void SetScorer(Scorer scorer)
-        {
+            _pairs.Add(new DocumentKey(_keys.Get(docID), docID, _checksums.Get(docID)));
         }
     }
 

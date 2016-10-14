@@ -342,7 +342,7 @@ namespace NuGet.Indexing
         public static void WriteStatsResult(JsonWriter jsonWriter, NuGetIndexSearcher searcher)
         {
             jsonWriter.WriteStartObject();
-            WriteProperty(jsonWriter, "numDocs", searcher.IndexReader.NumDocs());
+            WriteProperty(jsonWriter, "numDocs", searcher.IndexReader.NumDocs);
             WriteProperty(jsonWriter, "indexName", searcher.Manager.IndexName);
             WriteProperty(jsonWriter, "lastReopen", searcher.LastReopen);
 

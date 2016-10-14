@@ -1,8 +1,9 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
-using Lucene.Net.Analysis;
+
 using System;
 using System.IO;
+using Lucene.Net.Analysis.Tokenattributes;
 
 namespace NuGet.Indexing
 {
@@ -10,10 +11,9 @@ namespace NuGet.Indexing
     {
         public DotTokenizer(TextReader input)
             : base(input)
-        {
-        }
+        { }
 
-        protected override bool IsTokenChar(char c)
+        protected internal override bool IsTokenChar(char c)
         {
             return !(Char.IsWhiteSpace(c)
                 || c == '.'

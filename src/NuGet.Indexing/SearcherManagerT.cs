@@ -31,7 +31,7 @@ namespace NuGet.Indexing
                 {
                     if (_currentSearcher == null)
                     {
-                        _currentSearcher = CreateSearcher(IndexReader.Open(Directory, true));
+                        _currentSearcher = CreateSearcher(DirectoryReader.Open(Directory));
                         if (_currentSearcher == null)
                         {
                             throw new Exception("Unable to create IndexSearcher");

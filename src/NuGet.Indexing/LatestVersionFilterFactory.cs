@@ -17,10 +17,11 @@ namespace NuGet.Indexing
         {
             IDictionary<string, OpenBitSet> openBitSetLookup = new Dictionary<string, OpenBitSet>();
 
-            if (indexReader.GetSequentialSubReaders() != null)
+            if (indexReader.Context.Children != null)
             {
-                foreach (SegmentReader segmentReader in indexReader.GetSequentialSubReaders())
+                foreach (var segmentContext in indexReader.Context.Children)
                 {
+                    var segmentReader = (SegmentReader)segmentContext.Reader;
                     openBitSetLookup.Add(segmentReader.SegmentName, new OpenBitSet());
                 }
             }
@@ -46,10 +47,11 @@ namespace NuGet.Indexing
         {
             IDictionary<string, Tuple<NuGetVersion, string, int>> lookup = new Dictionary<string, Tuple<NuGetVersion, string, int>>();
 
-            if (indexReader.GetSequentialSubReaders() != null)
+            if (indexReader.Context.Children != null)
             {
-                foreach (SegmentReader segmentReader in indexReader.GetSequentialSubReaders())
+                foreach (var segmentContext in indexReader.Context.Children)
                 {
+                    var segmentReader = (SegmentReader)segmentContext.Reader;
                     MakeLatestVersionLookupPerReader(lookup, segmentReader, segmentReader.SegmentName, includePrerelease, includeUnlisted);
                 }
             }
@@ -65,7 +67,7 @@ namespace NuGet.Indexing
         {
             for (int n = 0; n < reader.MaxDoc; n++)
             {
-                if (reader.IsDeleted(n))
+                if (reader.Document(n) == null)
                 {
                     continue;
                 }

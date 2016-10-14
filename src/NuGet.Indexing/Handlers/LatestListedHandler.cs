@@ -34,10 +34,11 @@ namespace NuGet.Indexing
             _openBitSetLookup = new Dictionary<string, OpenBitSet>();
             _lookup = new Dictionary<string, Tuple<NuGetVersion, string, int>>();
 
-            if (indexReader.GetSequentialSubReaders() != null)
+            if (indexReader.Context.Children != null)
             {
-                foreach (SegmentReader segmentReader in indexReader.GetSequentialSubReaders())
+                foreach (var segmentContext in indexReader.Context.Children)
                 {
+                    var segmentReader = (SegmentReader)segmentContext.Reader;
                     _openBitSetLookup.Add(segmentReader.SegmentName, new OpenBitSet());
                 }
             }

@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using Lucene.Net.Index;
+using Lucene.Net.Queries;
 using Lucene.Net.Search;
-using Lucene.Net.Search.Function;
 
 namespace NuGet.Indexing
 {
@@ -37,9 +37,9 @@ namespace NuGet.Indexing
             Query = query;
         }
 
-        protected override CustomScoreProvider GetCustomScoreProvider(IndexReader reader)
+        protected override CustomScoreProvider GetCustomScoreProvider(AtomicReaderContext atomicReaderContext)
         {
-            return new DownloadsScoreProvider(reader, _docIdMapping, _downloads, _ranking, _context, _baseBoost);
+            return new DownloadsScoreProvider(atomicReaderContext, _docIdMapping, _downloads, _ranking, _context, _baseBoost);
         }
 
         public override string ToString()

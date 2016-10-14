@@ -30,10 +30,11 @@ namespace NuGet.Indexing
             _knownOwners = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             _ownerTuples = new Dictionary<string, IDictionary<string, DynamicDocIdSet>>();
 
-            if (indexReader.GetSequentialSubReaders() != null)
+            if (indexReader.Context.Children != null)
             {
-                foreach (SegmentReader segmentReader in indexReader.GetSequentialSubReaders())
+                foreach (var segmentContext in indexReader.Context.Children)
                 {
+                    var segmentReader = (SegmentReader)segmentContext.Reader;
                     _ownerTuples.Add(segmentReader.SegmentName, new Dictionary<string, DynamicDocIdSet>(StringComparer.OrdinalIgnoreCase));
                 }
             }

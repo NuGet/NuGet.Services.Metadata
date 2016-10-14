@@ -4,10 +4,11 @@ using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using System;
 using System.Collections.Generic;
+using Lucene.Net.Analysis.Miscellaneous;
 
 namespace NuGet.Indexing
 {
-    public class PackageAnalyzer : PerFieldAnalyzerWrapper
+    public class PackageAnalyzer : AnalyzerWrapper
     {
         static readonly IDictionary<string, Analyzer> _fieldAnalyzers;
 
@@ -30,8 +31,18 @@ namespace NuGet.Indexing
         }
 
         public PackageAnalyzer()
-            : base(new StandardAnalyzer(Lucene.Net.Util.Version.LUCENE_30), _fieldAnalyzers)
+            : base()
         {
+        }
+
+        protected override Analyzer GetWrappedAnalyzer(string fieldName)
+        {
+            if (_fieldAnalyzers.ContainsKey(fieldName))
+            {
+                return _fieldAnalyzers[fieldName];
+            }
+
+            return new StandardAnalyzer(Lucene.Net.Util.LuceneVersion.LUCENE_48);
         }
     }
 }

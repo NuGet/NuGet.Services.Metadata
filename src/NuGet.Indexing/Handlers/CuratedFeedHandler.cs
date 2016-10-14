@@ -28,15 +28,16 @@ namespace NuGet.Indexing
         public void Begin(IndexReader indexReader)
         {
             _bitSetLookup = new Dictionary<string, IDictionary<string, OpenBitSet>>(StringComparer.OrdinalIgnoreCase);
-
-            if (indexReader.GetSequentialSubReaders() != null)
+            
+            if (indexReader.Context.Children != null)
             {
                 foreach (var key in _feeds.Keys)
                 {
                     _bitSetLookup[key] = new Dictionary<string, OpenBitSet>();
 
-                    foreach (SegmentReader segmentReader in indexReader.GetSequentialSubReaders())
+                    foreach (var segmentContext in indexReader.Context.Children)
                     {
+                        var segmentReader = (SegmentReader)segmentContext.Reader;
                         _bitSetLookup[key][segmentReader.SegmentName] = new OpenBitSet();
                     }
                 }

@@ -7,6 +7,7 @@ using Lucene.Net.Index;
 using Lucene.Net.Search;
 using NuGet.Indexing;
 using Xunit;
+using static Lucene.Net.Search.BooleanClause;
 
 namespace NuGet.IndexingTests
 {
@@ -20,7 +21,7 @@ namespace NuGet.IndexingTests
             var actual = NuGetQuery.MakeQuery(input);
 
             // assert
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected.ToString(), actual.ToString());
         }
 
         [Theory]
@@ -31,7 +32,7 @@ namespace NuGet.IndexingTests
             var actual = NuGetQuery.MakeQuery(input);
 
             // assert
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected.ToString(), actual.ToString());
         }
 
         [Theory]
@@ -95,17 +96,23 @@ namespace NuGet.IndexingTests
         public void TreatsNoFieldLabelAsQueryingAllFields()
         {
             // arrange
+            var idClause = new BooleanQuery { Boost = 8 };
+            idClause.Add(new BooleanClause(new TermQuery(new Term("Id", "dot")), Occur.SHOULD));
+
+            var tagsClause = new BooleanQuery { Boost = 2 };
+            tagsClause.Add(new BooleanClause(new TermQuery(new Term("Tags", "dot")), Occur.SHOULD));
+
             var queryText = "dot";
             var expected = new BooleanQuery
             {
-                new BooleanClause(new BooleanQuery { Clauses = { new BooleanClause(new TermQuery(new Term("Id", "dot")), Occur.SHOULD) }, Boost = 8 }, Occur.SHOULD),
+                new BooleanClause(idClause, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("ShingledId", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("TokenizedId", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Version", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Title", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Description", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Summary", "dot")), Occur.SHOULD) }, Occur.SHOULD),
-                new BooleanClause(new BooleanQuery { Clauses = { new BooleanClause(new TermQuery(new Term("Tags", "dot")), Occur.SHOULD) }, Boost = 2 }, Occur.SHOULD),
+                new BooleanClause(tagsClause, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Authors", "dot")), Occur.SHOULD) }, Occur.SHOULD)
             };
 
@@ -113,13 +120,19 @@ namespace NuGet.IndexingTests
             var actual = NuGetQuery.MakeQuery(queryText);
 
             // assert
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected.ToString(), actual.ToString());
         }
 
         [Fact]
         public void CanMixTermsWithAndWithoutFieldLabels()
         {
             // arrange
+            var idClause = new BooleanQuery { Boost = 8 };
+            idClause.Add(new BooleanClause(new TermQuery(new Term("Id", "dot")), Occur.SHOULD));
+
+            var tagsClause = new BooleanQuery { Boost = 2 };
+            tagsClause.Add(new BooleanClause(new TermQuery(new Term("Tags", "dot")), Occur.SHOULD));
+
             var owners = CreateOwnersResult(new Dictionary<string, HashSet<string>>
                 {
                     {  "dot", new HashSet<string> { "microsoft" } }
@@ -129,14 +142,14 @@ namespace NuGet.IndexingTests
             var expected = new FilteredQuery(
                 new BooleanQuery
                 {
-                    new BooleanClause(new BooleanQuery { Clauses = { new BooleanClause(new TermQuery(new Term("Id", "dot")), Occur.SHOULD) }, Boost = 8 }, Occur.SHOULD),
+                    new BooleanClause(idClause, Occur.SHOULD),
                     new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("ShingledId", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                     new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("TokenizedId", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                     new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Version", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                     new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Title", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                     new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Description", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                     new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Summary", "dot")), Occur.SHOULD) }, Occur.SHOULD),
-                    new BooleanClause(new BooleanQuery { Clauses = { new BooleanClause(new TermQuery(new Term("Tags", "dot")), Occur.SHOULD) }, Boost = 2 }, Occur.SHOULD),
+                    new BooleanClause(tagsClause, Occur.SHOULD),
                     new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Authors", "dot")), Occur.SHOULD) }, Occur.SHOULD)
                 },
                 new OwnersFilter(owners, "Microsoft"));
@@ -191,17 +204,23 @@ namespace NuGet.IndexingTests
         public void TreatsUnrecognizedFieldAsAnyField()
         {
             // arrange
+            var idClause = new BooleanQuery { Boost = 8 };
+            idClause.Add(new BooleanClause(new TermQuery(new Term("Id", "dot")), Occur.SHOULD));
+
+            var tagsClause = new BooleanQuery { Boost = 2 };
+            tagsClause.Add(new BooleanClause(new TermQuery(new Term("Tags", "dot")), Occur.SHOULD));
+
             var queryText = "invalid:dot";
             var expected = new BooleanQuery
             {
-                new BooleanClause(new BooleanQuery { Clauses = { new BooleanClause(new TermQuery(new Term("Id", "dot")), Occur.SHOULD) }, Boost = 8 }, Occur.SHOULD),
+                new BooleanClause(idClause, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("ShingledId", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("TokenizedId", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Version", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Title", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Description", "dot")), Occur.SHOULD) }, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Summary", "dot")), Occur.SHOULD) }, Occur.SHOULD),
-                new BooleanClause(new BooleanQuery { Clauses = { new BooleanClause(new TermQuery(new Term("Tags", "dot")), Occur.SHOULD) }, Boost = 2 }, Occur.SHOULD),
+                new BooleanClause(tagsClause, Occur.SHOULD),
                 new BooleanClause(new BooleanQuery { new BooleanClause(new TermQuery(new Term("Authors", "dot")), Occur.SHOULD) }, Occur.SHOULD)
             };
 
@@ -209,7 +228,7 @@ namespace NuGet.IndexingTests
             var actual = NuGetQuery.MakeQuery(queryText);
 
             // assert
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected.ToString(), actual.ToString());
         }
 
         public static IEnumerable<object[]> MakesQueriesWithProperPhrasingData
@@ -291,34 +310,10 @@ namespace NuGet.IndexingTests
                     {
                         new BooleanClause(new BooleanQuery
                         {
-                            new BooleanClause(new BooleanQuery
-                            {
-                                Clauses =
-                                {
-                                    new BooleanClause(new TermQuery(new Term("Id", "aa")), Occur.SHOULD),
-                                    new BooleanClause(new TermQuery(new Term("Id", "bb")), Occur.SHOULD)
-                                },
-                                Boost = 8
-                            }, Occur.SHOULD),
-                            new BooleanClause(new BooleanQuery
-                            {
-                                new BooleanClause(new TermQuery(new Term("ShingledId", "aa")), Occur.SHOULD),
-                                new BooleanClause(new TermQuery(new Term("ShingledId", "bb")), Occur.SHOULD)
-                            }, Occur.SHOULD),
-                            new BooleanClause(new BooleanQuery
-                            {
-                                new BooleanClause(new TermQuery(new Term("TokenizedId", "aa")), Occur.SHOULD),
-                                new BooleanClause(new TermQuery(new Term("TokenizedId", "bb")), Occur.SHOULD)
-                            }, Occur.SHOULD),
-                            new BooleanClause(new BooleanQuery
-                            {
-                                Clauses =
-                                {
-                                    new BooleanClause(new TermQuery(new Term("TokenizedId", "aa")), Occur.MUST),
-                                    new BooleanClause(new TermQuery(new Term("TokenizedId", "bb")), Occur.MUST)
-                                },
-                                Boost = 4
-                            }, Occur.SHOULD)
+                            new BooleanClause(MakeTwoTermBooleanQuery("Id", "aa", "bb", 8), Occur.SHOULD),
+                            new BooleanClause(MakeTwoTermBooleanQuery("ShingledId", "aa", "bb"), Occur.SHOULD),
+                            new BooleanClause(MakeTwoTermBooleanQuery("TokenizedId", "aa", "bb"), Occur.SHOULD),
+                            new BooleanClause(MakeTwoTermBooleanQuery("TokenizedId", "aa", "bb", 4), Occur.SHOULD)
                         }, Occur.MUST)
                     }
                 };
@@ -334,20 +329,8 @@ namespace NuGet.IndexingTests
                     {
                         new BooleanClause(new BooleanQuery
                         {
-                            new BooleanClause(new BooleanQuery
-                            {
-                                new BooleanClause(new TermQuery(new Term("Title", "dot")), Occur.SHOULD),
-                                new BooleanClause(new TermQuery(new Term("Title", "net")), Occur.SHOULD)
-                            }, Occur.SHOULD),
-                            new BooleanClause(new BooleanQuery
-                            {
-                                Clauses =
-                                {
-                                    new BooleanClause(new TermQuery(new Term("Title", "dot")), Occur.MUST),
-                                    new BooleanClause(new TermQuery(new Term("Title", "net")), Occur.MUST)
-                                },
-                                Boost = 4
-                            }, Occur.SHOULD)
+                            new BooleanClause(MakeTwoTermBooleanQuery("Title", "dot", "net"), Occur.SHOULD),
+                            new BooleanClause(MakeTwoTermBooleanQuery("Title", "dot", "net", 4), Occur.SHOULD)
                         }, Occur.MUST)
                     }
                 };
@@ -402,22 +385,27 @@ namespace NuGet.IndexingTests
         /// <returns>The parameters to test the query.</returns>
         private static object[] GetSimpleFieldQuery(string field, float boost = 1)
         {
+            var query = new BooleanQuery { Boost = boost };
+            query.Add(new BooleanClause(new TermQuery(new Term(field, "dot")), Occur.SHOULD));
+            query.Add(new BooleanClause(new TermQuery(new Term(field, "bar")), Occur.SHOULD));
+
             return new object[]
             {
                 string.Format("{0}:dot {0}:bar", field),
                 new BooleanQuery
                 {
-                    new BooleanClause(new BooleanQuery
-                    {
-                        Clauses =
-                        {
-                            new BooleanClause(new TermQuery(new Term(field, "dot")), Occur.SHOULD),
-                            new BooleanClause(new TermQuery(new Term(field, "bar")), Occur.SHOULD)
-                        },
-                        Boost = boost
-                    }, Occur.MUST)
+                    new BooleanClause(query, Occur.MUST)
                 }
             };
+        }
+
+        private static BooleanQuery MakeTwoTermBooleanQuery(string termName, string value1, string value2, float boost = 1)
+        {
+            var query = new BooleanQuery { Boost = boost };
+            query.Add(new BooleanClause(new TermQuery(new Term(termName, value1)), Occur.SHOULD));
+            query.Add(new BooleanClause(new TermQuery(new Term(termName, value2)), Occur.SHOULD));
+
+            return query;
         }
     }
 }

@@ -16,6 +16,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using static Lucene.Net.Search.BooleanClause;
 
 namespace Ng
 {
@@ -85,9 +86,10 @@ namespace Ng
                 _logger.LogInformation(string.Format("SKIP COMMIT No changes. Index contains {0} documents.", _indexWriter.NumDocs()));
                 return;
             }
-            
-            _indexWriter.ExpungeDeletes();
-            _indexWriter.Commit(_metadataForNextCommit.ToDictionary());
+
+            _indexWriter.Flush(false, false);
+            _indexWriter.CommitData = _metadataForNextCommit.ToDictionary();
+            _indexWriter.Commit();
 
             _logger.LogInformation("COMMIT index contains {0} documents. Metadata: commitTimeStamp {CommitTimeStamp}; change count {ChangeCount}; trace {CommitTrace}",
                 _indexWriter.NumDocs(), _metadataForNextCommit.CommitTimeStamp.ToString("O"), _metadataForNextCommit.Count, _metadataForNextCommit.Trace);

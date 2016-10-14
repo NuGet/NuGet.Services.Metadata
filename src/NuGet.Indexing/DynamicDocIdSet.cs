@@ -16,7 +16,7 @@ namespace NuGet.Indexing
             DocIds = new SortedSet<int>();
         }
 
-        public override DocIdSetIterator Iterator()
+        public override DocIdSetIterator GetIterator()
         {
             return new DynamicDocIdSetIterator(DocIds);
         }
@@ -43,7 +43,7 @@ namespace NuGet.Indexing
                     return _docIds[_current];
                 }
 
-                return DocIdSetIterator.NO_MORE_DOCS;
+                return NO_MORE_DOCS;
             }
 
             public override int NextDoc()
@@ -60,6 +60,11 @@ namespace NuGet.Indexing
                 }
 
                 return DocID();
+            }
+
+            public override long Cost()
+            {
+                return _docIds.LongLength;
             }
         }
     }

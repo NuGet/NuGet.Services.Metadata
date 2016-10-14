@@ -19,7 +19,7 @@ namespace NuGet.IndexingTests
         public void TokenizingReturnsExpectedTerms(string text, TokenAttributes[] expected)
         {
             // Arrange
-            var tokenStream = new StandardTokenizer(Version.LUCENE_30, new StringReader(text));
+            var tokenStream = new StandardTokenizer(LuceneVersion.LUCENE_48, new StringReader(text));
             var filter = new ExpandAcronymsFilter(tokenStream, NuGetAcronymExpansionProvider.Instance);
 
             // Act

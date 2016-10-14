@@ -33,10 +33,7 @@ namespace Ng
         public override Task Load(CancellationToken cancellationToken)
         {
             IDictionary<string, string> commitUserData;
-            using (var reader = _indexWriter.GetReader())
-            {
-                commitUserData = reader.CommitUserData;
-            }
+            commitUserData = _indexWriter.CommitData;
 
             string value;
             if (commitUserData != null && commitUserData.TryGetValue("commitTimeStamp", out value))
