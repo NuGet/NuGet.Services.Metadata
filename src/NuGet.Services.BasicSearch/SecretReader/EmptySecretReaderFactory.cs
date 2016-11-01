@@ -14,9 +14,9 @@ namespace NuGet.Services.BasicSearch
             return new SecretInjector(secretReader);
         }
 
-        public Task<ISecretReader> CreateSecretReader(IArgumentsDictionary arguments)
+        public ISecretReader CreateSecretReader()
         {
-            return Task.FromResult<ISecretReader>(new EmptySecretReader());
+            return new EmptySecretReader();
         }
     }
 }

@@ -17,7 +17,7 @@ namespace NuGet.Services.BasicSearch
         public const string StoreLocationKey = "keyVault:StoreLocation";
         public const string CertificateThumbprintKey = "keyVault:CertificateThumbprint";
 
-        public async Task<ISecretReader> CreateSecretReader(IArgumentsDictionary arguments)
+        public async ISecretReader CreateSecretReader()
         {
             if (arguments == null)
             {
