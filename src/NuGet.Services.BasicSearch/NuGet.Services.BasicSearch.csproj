@@ -349,6 +349,7 @@
   <ItemGroup>
     <Compile Include="CorrelationIdMiddleware.cs" />
     <Compile Include="SearchConsoleMiddleware.cs" />
+    <Compile Include="BasicSearchSettings.cs" />
     <Compile Include="SearchTelemetryClient.cs" />
     <Compile Include="LogMessages.Designer.cs">
       <AutoGen>True</AutoGen>

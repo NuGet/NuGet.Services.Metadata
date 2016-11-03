@@ -2,22 +2,13 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using NuGet.Indexing;
-using NuGet.Services.KeyVault;
-using System.Threading.Tasks;
 using System.Security.Cryptography.X509Certificates;
-using NuGet.Services.BasicSearch.SecretReader;
+using NuGet.Services.KeyVault;
 
-namespace NuGet.Services.BasicSearch
+namespace NuGet.Services.BasicSearch.SecretReader
 {
     public class SecretReaderFactory : ISecretReaderFactory
     {
-        public const string VaultNameKey = "keyVault:VaultName";
-        public const string ClientIdKey = "keyVault:ClientId";
-        public const string StoreNameKey = "keyVault:StoreName";
-        public const string StoreLocationKey = "keyVault:StoreLocation";
-        public const string CertificateThumbprintKey = "keyVault:CertificateThumbprint";
-
         public ISecretReader CreateSecretReader()
         {
             // NOTE: In this method we are using ".Result" on the settings calls.
@@ -30,7 +21,7 @@ namespace NuGet.Services.BasicSearch
                 throw new ArgumentNullException(nameof(settings));
             }
 
-            var vaultName = settings.GetOrDefault<string>(VaultNameKey).Result;
+            var vaultName = settings.GetOrDefault<string>(BasicSearchSettings.VaultNameKey).Result;
             ISecretReader secretReader;
 
             // Is key vault configured?
@@ -40,18 +31,18 @@ namespace NuGet.Services.BasicSearch
             }
             else
             {
-                var clientId = settings.GetOrThrow<string>(ClientIdKey).Result;
-                var certificateThumbprint = settings.GetOrThrow<string>(CertificateThumbprintKey).Result;
-                var storeName = settings.GetOrThrow<StoreName>(StoreNameKey).Result;
-                var storeLocation = settings.GetOrThrow<StoreLocation>(StoreLocationKey).Result;
+                var clientId = settings.GetOrThrow<string>(BasicSearchSettings.ClientIdKey).Result;
+                var certificateThumbprint = settings.GetOrThrow<string>(BasicSearchSettings.CertificateThumbprintKey).Result;
+                var storeName = settings.GetOrThrow<StoreName>(BasicSearchSettings.StoreNameKey).Result;
+                var storeLocation = settings.GetOrThrow<StoreLocation>(BasicSearchSettings.StoreLocationKey).Result;
 
                 // KeyVault is configured, but not all data is provided. Fail.
                 if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(certificateThumbprint))
                 {
                     throw new ArgumentException("Not all KeyVault configuration provided. " +
-                                                $"Parameter: {VaultNameKey} Value: {vaultName}, " +
-                                                $"Parameter: {ClientIdKey} Value: {clientId}, " +
-                                                $"Parameter: {CertificateThumbprintKey} Value: {certificateThumbprint}");
+                                                $"Parameter: {BasicSearchSettings.VaultNameKey} Value: {vaultName}, " +
+                                                $"Parameter: {BasicSearchSettings.ClientIdKey} Value: {clientId}, " +
+                                                $"Parameter: {BasicSearchSettings.CertificateThumbprintKey} Value: {certificateThumbprint}");
                 }
                
                 secretReader = new KeyVaultReader(new KeyVaultConfiguration(vaultName, clientId, certificateThumbprint, storeName, storeLocation, validateCertificate: true));

@@ -84,11 +84,11 @@ namespace NuGet.Indexing
             LoggerFactory = loggerFactory;
             FrameworkLogger logger = loggerFactory.CreateLogger<NuGetSearcherManager>();
 
-            var luceneDirectory = await settings.GetOrDefault<string>("Local.Lucene.Directory");
+            var luceneDirectory = await settings.GetOrDefault<string>(IndexingSettings.LocalLuceneDirectory);
             if (!string.IsNullOrEmpty(luceneDirectory))
             {
                 directory = directory ?? new SimpleFSDirectory(new DirectoryInfo(luceneDirectory));
-                loader = loader ?? new FileLoader(await settings.GetOrDefault<string>("Local.Data.Directory"));
+                loader = loader ?? new FileLoader(await settings.GetOrDefault<string>(IndexingSettings.LocalDataDirectory));
             }
 
             IIndexDirectoryProvider indexProvider;
@@ -98,13 +98,13 @@ namespace NuGet.Indexing
             }
             else
             {
-                var indexContainerName = luceneDirectory ?? await settings.GetOrDefault("Search.IndexContainer", "ng-search-index");
+                var indexContainerName = luceneDirectory ?? await settings.GetOrDefault(IndexingSettings.IndexContainer, IndexingSettings.IndexContainerDefault);
                 indexProvider = new FixedIndexDirectoryProvider(directory, indexContainerName);
             }
 
             var searcherManager = new NuGetSearcherManager(logger, indexProvider, loader);
 
-            var registrationBaseAddress = await settings.GetOrDefault<string>("Search.RegistrationBaseAddress");
+            var registrationBaseAddress = await settings.GetOrDefault<string>(IndexingSettings.RegistrationBaseAddress);
             searcherManager.RegistrationBaseAddress["http"] = MakeRegistrationBaseAddress("http", registrationBaseAddress);
             searcherManager.RegistrationBaseAddress["https"] = MakeRegistrationBaseAddress("https", registrationBaseAddress);
 

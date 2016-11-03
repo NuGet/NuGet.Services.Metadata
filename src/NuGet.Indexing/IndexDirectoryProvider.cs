@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System.Threading.Tasks;
 using Lucene.Net.Store;
 using Lucene.Net.Store.Azure;
 using Microsoft.Extensions.Logging;
@@ -49,11 +52,11 @@ namespace NuGet.Indexing
         public async Task Reload()
         {
             // Refresh the primary storage account.
-            var storageAccount = CloudStorageAccount.Parse(await _settings.GetOrThrow<string>("Storage.Primary"));
+            var storageAccount = CloudStorageAccount.Parse(await _settings.GetOrThrow<string>(IndexingSettings.StoragePrimary));
 
             // If we don't have a directory or the index container has changed, create a new AzureDirectorySynchronizer.
             // Otherwise, don't refresh the AzureDirectorySynchronizer because we don't want to reload the index unless necessary.
-            var newIndexContainerName = await _settings.GetOrDefault("Search.IndexContainer", "ng-search-index");
+            var newIndexContainerName = await _settings.GetOrDefault(IndexingSettings.IndexContainer, IndexingSettings.IndexContainerDefault);
             if (_directory == null || newIndexContainerName != _indexContainerName)
             {
                 _indexContainerName = newIndexContainerName;

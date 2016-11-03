@@ -7,8 +7,6 @@ using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Lucene.Net.Store;
-using Lucene.Net.Store.Azure;
 using NuGet.Services.Configuration;
 using FrameworkLogger = Microsoft.Extensions.Logging.ILogger;
 
@@ -57,8 +55,8 @@ namespace NuGet.Indexing
         public async Task Reload()
         {
             // Refresh the data container and the primary storage account.
-            _dataContainerName = await _settings.GetOrDefault("Search.DataContainer", "ng-search-data");
-            _storageAccount = CloudStorageAccount.Parse(await _settings.GetOrThrow<string>("Storage.Primary"));
+            _dataContainerName = await _settings.GetOrDefault(IndexingSettings.DataContainer, IndexingSettings.DataContainerDefault);
+            _storageAccount = CloudStorageAccount.Parse(await _settings.GetOrThrow<string>(IndexingSettings.StoragePrimary));
 
             _logger.LogInformation("StorageLoader data container: {DataContainerName}", _dataContainerName);
         }

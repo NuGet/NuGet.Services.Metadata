@@ -43,7 +43,7 @@ namespace NuGet.Services.BasicSearch
         public async void Configuration(IAppBuilder app, ISettingsProvider settings, Directory directory, ILoader loader)
         {
             // Configure
-            Logging.ApplicationInsights.Initialize(await settings.GetOrDefault<string>("serilog:ApplicationInsightsInstrumentationKey"));
+            Logging.ApplicationInsights.Initialize(await settings.GetOrDefault<string>(BasicSearchSettings.ApplicationInsightsInstrumentationKey));
 
             // Create telemetry sink
             _searchTelemetryClient = new SearchTelemetryClient();
@@ -101,12 +101,7 @@ namespace NuGet.Services.BasicSearch
             }));
 
             // Start the service running - the Lucene index needs to be reopened regularly on a background thread
-            var searchIndexRefresh = await settings.GetOrDefault<string>("Search.IndexRefresh", "300");
-            int seconds;
-            if (!int.TryParse(searchIndexRefresh, out seconds))
-            {
-                seconds = 120;
-            }
+            var seconds = await settings.GetOrDefault(BasicSearchSettings.SearchRefreshSec, BasicSearchSettings.SearchRefreshSecDefault);
 
             _logger.LogInformation(LogMessages.SearchIndexRefreshConfiguration, seconds);
 

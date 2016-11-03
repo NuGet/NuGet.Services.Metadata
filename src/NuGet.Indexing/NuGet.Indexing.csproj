@@ -328,6 +328,7 @@
     <Compile Include="Handlers\RankingsHandler.cs" />
     <Compile Include="ResponseFormatter.cs" />
     <Compile Include="Retry.cs" />
+    <Compile Include="IndexingSettings.cs" />
     <Compile Include="Sql2Lucene.cs" />
     <Compile Include="StorageLoader.cs" />
     <Compile Include="UriFormatter.cs" />
