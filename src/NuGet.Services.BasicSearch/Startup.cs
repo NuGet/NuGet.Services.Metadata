@@ -18,6 +18,8 @@ using Microsoft.Owin.StaticFiles;
 using Microsoft.Owin.StaticFiles.Infrastructure;
 using NuGet.ApplicationInsights.Owin;
 using NuGet.Indexing;
+using NuGet.Services.BasicSearch.SecretReader;
+using NuGet.Services.Configuration;
 using NuGet.Services.Logging;
 using Owin;
 using Serilog.Events;
@@ -38,10 +40,10 @@ namespace NuGet.Services.BasicSearch
         private ResponseWriter _responseWriter;
         private SearchTelemetryClient _searchTelemetryClient;
 
-        public async void Configuration(IAppBuilder app, IArgumentsDictionary arguments, Directory directory, ILoader loader)
+        public async void Configuration(IAppBuilder app, ISettingsProvider settings, Directory directory, ILoader loader)
         {
             // Configure
-            Logging.ApplicationInsights.Initialize(await arguments.GetOrDefault<string>("serilog:ApplicationInsightsInstrumentationKey"));
+            Logging.ApplicationInsights.Initialize(await settings.GetOrDefault<string>("serilog:ApplicationInsightsInstrumentationKey"));
 
             // Create telemetry sink
             _searchTelemetryClient = new SearchTelemetryClient();
@@ -99,7 +101,7 @@ namespace NuGet.Services.BasicSearch
             }));
 
             // Start the service running - the Lucene index needs to be reopened regularly on a background thread
-            var searchIndexRefresh = await arguments.GetOrDefault<string>("Search.IndexRefresh", "300");
+            var searchIndexRefresh = await settings.GetOrDefault<string>("Search.IndexRefresh", "300");
             int seconds;
             if (!int.TryParse(searchIndexRefresh, out seconds))
             {
@@ -108,7 +110,7 @@ namespace NuGet.Services.BasicSearch
 
             _logger.LogInformation(LogMessages.SearchIndexRefreshConfiguration, seconds);
 
-            if (await InitializeSearcherManager(arguments, directory, loader, loggerFactory))
+            if (InitializeSearcherManager(settings, directory, loader, loggerFactory))
             {
                 var intervalInMs = seconds * 1000;
 
@@ -121,16 +123,16 @@ namespace NuGet.Services.BasicSearch
             app.Run(InvokeAsync);
         }
 
-        public async void Configuration(IAppBuilder app)
+        public void Configuration(IAppBuilder app)
         {
             ServicePointManager.DefaultConnectionLimit = Int32.MaxValue;
             ServicePointManager.Expect100Continue = false;
             ServicePointManager.UseNagleAlgorithm = false;
             
             var secretReaderFactory = new SecretReaderFactory();
-            var secretReader = await secretReaderFactory.CreateSecretReader(new RefreshingConfigurationDictionary(secretReaderFactory.CreateSecretInjector(new EmptySecretReader())));
+            var secretReader = secretReaderFactory.CreateSecretReader();
 
-            Configuration(app, new RefreshingConfigurationDictionary(secretReaderFactory.CreateSecretInjector(secretReader)), null, null);
+            Configuration(app, new EnvironmentSettingsProvider(secretReaderFactory.CreateSecretInjector(secretReader)), null, null);
         }
 
         private async void ReopenCallback(object state)
@@ -176,7 +178,7 @@ namespace NuGet.Services.BasicSearch
             }
         }
 
-        private async Task<bool> InitializeSearcherManager(IArgumentsDictionary arguments, Directory directory, ILoader loader, ILoggerFactory loggerFactory)
+        private bool InitializeSearcherManager(ISettingsProvider settings, Directory directory, ILoader loader, ILoggerFactory loggerFactory)
         {
             const int maxRetries = 10;
 
@@ -187,7 +189,7 @@ namespace NuGet.Services.BasicSearch
                     {
                         var stopwatch = Stopwatch.StartNew();
 
-                        _searcherManager = await NuGetSearcherManager.Create(arguments, loggerFactory, directory, loader);
+                        _searcherManager = await NuGetSearcherManager.Create(settings, loggerFactory, directory, loader);
                         _searcherManager.Open();
 
                         stopwatch.Stop();

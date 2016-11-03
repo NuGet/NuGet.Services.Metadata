@@ -28,14 +28,10 @@ namespace NuGet.Indexing
             return new JsonTextReader(new StreamReader(fullName));
         }
 
-        public AzureDirectorySynchronizer GetSynchronizer()
+        public Task Reload()
         {
-            return null;
-        }
-
-        public async Task Reload()
-        {
-            // no-op
+            // no-op because local files do not need to be reloaded
+            return Task.FromResult(false);
         }
     }
 }

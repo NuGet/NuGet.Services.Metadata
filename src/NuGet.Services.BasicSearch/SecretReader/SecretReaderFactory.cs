@@ -6,6 +6,7 @@ using NuGet.Indexing;
 using NuGet.Services.KeyVault;
 using System.Threading.Tasks;
 using System.Security.Cryptography.X509Certificates;
+using NuGet.Services.BasicSearch.SecretReader;
 
 namespace NuGet.Services.BasicSearch
 {
@@ -17,14 +18,19 @@ namespace NuGet.Services.BasicSearch
         public const string StoreLocationKey = "keyVault:StoreLocation";
         public const string CertificateThumbprintKey = "keyVault:CertificateThumbprint";
 
-        public async ISecretReader CreateSecretReader()
+        public ISecretReader CreateSecretReader()
         {
-            if (arguments == null)
+            // NOTE: In this method we are using ".Result" on the settings calls.
+            // You should NEVER do this!
+            // We can do it here because this code executes during startup, when it is not a problem.
+            var settings = new EnvironmentSettingsProvider(CreateSecretInjector(new EmptySecretReader()));
+
+            if (settings == null)
             {
-                throw new ArgumentNullException(nameof(arguments));
+                throw new ArgumentNullException(nameof(settings));
             }
 
-            var vaultName = await arguments.GetOrDefault<string>(VaultNameKey);
+            var vaultName = settings.GetOrDefault<string>(VaultNameKey).Result;
             ISecretReader secretReader;
 
             // Is key vault configured?
@@ -34,10 +40,10 @@ namespace NuGet.Services.BasicSearch
             }
             else
             {
-                var clientId = await arguments.GetOrThrow<string>(ClientIdKey);
-                var certificateThumbprint = await arguments.GetOrThrow<string>(CertificateThumbprintKey);
-                var storeName = await arguments.GetOrThrow<StoreName>(StoreNameKey);
-                var storeLocation = await arguments.GetOrThrow<StoreLocation>(StoreLocationKey);
+                var clientId = settings.GetOrThrow<string>(ClientIdKey).Result;
+                var certificateThumbprint = settings.GetOrThrow<string>(CertificateThumbprintKey).Result;
+                var storeName = settings.GetOrThrow<StoreName>(StoreNameKey).Result;
+                var storeLocation = settings.GetOrThrow<StoreLocation>(StoreLocationKey).Result;
 
                 // KeyVault is configured, but not all data is provided. Fail.
                 if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(certificateThumbprint))

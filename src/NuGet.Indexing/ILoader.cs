@@ -9,9 +9,6 @@ namespace NuGet.Indexing
     public interface ILoader
     {
         JsonReader GetReader(string name);
-
-        AzureDirectorySynchronizer GetSynchronizer();
-
         Task Reload();
     }
 }

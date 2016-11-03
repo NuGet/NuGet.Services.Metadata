@@ -43,7 +43,7 @@ namespace NuGet.IndexingTests
             int take,
             string expected)
         {
-            var searcher = new MockSearcher(indexName, numDocs, commitUserData, versions: Constants.VersionResults);
+            var searcher = new MockIndexSearcher(indexName, numDocs, commitUserData, versions: Constants.VersionResults);
             var topDocs = new TopDocs(topDocsTotalHits, Constants.ScoreDocs, topDocsMaxScore);
 
             var sb = new StringBuilder();
@@ -65,7 +65,7 @@ namespace NuGet.IndexingTests
             Dictionary<string, string> commitUserData,
             string expected)
         {
-            var searcher = new MockSearcher(indexName, numDocs, commitUserData);
+            var searcher = new MockIndexSearcher(indexName, numDocs, commitUserData);
 
             var sb = new StringBuilder();
             var sw = new StringWriter(sb);
@@ -91,7 +91,7 @@ namespace NuGet.IndexingTests
             bool includeExplanation,
             string expected)
         {
-            var searcher = new MockSearcher(indexName, numDocs, commitUserData);
+            var searcher = new MockIndexSearcher(indexName, numDocs, commitUserData);
             var topDocs = new TopDocs(topDocsTotalHits, Constants.ScoreDocs, topDocsMaxScore);
 
             var sb = new StringBuilder();
@@ -120,7 +120,7 @@ namespace NuGet.IndexingTests
             bool includePrerelease,
             string expected)
         {
-            var searcher = new MockSearcher(indexName, numDocs, commitUserData, versions: Constants.VersionResults);
+            var searcher = new MockIndexSearcher(indexName, numDocs, commitUserData, versions: Constants.VersionResults);
             var topDocs = new TopDocs(topDocsTotalHits, Constants.ScoreDocs, topDocsMaxScore);
 
             var sb = new StringBuilder();
@@ -144,7 +144,7 @@ namespace NuGet.IndexingTests
             float topDocsMaxScore,
             string expected)
         {
-            var searcher = new MockSearcher(indexName, numDocs, commitUserData, versions: Constants.VersionResults);
+            var searcher = new MockIndexSearcher(indexName, numDocs, commitUserData, versions: Constants.VersionResults);
             var topDocs = new TopDocs(topDocsTotalHits, Constants.ScoreDocs, topDocsMaxScore);
 
             var sb = new StringBuilder();
@@ -212,7 +212,7 @@ namespace NuGet.IndexingTests
             bool includeExplanation,
             string expected)
         {
-            var searcher = new MockSearcher(indexName, numDocs, commitUserData, versions: Constants.VersionResults);
+            var searcher = new MockIndexSearcher(indexName, numDocs, commitUserData, versions: Constants.VersionResults);
             var topDocs = new TopDocs(topDocsTotalHits, Constants.ScoreDocs, topDocsMaxScore);
 
             var sb = new StringBuilder();

@@ -3,38 +3,36 @@
 
 using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using Lucene.Net.Store;
+using Lucene.Net.Store.Azure;
+using NuGet.Services.Configuration;
 using FrameworkLogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace NuGet.Indexing
 {
     public class StorageLoader : ILoader
     {
-        private readonly string _containerName;
         private readonly FrameworkLogger _logger;
 
-        private CloudStorageAccount _storageAccount;
-        private AzureDirectorySynchronizer _synchronizer;
-        private Func<Task<Tuple<CloudStorageAccount, AzureDirectorySynchronizer>>> _createCloud;
+        private readonly ISettingsProvider _settings;
 
-        public static async Task<StorageLoader> CreateStorageLoader(Func<Task<Tuple<CloudStorageAccount, AzureDirectorySynchronizer>>> createCloud, string containerName, FrameworkLogger logger)
+        private string _dataContainerName;
+        private CloudStorageAccount _storageAccount;
+
+        public static async Task<StorageLoader> Create(ISettingsProvider settings, FrameworkLogger logger)
         {
-            var storageLoader = new StorageLoader(createCloud, containerName, logger);
+            var storageLoader = new StorageLoader(settings, logger);
             await storageLoader.Reload();
             return storageLoader;
         }
 
-        private StorageLoader(Func<Task<Tuple<CloudStorageAccount, AzureDirectorySynchronizer>>> createCloud, string containerName, FrameworkLogger logger)
+        private StorageLoader(ISettingsProvider settings, FrameworkLogger logger)
         {
-            logger.LogInformation("StorageLoader container: {ContainerName}", containerName);
-
-            _createCloud = createCloud;
-            _containerName = containerName;
-
+            _settings = settings;
             _logger = logger;
         }
 
@@ -44,9 +42,9 @@ namespace NuGet.Indexing
             {
                 _logger.LogInformation("StorageLoader.GetReader: {ReaderTarget}", name);
 
-                CloudBlobClient client = _storageAccount.CreateCloudBlobClient();
-                CloudBlobContainer container = client.GetContainerReference(_containerName);
-                CloudBlockBlob blob = container.GetBlockBlobReference(name);
+                var client = _storageAccount.CreateCloudBlobClient();
+                var container = client.GetContainerReference(_dataContainerName);
+                var blob = container.GetBlockBlobReference(name);
                 return new JsonTextReader(new StreamReader(blob.OpenRead()));
             }
             catch (Exception e)
@@ -58,14 +56,11 @@ namespace NuGet.Indexing
 
         public async Task Reload()
         {
-            var cloudTuple = await _createCloud();
-            _storageAccount = cloudTuple.Item1;
-            _synchronizer = cloudTuple.Item2;
-        }
+            // Refresh the data container and the primary storage account.
+            _dataContainerName = await _settings.GetOrDefault("Search.DataContainer", "ng-search-data");
+            _storageAccount = CloudStorageAccount.Parse(await _settings.GetOrThrow<string>("Storage.Primary"));
 
-        public AzureDirectorySynchronizer GetSynchronizer()
-        {
-            return _synchronizer;
+            _logger.LogInformation("StorageLoader data container: {DataContainerName}", _dataContainerName);
         }
     }
 }

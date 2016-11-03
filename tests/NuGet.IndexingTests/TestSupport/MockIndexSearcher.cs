@@ -12,9 +12,9 @@ using NuGet.Indexing;
 namespace NuGet.IndexingTests.TestSupport
 {
 
-    public class MockSearcher : NuGetIndexSearcher
+    public class MockIndexSearcher : NuGetIndexSearcher
     {
-        public MockSearcher(string indexName, int numDocs, Dictionary<string, string> commitUserData, VersionResult[] versions = null)
+        public MockIndexSearcher(string indexName, int numDocs, Dictionary<string, string> commitUserData, VersionResult[] versions = null)
             : base(manager: InitNuGetSearcherManager(indexName),
                   reader: MockObjectFactory.CreateMockIndexReader(numDocs).Object,
                   commitUserData: commitUserData,
@@ -33,11 +33,15 @@ namespace NuGet.IndexingTests.TestSupport
 
         private static NuGetSearcherManager InitNuGetSearcherManager(string indexName)
         {
-            var searcherManager = new NuGetSearcherManager(indexName, new Mock<ILogger>().Object, directory: null, loader: null);
+            var mockSearcherManager = new Mock<NuGetSearcherManager>(new Mock<ILogger>().Object, null, null)
+            {
+                CallBase = true
+            };
 
-            searcherManager.RegistrationBaseAddress[Constants.SchemeName] = new Uri(Constants.BaseUri);
+            mockSearcherManager.Setup(x => x.IndexName).Returns(indexName);
+            mockSearcherManager.Object.RegistrationBaseAddress[Constants.SchemeName] = new Uri(Constants.BaseUri);
 
-            return searcherManager;
+            return mockSearcherManager.Object;
         }
 
         public override Document Doc(int id)

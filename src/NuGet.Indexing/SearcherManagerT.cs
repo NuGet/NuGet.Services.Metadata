@@ -17,18 +17,13 @@ namespace NuGet.Indexing
         private bool _reopening;
         private TIndexSearcher _currentSearcher;
 
-        public Directory Directory { get; private set; }
-
-        public SearcherManager(Directory directory)
-        {
-            Directory = directory;
-        }
+        protected abstract Directory GetDirectory();
 
         public async Task Open()
         {
             if (_currentSearcher == null)
             {
-                var tempSearcher = await CreateSearcher(IndexReader.Open(Directory, true));
+                var tempSearcher = await CreateSearcher(IndexReader.Open(GetDirectory(), true));
                 lock (_sync)
                 {
                     if (_currentSearcher == null)
