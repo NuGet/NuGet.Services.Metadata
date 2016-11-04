@@ -1,21 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Lucene.Net.Store;
 
-namespace NuGet.Indexing
+namespace NuGet.Indexing.IndexDirectoryProvider
 {
     /// <summary>
     /// Stores a directory and an index container name but does not reload them or provide a synchronizer.
     /// </summary>
-    public class FixedIndexDirectoryProvider : IIndexDirectoryProvider
+    public class LocalIndexDirectoryProvider : IIndexDirectoryProvider
     {
         private readonly Directory _directory;
         private readonly string _indexContainerName;
 
-        public FixedIndexDirectoryProvider(Directory directory, string indexContainerName)
+        public LocalIndexDirectoryProvider(Directory directory, string indexContainerName)
         {
             _directory = directory;
             _indexContainerName = indexContainerName;

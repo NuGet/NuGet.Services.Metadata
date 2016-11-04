@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using FrameworkLogger = Microsoft.Extensions.Logging.ILogger;
 using System.Threading.Tasks;
+using NuGet.Indexing.IndexDirectoryProvider;
 using NuGet.Services.Configuration;
 using Directory = Lucene.Net.Store.Directory;
 
@@ -90,7 +91,7 @@ namespace NuGet.Indexing
             }
 
             LoggerFactory = loggerFactory;
-            FrameworkLogger logger = loggerFactory.CreateLogger<NuGetSearcherManager>();
+            var logger = loggerFactory.CreateLogger<NuGetSearcherManager>();
 
             // If a local Lucene directory has been specified, create a directory and loader for the specified directory.
             var luceneDirectory = await settings.GetOrDefault<string>(IndexingSettings.LocalLuceneDirectory);
@@ -103,14 +104,14 @@ namespace NuGet.Indexing
             IIndexDirectoryProvider indexProvider;
             if (directory == null)
             {
-                // If no directory has been provided, create an IndexDirectoryProvider from the configuration.
-                indexProvider = await IndexDirectoryProvider.Create(settings, logger);
+                // If no directory has been provided, create a CloudIndexDirectoryProvider from the configuration.
+                indexProvider = await CloudIndexDirectoryProvider.Create(settings, logger);
             }
             else
             {
                 // Use the specified directory to create a FixedIndexDirectoryProvider.
                 var indexContainerName = luceneDirectory ?? await settings.GetOrDefault(IndexingSettings.IndexContainer, IndexingSettings.IndexContainerDefault);
-                indexProvider = new FixedIndexDirectoryProvider(directory, indexContainerName);
+                indexProvider = new LocalIndexDirectoryProvider(directory, indexContainerName);
             }
 
             // If a loader has been specified, use it.
@@ -149,7 +150,9 @@ namespace NuGet.Indexing
 
             if (_lastTimeIndexReloaded < DateTime.UtcNow - _indexReloadRate)
             {
-                hasReloaded = await _indexProvider.Reload() || await _loader.Reload();
+                var hasReloadedIndex = await _indexProvider.Reload();
+                var hasReloadedLoader = await _loader.Reload();
+                hasReloaded = hasReloadedIndex || hasReloadedLoader;
 
                 _lastTimeIndexReloaded = DateTime.UtcNow;
             }

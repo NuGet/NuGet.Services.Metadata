@@ -1,14 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Lucene.Net.Store;
-using Lucene.Net.Store.Azure;
-using Microsoft.WindowsAzure.Storage;
-using NuGet.Services.Configuration;
 
-namespace NuGet.Indexing
+namespace NuGet.Indexing.IndexDirectoryProvider
 {
     public interface IIndexDirectoryProvider
     {

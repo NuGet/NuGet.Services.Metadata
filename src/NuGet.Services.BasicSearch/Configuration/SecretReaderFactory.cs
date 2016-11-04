@@ -3,17 +3,15 @@
 
 using System;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using NuGet.Services.KeyVault;
 
-namespace NuGet.Services.BasicSearch.SecretReader
+namespace NuGet.Services.BasicSearch.Configuration
 {
-    public class SecretReaderFactory : ISecretReaderFactory
+    internal class SecretReaderFactory : ISecretReaderFactory
     {
-        public ISecretReader CreateSecretReader()
+        private async Task<ISecretReader> CreateSecretReaderAsync()
         {
-            // NOTE: In this method we are using ".Result" on the settings calls.
-            // You should NEVER do this!
-            // We can do it here because this code executes during startup, when it is not a problem.
             var settings = new EnvironmentSettingsProvider(CreateSecretInjector(new EmptySecretReader()));
 
             if (settings == null)
@@ -21,7 +19,7 @@ namespace NuGet.Services.BasicSearch.SecretReader
                 throw new ArgumentNullException(nameof(settings));
             }
 
-            var vaultName = settings.GetOrDefault<string>(BasicSearchSettings.VaultNameKey).Result;
+            var vaultName = await settings.GetOrDefault<string>(BasicSearchSettings.VaultNameKey);
             ISecretReader secretReader;
 
             // Is key vault configured?
@@ -31,11 +29,11 @@ namespace NuGet.Services.BasicSearch.SecretReader
             }
             else
             {
-                var clientId = settings.GetOrThrow<string>(BasicSearchSettings.ClientIdKey).Result;
-                var certificateThumbprint = settings.GetOrThrow<string>(BasicSearchSettings.CertificateThumbprintKey).Result;
-                var storeName = settings.GetOrDefault(BasicSearchSettings.StoreNameKey, StoreName.My).Result;
-                var storeLocation = settings.GetOrDefault(BasicSearchSettings.StoreLocationKey, StoreLocation.LocalMachine).Result;
-                var validateCertificate = settings.GetOrDefault<bool>(BasicSearchSettings.ValidateCertificate).Result;
+                var clientId = await settings.GetOrThrow<string>(BasicSearchSettings.ClientIdKey);
+                var certificateThumbprint = await settings.GetOrThrow<string>(BasicSearchSettings.CertificateThumbprintKey);
+                var storeName = await settings.GetOrDefault(BasicSearchSettings.StoreNameKey, StoreName.My);
+                var storeLocation = await settings.GetOrDefault(BasicSearchSettings.StoreLocationKey, StoreLocation.LocalMachine);
+                var validateCertificate = await settings.GetOrDefault<bool>(BasicSearchSettings.ValidateCertificate);
 
                 // KeyVault is configured, but not all data is provided. Fail.
                 if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(certificateThumbprint))
@@ -52,6 +50,14 @@ namespace NuGet.Services.BasicSearch.SecretReader
             }
 
             return secretReader;
+        }
+
+        public ISecretReader CreateSecretReader()
+        {
+            // NOTE: In this method we are using ".Result" on a function that makes KeyVault calls.
+            // You should NEVER do this!
+            // We can do it here because this code executes during startup, when it is not a problem.
+            return CreateSecretReaderAsync().Result;
         }
 
         public ISecretInjector CreateSecretInjector(ISecretReader secretReader)

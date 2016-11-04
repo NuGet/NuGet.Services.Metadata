@@ -9,6 +9,7 @@ namespace NuGet.Indexing
     public interface ILoader
     {
         JsonReader GetReader(string name);
+
         /// <summary>
         /// Reloads the data for the reader.
         /// </summary>

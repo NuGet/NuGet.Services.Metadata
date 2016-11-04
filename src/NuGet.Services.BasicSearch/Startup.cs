@@ -18,7 +18,7 @@ using Microsoft.Owin.StaticFiles;
 using Microsoft.Owin.StaticFiles.Infrastructure;
 using NuGet.ApplicationInsights.Owin;
 using NuGet.Indexing;
-using NuGet.Services.BasicSearch.SecretReader;
+using NuGet.Services.BasicSearch.Configuration;
 using NuGet.Services.Configuration;
 using NuGet.Services.Logging;
 using Owin;
@@ -185,7 +185,7 @@ namespace NuGet.Services.BasicSearch
                         var stopwatch = Stopwatch.StartNew();
 
                         _searcherManager = await NuGetSearcherManager.Create(settings, loggerFactory, directory, loader);
-                        await _searcherManager.Open();
+                        await _searcherManager.OpenAsync();
 
                         stopwatch.Stop();
 

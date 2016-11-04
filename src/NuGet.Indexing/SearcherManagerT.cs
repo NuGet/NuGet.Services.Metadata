@@ -19,7 +19,7 @@ namespace NuGet.Indexing
 
         protected abstract Directory GetDirectory();
 
-        public async Task Open()
+        public async Task OpenAsync()
         {
             if (_currentSearcher == null)
             {

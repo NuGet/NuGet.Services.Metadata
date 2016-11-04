@@ -12,7 +12,7 @@ using Lucene.Net.Store;
 using Microsoft.Owin.Hosting;
 using Newtonsoft.Json;
 using NuGet.Services.BasicSearch;
-using NuGet.Services.BasicSearch.SecretReader;
+using NuGet.Services.BasicSearch.Configuration;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
 

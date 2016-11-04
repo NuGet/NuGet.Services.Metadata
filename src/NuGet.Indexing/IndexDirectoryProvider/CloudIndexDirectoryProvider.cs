@@ -9,9 +9,12 @@ using Microsoft.WindowsAzure.Storage;
 using NuGet.Services.Configuration;
 using FrameworkLogger = Microsoft.Extensions.Logging.ILogger;
 
-namespace NuGet.Indexing
+namespace NuGet.Indexing.IndexDirectoryProvider
 {
-    public class IndexDirectoryProvider : IIndexDirectoryProvider
+    /// <summary>
+    /// Maintains an index on the cloud. Provides a 
+    /// </summary>
+    public class CloudIndexDirectoryProvider : IIndexDirectoryProvider
     {
         private readonly FrameworkLogger _logger;
 
@@ -19,16 +22,17 @@ namespace NuGet.Indexing
 
         private Directory _directory;
         private string _indexContainerName;
+        private string _storageAccountConnectionString;
         private AzureDirectorySynchronizer _synchronizer;
 
-        public static async Task<IndexDirectoryProvider> Create(ISettingsProvider settings, FrameworkLogger logger)
+        public static async Task<IIndexDirectoryProvider> Create(ISettingsProvider settings, FrameworkLogger logger)
         {
-            var indexSynchronizer = new IndexDirectoryProvider(settings, logger);
+            var indexSynchronizer = new CloudIndexDirectoryProvider(settings, logger);
             await indexSynchronizer.Reload();
             return indexSynchronizer;
         }
 
-        protected IndexDirectoryProvider(ISettingsProvider settings, FrameworkLogger logger)
+        protected CloudIndexDirectoryProvider(ISettingsProvider settings, FrameworkLogger logger)
         {
             _logger = logger;
             _settings = settings;
@@ -53,16 +57,23 @@ namespace NuGet.Indexing
         {
             // If we have a directory and the index container has not changed, we don't need to reload.
             // We don't want to reload the index unless necessary.
+            var newStorageAccountConnectionString = await _settings.GetOrThrow<string>(IndexingSettings.StoragePrimary);
             var newIndexContainerName = await _settings.GetOrDefault(IndexingSettings.IndexContainer, IndexingSettings.IndexContainerDefault);
-            if (_directory != null && newIndexContainerName == _indexContainerName)
+            if (_directory != null && 
+                newStorageAccountConnectionString == _storageAccountConnectionString &&
+                newIndexContainerName == _indexContainerName)
             {
                 return false;
             }
-
-            _indexContainerName = newIndexContainerName;
-            _logger.LogInformation("StorageLoader index container: {IndexContainerName}", _indexContainerName);
             
-            var storageAccount = CloudStorageAccount.Parse(await _settings.GetOrThrow<string>(IndexingSettings.StoragePrimary));
+            _storageAccountConnectionString = newStorageAccountConnectionString;
+            _indexContainerName = newIndexContainerName;
+
+            _logger.LogInformation(
+                "Recognized index configuration change. Reloading index with new settings. Storage Account Name = {StorageAccountName}, Container = {IndexContainerName}",
+                _storageAccountConnectionString, _indexContainerName);
+
+            var storageAccount = CloudStorageAccount.Parse(_storageAccountConnectionString);
 
             var sourceDirectory = new AzureDirectory(storageAccount, _indexContainerName);
             _directory = new RAMDirectory(sourceDirectory); // Copy the directory from Azure storage to RAM.

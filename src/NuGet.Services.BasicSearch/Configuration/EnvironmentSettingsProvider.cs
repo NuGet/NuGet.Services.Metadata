@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using NuGet.Services.KeyVault;
 using SettingsProvider = NuGet.Services.Configuration.SettingsProvider;
 
-namespace NuGet.Services.BasicSearch.SecretReader
+namespace NuGet.Services.BasicSearch.Configuration
 {
     public class EnvironmentSettingsProvider : SettingsProvider
     {
