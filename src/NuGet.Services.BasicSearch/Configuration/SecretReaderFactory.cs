@@ -8,7 +8,7 @@ using NuGet.Services.KeyVault;
 
 namespace NuGet.Services.BasicSearch.Configuration
 {
-    internal class SecretReaderFactory : ISecretReaderFactory
+    public class SecretReaderFactory : ISecretReaderFactory
     {
         private async Task<ISecretReader> CreateSecretReaderAsync()
         {

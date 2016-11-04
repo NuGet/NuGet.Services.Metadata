@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Lucene.Net.Store;
 using Lucene.Net.Store.Azure;
@@ -73,12 +74,17 @@ namespace NuGet.Indexing.IndexDirectoryProvider
                 "Recognized index configuration change. Reloading index with new settings. Storage Account Name = {StorageAccountName}, Container = {IndexContainerName}",
                 _storageAccountConnectionString, _indexContainerName);
 
+            var stopwatch = Stopwatch.StartNew();
+
             var storageAccount = CloudStorageAccount.Parse(_storageAccountConnectionString);
 
             var sourceDirectory = new AzureDirectory(storageAccount, _indexContainerName);
             _directory = new RAMDirectory(sourceDirectory); // Copy the directory from Azure storage to RAM.
 
             _synchronizer = new AzureDirectorySynchronizer(sourceDirectory, _directory);
+
+            stopwatch.Stop();
+            _logger.LogInformation($"Index reload completed and took {stopwatch.Elapsed.Seconds} seconds.");
 
             return true;
         }
