@@ -119,7 +119,7 @@
     <Compile Include="ResponseFormatterTests.cs" />
     <Compile Include="TestSupport\Constants.cs" />
     <Compile Include="TestSupport\MockObjectFactory.cs" />
-    <Compile Include="TestSupport\MockIndexSearcher.cs" />
+    <Compile Include="TestSupport\MockSearcher.cs" />
     <Compile Include="VersionAnalyzerTests.cs" />
     <Compile Include="OwnerAnalyzerTests.cs" />
     <Compile Include="TagsAnalyzerTests.cs" />
