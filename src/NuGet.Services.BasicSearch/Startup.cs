@@ -101,16 +101,16 @@ namespace NuGet.Services.BasicSearch
             }));
 
             // Start the service running - the Lucene index needs to be reopened regularly on a background thread
-            var seconds = await settings.GetOrDefault(BasicSearchSettings.SearchRefreshSec, BasicSearchSettings.SearchRefreshSecDefault);
+            var intervalSec = await settings.GetOrDefault(BasicSearchSettings.SearchRefreshSec, BasicSearchSettings.SearchRefreshSecDefault);
 
-            _logger.LogInformation(LogMessages.SearchIndexRefreshConfiguration, seconds);
+            _logger.LogInformation(LogMessages.SearchIndexRefreshConfiguration, intervalSec);
 
-            if (InitializeSearcherManager(settings, directory, loader, loggerFactory))
+            if (await InitializeSearcherManager(settings, directory, loader, loggerFactory))
             {
-                var intervalInMs = seconds * 1000;
+                var intervalMs = intervalSec * 1000;
 
                 _gate = 0;
-                _indexReloadTimer = new Timer(ReopenCallback, 0, intervalInMs, intervalInMs);
+                _indexReloadTimer = new Timer(ReopenCallback, 0, intervalMs, intervalMs);
             }
 
             _responseWriter = new ResponseWriter();
@@ -173,13 +173,13 @@ namespace NuGet.Services.BasicSearch
             }
         }
 
-        private bool InitializeSearcherManager(ISettingsProvider settings, Directory directory, ILoader loader, ILoggerFactory loggerFactory)
+        private async Task<bool> InitializeSearcherManager(ISettingsProvider settings, Directory directory, ILoader loader, ILoggerFactory loggerFactory)
         {
             const int maxRetries = 10;
 
             try
             {
-                Retry.Incremental(
+                await Retry.IncrementalAsync(
                     async () =>
                     {
                         var stopwatch = Stopwatch.StartNew();
@@ -197,7 +197,8 @@ namespace NuGet.Services.BasicSearch
                     shouldRetry: e =>
                     {
                         // Retry on any exception (but log it)
-                        _logger.LogError("Startup: An error occurred initializing searcher manager. Going to retry...", e);
+                        _logger.LogError("Startup: An error occurred initializing searcher manager. Going to retry...",
+                            e);
                         _searchTelemetryClient.TrackMetric(SearchTelemetryClient.MetricName.SearchIndexReopenFailed, 1);
 
                         return true;

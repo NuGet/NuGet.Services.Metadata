@@ -23,12 +23,11 @@ namespace NuGet.Indexing
         {
             if (_currentSearcher == null)
             {
-                var tempSearcher = await CreateSearcher(IndexReader.Open(GetDirectory(), true));
                 lock (_sync)
                 {
                     if (_currentSearcher == null)
                     {
-                        _currentSearcher = tempSearcher;
+                        _currentSearcher = CreateSearcher(IndexReader.Open(GetDirectory(), true));
                         if (_currentSearcher == null)
                         {
                             throw new Exception("Unable to create IndexSearcher");
@@ -47,7 +46,7 @@ namespace NuGet.Indexing
             return newReader != currentSearcher.IndexReader;
         }
 
-        protected abstract Task<TIndexSearcher> CreateSearcher(IndexReader reader);
+        protected abstract TIndexSearcher CreateSearcher(IndexReader reader);
 
         protected virtual void Warm(TIndexSearcher searcher)
         {
@@ -86,7 +85,7 @@ namespace NuGet.Indexing
 
                     if (RequiresNewSearcher(newReader, _currentSearcher))
                     {
-                        var newSearcher = await CreateSearcher(newReader);
+                        var newSearcher = CreateSearcher(newReader);
                         if (newSearcher != null)
                         {
                             Warm(newSearcher);

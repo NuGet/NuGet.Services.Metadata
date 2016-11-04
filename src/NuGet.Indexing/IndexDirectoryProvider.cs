@@ -52,7 +52,7 @@ namespace NuGet.Indexing
         public async Task<bool> Reload()
         {
             // If we have a directory and the index container has not changed, we don't need to reload.
-            // Don't refresh the AzureDirectorySynchronizer because we don't want to reload the index unless necessary.
+            // We don't want to reload the index unless necessary.
             var newIndexContainerName = await _settings.GetOrDefault(IndexingSettings.IndexContainer, IndexingSettings.IndexContainerDefault);
             if (_directory != null && newIndexContainerName == _indexContainerName)
             {
@@ -61,8 +61,7 @@ namespace NuGet.Indexing
 
             _indexContainerName = newIndexContainerName;
             _logger.LogInformation("StorageLoader index container: {IndexContainerName}", _indexContainerName);
-                
-            // Refresh the primary storage account.
+            
             var storageAccount = CloudStorageAccount.Parse(await _settings.GetOrThrow<string>(IndexingSettings.StoragePrimary));
 
             var sourceDirectory = new AzureDirectory(storageAccount, _indexContainerName);

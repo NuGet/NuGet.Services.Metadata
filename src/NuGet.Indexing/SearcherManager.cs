@@ -28,9 +28,9 @@ namespace NuGet.Indexing
             return Task.FromResult(searcher.IndexReader.Reopen());
         }
         
-        protected override Task<IndexSearcher> CreateSearcher(IndexReader reader)
+        protected override IndexSearcher CreateSearcher(IndexReader reader)
         {
-            return Task.FromResult<IndexSearcher>(new IndexSearcher(reader));
+            return new IndexSearcher(reader);
         }
     }
 }

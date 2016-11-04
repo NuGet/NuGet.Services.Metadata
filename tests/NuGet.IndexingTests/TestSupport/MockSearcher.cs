@@ -12,9 +12,9 @@ using NuGet.Indexing;
 namespace NuGet.IndexingTests.TestSupport
 {
 
-    public class MockIndexSearcher : NuGetIndexSearcher
+    public class MockSearcher : NuGetIndexSearcher
     {
-        public MockIndexSearcher(string indexName, int numDocs, Dictionary<string, string> commitUserData, VersionResult[] versions = null)
+        public MockSearcher(string indexName, int numDocs, Dictionary<string, string> commitUserData, VersionResult[] versions = null)
             : base(manager: InitNuGetSearcherManager(indexName),
                   reader: MockObjectFactory.CreateMockIndexReader(numDocs).Object,
                   commitUserData: commitUserData,

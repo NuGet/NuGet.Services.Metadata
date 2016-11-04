@@ -113,7 +113,7 @@ namespace NuGet.Indexing
                 indexProvider = new FixedIndexDirectoryProvider(directory, indexContainerName);
             }
 
-            // If a loader has been specified, used it.
+            // If a loader has been specified, use it.
             // Otherwise, create a StorageLoader from the configuration.
             loader = loader ?? await StorageLoader.Create(settings, logger);
 
@@ -191,20 +191,20 @@ namespace NuGet.Indexing
         /// absolutely must be kept in sync with the underlying IndexReader. This is because the shared key across
         /// all in-memory data is the Lucene docID and this can change following an index refresh.
         /// </summary>
-        protected override async Task<NuGetIndexSearcher> CreateSearcher(IndexReader reader)
+        protected override NuGetIndexSearcher CreateSearcher(IndexReader reader)
         {
             _logger.LogInformation("NuGetSearcherManager.CreateSearcher");
 
             try
             {
-                // (Re)load the auxilliary data, index, and loader (if needed)
+                // (Re)load all the auxilliary data (if needed)
                 try
                 {
                     ReloadAuxiliaryDataIfExpired();
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError("NuGetSearcherManager.CreateSearcher: Error loading index and auxiliary data.", e);
+                    _logger.LogError("NuGetSearcherManager.CreateSearcher: Error loading auxiliary data.", e);
                     throw;
                 }
 
