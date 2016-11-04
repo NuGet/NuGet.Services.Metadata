@@ -23,10 +23,13 @@ namespace NuGet.Indexing
         
         private readonly FrameworkLogger _logger;
 
+        private DateTime _lastTimeIndexReloaded = DateTime.MinValue;
+        private readonly TimeSpan _indexReloadRate;
         private readonly IIndexDirectoryProvider _indexProvider;
         private readonly ILoader _loader;
 
-        private DateTime _auxiliaryDataReloaded = DateTime.MinValue;
+        private DateTime _lastTimeAuxiliaryDataRefreshed = DateTime.MinValue;
+        private readonly TimeSpan _auxiliaryDataRefreshRate;
         private readonly IDictionary<string, HashSet<string>> _owners = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
         private readonly IDictionary<string, HashSet<string>> _curatedFeeds = new Dictionary<string, HashSet<string>>();
         private readonly Downloads _downloads = new Downloads();
@@ -36,7 +39,9 @@ namespace NuGet.Indexing
 
         public NuGetSearcherManager(FrameworkLogger logger,
             IIndexDirectoryProvider indexProvider,
-            ILoader loader)
+            ILoader loader,
+            int auxiliaryDataRefreshRateSec = IndexingSettings.AuxiliaryDataRefreshRateSecDefault,
+            int indexReloadRateSec = IndexingSettings.IndexReloadRateSecDefault)
         {
             if (logger == null)
             {
@@ -49,6 +54,9 @@ namespace NuGet.Indexing
 
             _indexProvider = indexProvider;
             _loader = loader;
+
+            _indexReloadRate = TimeSpan.FromSeconds(indexReloadRateSec);
+            _auxiliaryDataRefreshRate = TimeSpan.FromSeconds(auxiliaryDataRefreshRateSec);
         }
 
         public virtual string IndexName => _indexProvider.GetIndexContainerName();
@@ -84,6 +92,7 @@ namespace NuGet.Indexing
             LoggerFactory = loggerFactory;
             FrameworkLogger logger = loggerFactory.CreateLogger<NuGetSearcherManager>();
 
+            // If a local Lucene directory has been specified, create a directory and loader for the specified directory.
             var luceneDirectory = await settings.GetOrDefault<string>(IndexingSettings.LocalLuceneDirectory);
             if (!string.IsNullOrEmpty(luceneDirectory))
             {
@@ -94,15 +103,31 @@ namespace NuGet.Indexing
             IIndexDirectoryProvider indexProvider;
             if (directory == null)
             {
+                // If no directory has been provided, create an IndexDirectoryProvider from the configuration.
                 indexProvider = await IndexDirectoryProvider.Create(settings, logger);
             }
             else
             {
+                // Use the specified directory to create a FixedIndexDirectoryProvider.
                 var indexContainerName = luceneDirectory ?? await settings.GetOrDefault(IndexingSettings.IndexContainer, IndexingSettings.IndexContainerDefault);
                 indexProvider = new FixedIndexDirectoryProvider(directory, indexContainerName);
             }
 
-            var searcherManager = new NuGetSearcherManager(logger, indexProvider, loader);
+            // If a loader has been specified, used it.
+            // Otherwise, create a StorageLoader from the configuration.
+            loader = loader ?? await StorageLoader.Create(settings, logger);
+
+            var auxDataRefreshRate =
+                await
+                    settings.GetOrDefault(IndexingSettings.AuxiliaryDataRefreshRateSec,
+                        IndexingSettings.AuxiliaryDataRefreshRateSecDefault);
+
+            var indexReloadRate =
+                await
+                    settings.GetOrDefault(IndexingSettings.IndexReloadRateSec,
+                        IndexingSettings.IndexReloadRateSecDefault);
+
+            var searcherManager = new NuGetSearcherManager(logger, indexProvider, loader, auxDataRefreshRate, indexReloadRate);
 
             var registrationBaseAddress = await settings.GetOrDefault<string>(IndexingSettings.RegistrationBaseAddress);
             searcherManager.RegistrationBaseAddress["http"] = MakeRegistrationBaseAddress("http", registrationBaseAddress);
@@ -117,9 +142,26 @@ namespace NuGet.Indexing
         {
             return _indexProvider.GetDirectory();
         }
-
-        protected override IndexReader Reopen(IndexSearcher searcher)
+        
+        private async Task<bool> ReloadIndexAndLoaderIfExpired()
         {
+            var hasReloaded = false;
+
+            if (_lastTimeIndexReloaded < DateTime.UtcNow - _indexReloadRate)
+            {
+                hasReloaded = await _indexProvider.Reload() || await _loader.Reload();
+
+                _lastTimeIndexReloaded = DateTime.UtcNow;
+            }
+
+            return hasReloaded;
+        }
+
+        protected override async Task<IndexReader> Reopen(IndexSearcher searcher)
+        {
+            // Reload the index before we create the new reader so it uses the correct index.
+            await ReloadIndexAndLoaderIfExpired();
+
             if (_indexProvider.GetSynchronizer() != null)
             {
                 try
@@ -155,14 +197,14 @@ namespace NuGet.Indexing
 
             try
             {
-                // (Re)load all the auxilliary data (if needed)
+                // (Re)load the auxilliary data, index, and loader (if needed)
                 try
                 {
-                    await ReloadAuxiliaryDataIfExpired();
+                    ReloadAuxiliaryDataIfExpired();
                 }
                 catch (Exception e)
                 {
-                    _logger.LogError("NuGetSearcherManager.CreateSearcher: Error loading auxiliary data.", e);
+                    _logger.LogError("NuGetSearcherManager.CreateSearcher: Error loading index and auxiliary data.", e);
                     throw;
                 }
 
@@ -265,20 +307,17 @@ namespace NuGet.Indexing
             }
         }
 
-        private async Task ReloadAuxiliaryDataIfExpired()
+        private void ReloadAuxiliaryDataIfExpired()
         {
-            if (_auxiliaryDataReloaded < DateTime.UtcNow - AuxiliaryDataRefreshRate)
+            if (_lastTimeAuxiliaryDataRefreshed < DateTime.UtcNow - _auxiliaryDataRefreshRate)
             {
-                await _indexProvider.Reload();
-                await _loader.Reload();
-
                 IndexingUtils.Load("owners.json", _loader, _logger, _owners);
                 IndexingUtils.Load("curatedfeeds.json", _loader, _logger, _curatedFeeds);
                 _downloads.Load("downloads.v1.json", _loader, _logger);
                 _rankings = DownloadRankings.Load("rankings.v1.json", _loader, _logger);
                 _queryBoostingContext = QueryBoostingContext.Load("searchSettings.v1.json", _loader, _logger);
 
-                _auxiliaryDataReloaded = DateTime.UtcNow;
+                _lastTimeAuxiliaryDataRefreshed = DateTime.UtcNow;
             }
         }
 

@@ -17,14 +17,10 @@ namespace NuGet.Services.BasicSearchTests.TestSupport
             return new JsonTextReader(new StringReader(this[name]));
         }
 
-        public AzureDirectorySynchronizer GetSynchronizer()
+        public Task<bool> Reload()
         {
-            return null;
-        }
-
-        public async Task Reload()
-        {
-            // no-op
+            // no-op because in-memory files do not need to be reloaded
+            return Task.FromResult(false);
         }
     }
 }

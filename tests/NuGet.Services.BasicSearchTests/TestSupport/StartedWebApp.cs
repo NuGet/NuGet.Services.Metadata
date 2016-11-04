@@ -39,25 +39,30 @@ namespace NuGet.Services.BasicSearchTests.TestSupport
 
         private async Task InitializeAsync(IEnumerable<PackageVersion> packages = null)
         {
-            // establish the settings
+            // Establish the settings.
             _settings = ReadFromXml<TestSettings>("TestSettings.xml");
             _nupkgDownloader = new NupkgDownloader(_settings);
             _luceneDirectoryInitializer = new LuceneDirectoryInitializer(_settings, _nupkgDownloader);
             _portReserver = new PortReserver();
 
-            // set up the data
+            // Set up the data.
             var enumeratedPackages = packages?.ToArray() ?? new PackageVersion[0];
             await _nupkgDownloader.DownloadPackagesAsync(enumeratedPackages);
             var luceneDirectory = _luceneDirectoryInitializer.GetInitializedDirectory(enumeratedPackages);
 
-            // set up the configuration
-            var configuration = new SecretConfigurationProvider(new SecretReaderFactory().CreateSecretInjector(new EmptySecretReader()), new Dictionary<string, string>
-            {
-                { "Local.Lucene.Directory", (luceneDirectory as FSDirectory)?.Directory.FullName ?? "RAM" },
-                { "Search.RegistrationBaseAddress", _settings.RegistrationBaseAddress }
-            });
+            // Set up the configuration.
+            // Note that here we are using SecretConfigurationProvider instead of EnvironmentSettingsProvider
+            // because we want to restrict the values that the configuration can hold.
+            var configuration =
+                new SecretConfigurationProvider(
+                    new SecretReaderFactory().CreateSecretInjector(new EmptySecretReader()),
+                    new Dictionary<string, string>
+                    {
+                        {"Local.Lucene.Directory", (luceneDirectory as FSDirectory)?.Directory.FullName ?? "RAM"},
+                        {"Search.RegistrationBaseAddress", _settings.RegistrationBaseAddress}
+                    });
 
-            // set up the data directory
+            // Set up the data directory.
             var loader = new InMemoryLoader
             {
                 { "downloads.v1.json", BuildDownloadsFile(enumeratedPackages) },
@@ -66,7 +71,7 @@ namespace NuGet.Services.BasicSearchTests.TestSupport
                 { "rankings.v1.json", BuildRankingsFile(enumeratedPackages) }
             };
 
-            // start the app
+            // Start the app.
             _webApp = WebApp.Start(_portReserver.BaseUri, app => new Startup().Configuration(app, configuration, luceneDirectory, loader));
             Client = new HttpClient { BaseAddress = new Uri(_portReserver.BaseUri) };
         }

@@ -33,7 +33,8 @@ namespace NuGet.IndexingTests.TestSupport
 
         private static NuGetSearcherManager InitNuGetSearcherManager(string indexName)
         {
-            var mockSearcherManager = new Mock<NuGetSearcherManager>(new Mock<ILogger>().Object, null, null)
+            var mockSearcherManager = new Mock<NuGetSearcherManager>(new Mock<ILogger>().Object, null, null,
+                IndexingSettings.AuxiliaryDataRefreshRateSecDefault, IndexingSettings.IndexReloadRateSecDefault)
             {
                 CallBase = true
             };

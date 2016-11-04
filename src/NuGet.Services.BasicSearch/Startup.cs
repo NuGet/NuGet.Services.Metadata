@@ -185,7 +185,7 @@ namespace NuGet.Services.BasicSearch
                         var stopwatch = Stopwatch.StartNew();
 
                         _searcherManager = await NuGetSearcherManager.Create(settings, loggerFactory, directory, loader);
-                        _searcherManager.Open();
+                        await _searcherManager.Open();
 
                         stopwatch.Stop();
 

@@ -19,6 +19,7 @@ namespace NuGet.Indexing
         private readonly ISettingsProvider _settings;
 
         private string _dataContainerName;
+        private string _storageAccountConnectionString;
         private CloudStorageAccount _storageAccount;
 
         public static async Task<StorageLoader> Create(ISettingsProvider settings, FrameworkLogger logger)
@@ -52,13 +53,22 @@ namespace NuGet.Indexing
             }
         }
 
-        public async Task Reload()
+        public async Task<bool> Reload()
         {
             // Refresh the data container and the primary storage account.
+            var oldDataContainerName = _dataContainerName;
             _dataContainerName = await _settings.GetOrDefault(IndexingSettings.DataContainer, IndexingSettings.DataContainerDefault);
-            _storageAccount = CloudStorageAccount.Parse(await _settings.GetOrThrow<string>(IndexingSettings.StoragePrimary));
+
+            var oldStorageAccountConnectionString = _storageAccountConnectionString;
+            _storageAccountConnectionString = await _settings.GetOrThrow<string>(IndexingSettings.StoragePrimary);
+            _storageAccount = CloudStorageAccount.Parse(_storageAccountConnectionString);
 
             _logger.LogInformation("StorageLoader data container: {DataContainerName}", _dataContainerName);
+
+            // Our data has changed if the data container name or storage account connection string has changed.
+            return
+                !(oldDataContainerName == _dataContainerName &&
+                  oldStorageAccountConnectionString == _storageAccountConnectionString);
         }
     }
 }

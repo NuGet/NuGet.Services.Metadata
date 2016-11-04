@@ -33,8 +33,9 @@ namespace NuGet.Services.BasicSearch.SecretReader
             {
                 var clientId = settings.GetOrThrow<string>(BasicSearchSettings.ClientIdKey).Result;
                 var certificateThumbprint = settings.GetOrThrow<string>(BasicSearchSettings.CertificateThumbprintKey).Result;
-                var storeName = settings.GetOrThrow<StoreName>(BasicSearchSettings.StoreNameKey).Result;
-                var storeLocation = settings.GetOrThrow<StoreLocation>(BasicSearchSettings.StoreLocationKey).Result;
+                var storeName = settings.GetOrDefault(BasicSearchSettings.StoreNameKey, StoreName.My).Result;
+                var storeLocation = settings.GetOrDefault(BasicSearchSettings.StoreLocationKey, StoreLocation.LocalMachine).Result;
+                var validateCertificate = settings.GetOrDefault<bool>(BasicSearchSettings.ValidateCertificate).Result;
 
                 // KeyVault is configured, but not all data is provided. Fail.
                 if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(certificateThumbprint))
@@ -44,8 +45,10 @@ namespace NuGet.Services.BasicSearch.SecretReader
                                                 $"Parameter: {BasicSearchSettings.ClientIdKey} Value: {clientId}, " +
                                                 $"Parameter: {BasicSearchSettings.CertificateThumbprintKey} Value: {certificateThumbprint}");
                 }
-               
-                secretReader = new KeyVaultReader(new KeyVaultConfiguration(vaultName, clientId, certificateThumbprint, storeName, storeLocation, validateCertificate: true));
+
+                secretReader =
+                    new KeyVaultReader(new KeyVaultConfiguration(vaultName, clientId, certificateThumbprint, storeName,
+                        storeLocation, validateCertificate));
             }
 
             return secretReader;

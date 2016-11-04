@@ -36,7 +36,7 @@ namespace NuGet.Indexing
             return null;
         }
 
-        public Task Reload()
+        public Task<bool> Reload()
         {
             return Task.FromResult(false);
         }

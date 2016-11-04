@@ -40,7 +40,7 @@ namespace NuGet.Indexing
             Warm(_currentSearcher);
         }
 
-        protected abstract IndexReader Reopen(IndexSearcher searcher);
+        protected abstract Task<IndexReader> Reopen(IndexSearcher searcher);
 
         protected virtual bool RequiresNewSearcher(IndexReader newReader, IndexSearcher currentSearcher)
         {
@@ -82,7 +82,7 @@ namespace NuGet.Indexing
                 TIndexSearcher searcher = Get();
                 try
                 {
-                    var newReader = Reopen(_currentSearcher);
+                    var newReader = await Reopen(_currentSearcher);
 
                     if (RequiresNewSearcher(newReader, _currentSearcher))
                     {

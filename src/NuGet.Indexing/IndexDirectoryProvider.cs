@@ -49,24 +49,28 @@ namespace NuGet.Indexing
             return _synchronizer;
         }
 
-        public async Task Reload()
+        public async Task<bool> Reload()
         {
+            // If we have a directory and the index container has not changed, we don't need to reload.
+            // Don't refresh the AzureDirectorySynchronizer because we don't want to reload the index unless necessary.
+            var newIndexContainerName = await _settings.GetOrDefault(IndexingSettings.IndexContainer, IndexingSettings.IndexContainerDefault);
+            if (_directory != null && newIndexContainerName == _indexContainerName)
+            {
+                return false;
+            }
+
+            _indexContainerName = newIndexContainerName;
+            _logger.LogInformation("StorageLoader index container: {IndexContainerName}", _indexContainerName);
+                
             // Refresh the primary storage account.
             var storageAccount = CloudStorageAccount.Parse(await _settings.GetOrThrow<string>(IndexingSettings.StoragePrimary));
 
-            // If we don't have a directory or the index container has changed, create a new AzureDirectorySynchronizer.
-            // Otherwise, don't refresh the AzureDirectorySynchronizer because we don't want to reload the index unless necessary.
-            var newIndexContainerName = await _settings.GetOrDefault(IndexingSettings.IndexContainer, IndexingSettings.IndexContainerDefault);
-            if (_directory == null || newIndexContainerName != _indexContainerName)
-            {
-                _indexContainerName = newIndexContainerName;
-                _logger.LogInformation("StorageLoader index container: {IndexContainerName}", _indexContainerName);
+            var sourceDirectory = new AzureDirectory(storageAccount, _indexContainerName);
+            _directory = new RAMDirectory(sourceDirectory); // Copy the directory from Azure storage to RAM.
 
-                var sourceDirectory = new AzureDirectory(storageAccount, _indexContainerName);
-                _directory = new RAMDirectory(sourceDirectory); // Copy the directory from Azure storage to RAM.
+            _synchronizer = new AzureDirectorySynchronizer(sourceDirectory, _directory);
 
-                _synchronizer = new AzureDirectorySynchronizer(sourceDirectory, _directory);
-            }
+            return true;
         }
     }
 }

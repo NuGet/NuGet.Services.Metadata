@@ -28,7 +28,7 @@ namespace NuGet.Indexing
             return new JsonTextReader(new StreamReader(fullName));
         }
 
-        public Task Reload()
+        public Task<bool> Reload()
         {
             // no-op because local files do not need to be reloaded
             return Task.FromResult(false);

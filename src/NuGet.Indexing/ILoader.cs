@@ -9,6 +9,10 @@ namespace NuGet.Indexing
     public interface ILoader
     {
         JsonReader GetReader(string name);
-        Task Reload();
+        /// <summary>
+        /// Reloads the data for the reader.
+        /// </summary>
+        /// <returns>Returns true if the data has changed.</returns>
+        Task<bool> Reload();
     }
 }

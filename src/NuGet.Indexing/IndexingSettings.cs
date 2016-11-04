@@ -8,6 +8,12 @@ namespace NuGet.Indexing
     /// </summary>
     public static class IndexingSettings
     {
+        public const string AuxiliaryDataRefreshRateSec = "Search.AuxiliaryDataRefreshRateSec";
+        public const int AuxiliaryDataRefreshRateSecDefault = 60*60; // One hour.
+
+        public const string IndexReloadRateSec = "Search.IndexReloadRateSec";
+        public const int IndexReloadRateSecDefault = 60*60; // One hour.
+
         public const string DataContainer = "Search.DataContainer";
         public const string DataContainerDefault = "ng-search-data";
 

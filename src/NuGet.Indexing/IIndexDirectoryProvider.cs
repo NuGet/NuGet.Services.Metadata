@@ -16,6 +16,10 @@ namespace NuGet.Indexing
         string GetIndexContainerName();
         AzureDirectorySynchronizer GetSynchronizer();
 
-        Task Reload();
+        /// <summary>
+        /// Reloads the index directory.
+        /// </summary>
+        /// <returns>Returns true if the index directory has changed.</returns>
+        Task<bool> Reload();
     }
 }

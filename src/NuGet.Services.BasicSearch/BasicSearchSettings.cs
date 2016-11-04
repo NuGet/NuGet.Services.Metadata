@@ -19,5 +19,6 @@ namespace NuGet.Services.BasicSearch
         public const string StoreNameKey = "keyVault:StoreName";
         public const string StoreLocationKey = "keyVault:StoreLocation";
         public const string CertificateThumbprintKey = "keyVault:CertificateThumbprint";
+        public const string ValidateCertificate = "keyVault:ValidateCertificate";
     }
 }
