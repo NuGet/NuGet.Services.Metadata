@@ -39,6 +39,7 @@ namespace Ng
             {
                 // Get arguments
                 var arguments = CommandHelpers.GetArguments(args, 1);
+                CommandHelpers.LoadAzureConfiguration(arguments);
 
                 // Configure ApplicationInsights
                 ApplicationInsights.Initialize(arguments.GetOrDefault<string>(Arguments.InstrumentationKey));

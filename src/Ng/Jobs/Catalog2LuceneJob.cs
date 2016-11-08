@@ -11,6 +11,10 @@ using NuGet.Services.Metadata.Catalog;
 using Lucene.Net.Index;
 using NuGet.Indexing;
 using NuGet.Services.Configuration;
+using System.Net;
+using System.IO;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Ng.Jobs
 {
@@ -19,7 +23,7 @@ namespace Ng.Jobs
         private bool _verbose;
         private string _source;
         private string _registration;
-        private Lucene.Net.Store.Directory _directory;
+        private IDictionary<string, string> _arguments;
         private string _catalogBaseAddress;
         private string _storageBaseAddress;
         private Func<HttpMessageHandler> _handlerFunc;
@@ -50,7 +54,8 @@ namespace Ng.Jobs
 
         protected override void Init(IDictionary<string, string> arguments, CancellationToken cancellationToken)
         {
-            _directory = CommandHelpers.GetLuceneDirectory(arguments);
+            _arguments = arguments;
+
             _source = arguments.GetOrThrow<string>(Arguments.Source);
             _verbose = arguments.GetOrDefault(Arguments.Verbose, false);
 
@@ -80,30 +85,33 @@ namespace Ng.Jobs
 
         protected override async Task RunInternal(CancellationToken cancellationToken)
         {
-            using (var indexWriter = CreateIndexWriter(_directory))
+            using (var directory = CommandHelpers.GetLuceneDirectory(_arguments))
             {
-                var collector = new SearchIndexFromCatalogCollector(
-                    Logger,
-                    index: new Uri(_source),
-                    indexWriter: indexWriter,
-                    commitEachBatch: false,
-                    baseAddress: _catalogBaseAddress,
-                    handlerFunc: _handlerFunc);
-
-                ReadWriteCursor front = new LuceneCursor(indexWriter, MemoryCursor.MinValue);
-
-                var back = _registration == null
-                    ? (ReadCursor)MemoryCursor.CreateMax()
-                    : new HttpReadCursor(new Uri(_registration), _handlerFunc);
-
-                bool run;
-                do
+                using (var indexWriter = CreateIndexWriter(directory))
                 {
-                    run = await collector.Run(front, back, cancellationToken);
+                    var collector = new SearchIndexFromCatalogCollector(
+                        Logger,
+                        index: new Uri(_source),
+                        indexWriter: indexWriter,
+                        commitEachBatch: false,
+                        baseAddress: _catalogBaseAddress,
+                        handlerFunc: _handlerFunc);
 
-                    collector.EnsureCommitted(); // commit after each catalog page
+                    ReadWriteCursor front = new LuceneCursor(indexWriter, MemoryCursor.MinValue);
+
+                    var back = _registration == null
+                        ? (ReadCursor)MemoryCursor.CreateMax()
+                        : new HttpReadCursor(new Uri(_registration), _handlerFunc);
+
+                    bool run;
+                    do
+                    {
+                        run = await collector.Run(front, back, cancellationToken);
+
+                        collector.EnsureCommitted(); // commit after each catalog page
+                    }
+                    while (run);
                 }
-                while (run);
             }
         }
 

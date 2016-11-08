@@ -29,7 +29,8 @@ namespace Ng
         public const string LuceneStorageAccountName = "luceneStorageAccountName";
         public const string LuceneStorageContainer = "luceneStorageContainer";
         public const string LuceneStorageKeyValue = "luceneStorageKeyValue";
-        
+        public const string LuceneConfigBlobName = "luceneConfigBlobName";
+        public const string LuceneIndexConfigKeyName = "luceneIndexConfigKeyName";
 
         public const string AzureStorageType = "azure";
         public const string FileStorageType = "file";

@@ -15,11 +15,34 @@ using System.IO;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using NuGet.Services.Configuration;
+using System.Net;
+using Newtonsoft.Json.Linq;
 
 namespace Ng
 {
     public static class CommandHelpers
     {
+        private static string _currentIndexName = "";
+        private static Lucene.Net.Store.Directory _currentLuceneDirectory;
+        private static IConfigurationProvider _azureConfiguration;
+
+        public static void LoadAzureConfiguration(IDictionary<string, string> args)
+        {
+            try
+            {
+            var storageAccountName = args[Arguments.LuceneStorageAccountName];
+                var storageAccountKey = args[Arguments.LuceneStorageKeyValue];
+                var configurationContainerName = args[Arguments.LuceneStorageContainer];
+                var configurationBlobName = args[Arguments.LuceneConfigBlobName];
+
+                _azureConfiguration = new AzureStorageConfigurationProvider(storageAccountName, storageAccountKey, configurationContainerName, configurationBlobName);
+            }
+            catch (KeyNotFoundException e)
+            {
+                Trace.TraceWarning("Failed to load configuration from Azure Blob.");
+            }
+        }
+
         public static IDictionary<string, string> GetArguments(string[] args, int start)
         {
             var unprocessedArguments = new Dictionary<string, string>();
@@ -146,7 +169,7 @@ namespace Ng
 
                 if (storageBaseAddress != null)
                 {
-                    return new FileStorageFactory(storageBaseAddress, storagePath) {Verbose = verbose};
+                    return new FileStorageFactory(storageBaseAddress, storagePath) { Verbose = verbose };
                 }
 
                 TraceRequiredArgument(argumentNameMap[Arguments.StorageBaseAddress]);
@@ -164,7 +187,7 @@ namespace Ng
                 var account = new CloudStorageAccount(credentials, true);
                 return new AzureStorageFactory(account, storageContainer, storagePath, storageBaseAddress) { Verbose = verbose };
             }
-            
+
             throw new ArgumentException($"Unrecognized storageType \"{storageType}\"");
         }
 
@@ -238,11 +261,21 @@ namespace Ng
 
                     var luceneStorageKeyValue = arguments.GetOrThrow<string>(argumentNameMap[Arguments.StorageKeyValue]);
 
-                    var luceneStorageContainer = arguments.GetOrThrow<string>(argumentNameMap[Arguments.StorageContainer]);
+                    var luceneStorageContainer = _getLuceneIndexContainerName();
+
+                    if (luceneStorageContainer.Equals(_currentIndexName, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        return _currentLuceneDirectory;
+                    }
 
                     var credentials = new StorageCredentials(luceneStorageAccountName, luceneStorageKeyValue);
                     var account = new CloudStorageAccount(credentials, true);
-                    return new AzureDirectory(account, luceneStorageContainer);
+                    _currentLuceneDirectory.Dispose();
+
+                    _currentLuceneDirectory = new AzureDirectory(account, luceneStorageContainer);
+                    _currentIndexName = luceneStorageContainer;
+
+                    return _currentLuceneDirectory;
                 }
                 Trace.TraceError("Unrecognized Lucene Directory Type \"{0}\"", luceneDirectoryType);
                 return null;
@@ -256,6 +289,12 @@ namespace Ng
 
                 return null;
             }
+        }
+
+        private static string _getLuceneIndexContainerName()
+        {
+            var indexName = _azureConfiguration.GetOrDefaultSync<string>(Arguments.LuceneIndexConfigKeyName, _currentIndexName);
+            return indexName;
         }
 
         public static Func<HttpMessageHandler> GetHttpMessageHandlerFactory(bool verbose, string catalogBaseAddress = null, string storageBaseAddress = null)
