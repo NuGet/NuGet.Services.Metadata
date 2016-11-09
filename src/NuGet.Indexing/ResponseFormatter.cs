@@ -301,10 +301,12 @@ namespace NuGet.Indexing
 
             jsonWriter.WritePropertyName("Owners");
             jsonWriter.WriteStartArray();
+
             foreach (string owner in owners)
             {
                 jsonWriter.WriteValue(owner);
             }
+
             jsonWriter.WriteEndArray();
 
             jsonWriter.WriteEndObject();
