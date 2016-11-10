@@ -13,7 +13,7 @@ using FrameworkLogger = Microsoft.Extensions.Logging.ILogger;
 namespace NuGet.Indexing.IndexDirectoryProvider
 {
     /// <summary>
-    /// Maintains an index on the cloud. Provides a 
+    /// Maintains an index on the cloud. Provides a synchronizer and a reload method to refresh the index.
     /// </summary>
     public class CloudIndexDirectoryProvider : IIndexDirectoryProvider
     {
