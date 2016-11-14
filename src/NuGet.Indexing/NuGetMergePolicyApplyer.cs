@@ -36,7 +36,8 @@ namespace NuGet.Indexing
                 MinMergeMB = MinMergeMB,
                 MaxMergeMB = MaxMergeMB
             };
+
             writer.SetMergePolicy(mergePolicy);
-        }           
+        }
     }
 }

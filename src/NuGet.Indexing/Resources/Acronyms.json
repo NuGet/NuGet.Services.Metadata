@@ -31,5 +31,9 @@
     ],
     "ftp": [
         "ftp"
+    ],
+    "rx": [
+        "rx",
+        "reactive extensions"
     ]
 }
