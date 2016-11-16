@@ -4,7 +4,6 @@
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
-using System.Threading.Tasks;
 
 namespace NuGet.Indexing
 {
@@ -23,9 +22,9 @@ namespace NuGet.Indexing
             return _directory;
         }
 
-        protected override Task<IndexReader> Reopen(IndexSearcher searcher)
+        protected override IndexReader Reopen(IndexingConfiguration config, IndexSearcher searcher)
         {
-            return Task.FromResult(searcher.IndexReader.Reopen());
+            return searcher.IndexReader.Reopen();
         }
         
         protected override IndexSearcher CreateSearcher(IndexReader reader)

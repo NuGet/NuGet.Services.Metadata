@@ -16,23 +16,14 @@ namespace NuGet.Indexing
     {
         private readonly FrameworkLogger _logger;
 
-        private readonly ISettingsProvider _settings;
-
         private string _dataContainerName;
         private string _storageAccountConnectionString;
         private CloudStorageAccount _storageAccount;
 
-        public static async Task<StorageLoader> Create(ISettingsProvider settings, FrameworkLogger logger)
+        public StorageLoader(IndexingConfiguration config, FrameworkLogger logger)
         {
-            var storageLoader = new StorageLoader(settings, logger);
-            await storageLoader.Reload();
-            return storageLoader;
-        }
-
-        private StorageLoader(ISettingsProvider settings, FrameworkLogger logger)
-        {
-            _settings = settings;
             _logger = logger;
+            Reload(config);
         }
 
         public JsonReader GetReader(string name)
@@ -53,14 +44,14 @@ namespace NuGet.Indexing
             }
         }
 
-        public async Task<bool> Reload()
+        public bool Reload(IndexingConfiguration config)
         {
             // Refresh the data container and the primary storage account.
             var oldDataContainerName = _dataContainerName;
-            _dataContainerName = await _settings.GetOrDefault(IndexingSettings.DataContainer, IndexingSettings.DataContainerDefault);
+            _dataContainerName = config.DataContainer;
 
             var oldStorageAccountConnectionString = _storageAccountConnectionString;
-            _storageAccountConnectionString = await _settings.GetOrThrow<string>(IndexingSettings.StoragePrimary);
+            _storageAccountConnectionString = config.StoragePrimary;
             _storageAccount = CloudStorageAccount.Parse(_storageAccountConnectionString);
 
             _logger.LogInformation("StorageLoader data container: {DataContainerName}", _dataContainerName);

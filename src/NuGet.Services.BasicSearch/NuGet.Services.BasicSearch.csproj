@@ -235,12 +235,12 @@
       <HintPath>..\..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NuGet.Services.Configuration, Version=1.0.76.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NuGet.Services.Configuration.1.0.76-r-isettingsprovider\lib\net452\NuGet.Services.Configuration.dll</HintPath>
+    <Reference Include="NuGet.Services.Configuration, Version=1.0.106.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NuGet.Services.Configuration.1.0.106-r-develop\lib\net452\NuGet.Services.Configuration.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NuGet.Services.KeyVault, Version=1.0.76.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NuGet.Services.KeyVault.1.0.76-r-isettingsprovider\lib\net45\NuGet.Services.KeyVault.dll</HintPath>
+    <Reference Include="NuGet.Services.KeyVault, Version=1.0.106.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\NuGet.Services.KeyVault.1.0.106-r-develop\lib\net45\NuGet.Services.KeyVault.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="NuGet.Services.Logging, Version=1.0.76.0, Culture=neutral, processorArchitecture=MSIL">
@@ -285,6 +285,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data" />
     <Reference Include="System.Net" />
     <Reference Include="System.Net.Http" />
@@ -349,7 +350,7 @@
   <ItemGroup>
     <Compile Include="CorrelationIdMiddleware.cs" />
     <Compile Include="SearchConsoleMiddleware.cs" />
-    <Compile Include="BasicSearchSettings.cs" />
+    <Compile Include="BasicSearchConfiguration.cs" />
     <Compile Include="SearchTelemetryClient.cs" />
     <Compile Include="LogMessages.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -357,7 +358,7 @@
       <DependentUpon>LogMessages.resx</DependentUpon>
     </Compile>
     <Compile Include="ResponseHelpers.cs" />
-    <Compile Include="Configuration\EnvironmentSettingsProvider.cs" />
+    <Compile Include="Configuration\EnvironmentSettingsConfigurationProvider.cs" />
     <Compile Include="Configuration\SecretReaderFactory.cs" />
     <Compile Include="ServiceEndpoints.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

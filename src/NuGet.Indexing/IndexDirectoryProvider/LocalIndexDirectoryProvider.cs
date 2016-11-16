@@ -32,9 +32,9 @@ namespace NuGet.Indexing.IndexDirectoryProvider
             return null;
         }
 
-        public Task<bool> Reload()
+        public bool Reload(IndexingConfiguration config)
         {
-            return Task.FromResult(false);
+            return false;
         }
     }
 }

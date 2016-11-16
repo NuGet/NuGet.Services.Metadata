@@ -53,9 +53,8 @@ namespace NuGet.Services.BasicSearchTests.TestSupport
             // Set up the configuration.
             // Note that here we are using SecretConfigurationProvider instead of EnvironmentSettingsProvider
             // because we want to restrict the values that the configuration can hold.
-            var configuration =
-                new SecretConfigurationProvider(
-                    new SecretReaderFactory().CreateSecretInjector(new EmptySecretReader()),
+            var configProvider =
+                new DictionaryConfigurationProvider(
                     new Dictionary<string, string>
                     {
                         {"Local.Lucene.Directory", (luceneDirectory as FSDirectory)?.Directory.FullName ?? "RAM"},
@@ -72,7 +71,7 @@ namespace NuGet.Services.BasicSearchTests.TestSupport
             };
 
             // Start the app.
-            _webApp = WebApp.Start(_portReserver.BaseUri, app => new Startup().Configuration(app, configuration, luceneDirectory, loader));
+            _webApp = WebApp.Start(_portReserver.BaseUri, app => new Startup().Configuration(app, new ConfigurationFactory(configProvider), luceneDirectory, loader));
             Client = new HttpClient { BaseAddress = new Uri(_portReserver.BaseUri) };
         }
 

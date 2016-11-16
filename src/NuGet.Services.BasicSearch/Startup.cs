@@ -39,11 +39,16 @@ namespace NuGet.Services.BasicSearch
         private int _gate;
         private ResponseWriter _responseWriter;
         private SearchTelemetryClient _searchTelemetryClient;
+        private IConfigurationFactory _configFactory;
 
-        public async void Configuration(IAppBuilder app, ISettingsProvider settings, Directory directory, ILoader loader)
+        public void Configuration(IAppBuilder app, IConfigurationFactory configFactory, Directory directory,
+            ILoader loader)
         {
+            _configFactory = configFactory;
+            var config = _configFactory.Get<BasicSearchConfiguration>().Result;
+
             // Configure
-            Logging.ApplicationInsights.Initialize(await settings.GetOrDefault<string>(BasicSearchSettings.ApplicationInsightsInstrumentationKey));
+            Logging.ApplicationInsights.Initialize(config.ApplicationInsightsInstrumentationKey);
 
             // Create telemetry sink
             _searchTelemetryClient = new SearchTelemetryClient();
@@ -101,11 +106,11 @@ namespace NuGet.Services.BasicSearch
             }));
 
             // Start the service running - the Lucene index needs to be reopened regularly on a background thread
-            var intervalSec = await settings.GetOrDefault(BasicSearchSettings.SearchRefreshSec, BasicSearchSettings.SearchRefreshSecDefault);
+            var intervalSec = config.IndexRefreshSec;
 
             _logger.LogInformation(LogMessages.SearchIndexRefreshConfiguration, intervalSec);
 
-            if (await InitializeSearcherManager(settings, directory, loader, loggerFactory))
+            if (InitializeSearcherManager(config, directory, loader, loggerFactory))
             {
                 var intervalMs = intervalSec * 1000;
 
@@ -127,7 +132,10 @@ namespace NuGet.Services.BasicSearch
             var secretReaderFactory = new SecretReaderFactory();
             var secretReader = secretReaderFactory.CreateSecretReader();
 
-            Configuration(app, new EnvironmentSettingsProvider(secretReaderFactory.CreateSecretInjector(secretReader)), null, null);
+            var configurationProvider =
+                new EnvironmentSettingsConfigurationProvider(secretReaderFactory.CreateSecretInjector(secretReader));
+
+            Configuration(app, new ConfigurationFactory(configurationProvider), null, null);
         }
 
         private async void ReopenCallback(object state)
@@ -148,7 +156,8 @@ namespace NuGet.Services.BasicSearch
                 {
                     var stopwatch = Stopwatch.StartNew();
 
-                    await _searcherManager.MaybeReopen();
+                    var newConfig = await _configFactory.Get<BasicSearchConfiguration>();
+                    _searcherManager.MaybeReopen(newConfig);
 
                     stopwatch.Stop();
 
@@ -173,22 +182,19 @@ namespace NuGet.Services.BasicSearch
             }
         }
 
-        private async Task<bool> InitializeSearcherManager(ISettingsProvider settings, Directory directory, ILoader loader, ILoggerFactory loggerFactory)
+        private bool InitializeSearcherManager(IndexingConfiguration config, Directory directory, ILoader loader, ILoggerFactory loggerFactory)
         {
             const int maxRetries = 10;
 
             try
             {
-                await Retry.IncrementalAsync(
-                    async () =>
+                Retry.Incremental(
+                    () =>
                     {
                         var stopwatch = Stopwatch.StartNew();
 
-                        var searcherManager = await NuGetSearcherManager.Create(settings, loggerFactory, directory, loader);
-                        await searcherManager.OpenAsync();
-
-                        // Guarantee that the searcher manager has been opened before we set it.
-                        _searcherManager = searcherManager;
+                        _searcherManager = NuGetSearcherManager.Create(config, loggerFactory, directory, loader);
+                        _searcherManager.Open();
 
                         stopwatch.Stop();
 

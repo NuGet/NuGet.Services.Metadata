@@ -28,10 +28,10 @@ namespace NuGet.Indexing
             return new JsonTextReader(new StreamReader(fullName));
         }
 
-        public Task<bool> Reload()
+        public bool Reload(IndexingConfiguration config)
         {
             // no-op because local files do not need to be reloaded
-            return Task.FromResult(false);
+            return false;
         }
     }
 }

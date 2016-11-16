@@ -19,24 +19,15 @@ namespace NuGet.Indexing.IndexDirectoryProvider
     {
         private readonly FrameworkLogger _logger;
 
-        private readonly ISettingsProvider _settings;
-
         private Directory _directory;
         private string _indexContainerName;
         private string _storageAccountConnectionString;
         private AzureDirectorySynchronizer _synchronizer;
 
-        public static async Task<IIndexDirectoryProvider> Create(ISettingsProvider settings, FrameworkLogger logger)
-        {
-            var indexSynchronizer = new CloudIndexDirectoryProvider(settings, logger);
-            await indexSynchronizer.Reload();
-            return indexSynchronizer;
-        }
-
-        protected CloudIndexDirectoryProvider(ISettingsProvider settings, FrameworkLogger logger)
+        public CloudIndexDirectoryProvider(IndexingConfiguration config, FrameworkLogger logger)
         {
             _logger = logger;
-            _settings = settings;
+            Reload(config);
         }
 
         public Directory GetDirectory()
@@ -54,12 +45,12 @@ namespace NuGet.Indexing.IndexDirectoryProvider
             return _synchronizer;
         }
 
-        public async Task<bool> Reload()
+        public bool Reload(IndexingConfiguration config)
         {
             // If we have a directory and the index container has not changed, we don't need to reload.
             // We don't want to reload the index unless necessary.
-            var newStorageAccountConnectionString = await _settings.GetOrThrow<string>(IndexingSettings.StoragePrimary);
-            var newIndexContainerName = await _settings.GetOrDefault(IndexingSettings.IndexContainer, IndexingSettings.IndexContainerDefault);
+            var newStorageAccountConnectionString = config.StoragePrimary;
+            var newIndexContainerName = config.IndexContainer;
             if (_directory != null && 
                 newStorageAccountConnectionString == _storageAccountConnectionString &&
                 newIndexContainerName == _indexContainerName)

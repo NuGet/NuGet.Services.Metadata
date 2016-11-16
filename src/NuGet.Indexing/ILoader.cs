@@ -13,7 +13,8 @@ namespace NuGet.Indexing
         /// <summary>
         /// Reloads the data for the reader.
         /// </summary>
+        /// <param name="config">Configuration to use.</param>
         /// <returns>Returns true if the data has changed.</returns>
-        Task<bool> Reload();
+        bool Reload(IndexingConfiguration config);
     }
 }

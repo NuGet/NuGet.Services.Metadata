@@ -6,15 +6,15 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Threading.Tasks;
 using NuGet.Services.KeyVault;
-using SettingsProvider = NuGet.Services.Configuration.SettingsProvider;
+using NuGet.Services.Configuration;
 
 namespace NuGet.Services.BasicSearch.Configuration
 {
-    public class EnvironmentSettingsProvider : SettingsProvider
+    public class EnvironmentSettingsConfigurationProvider : ConfigurationProvider
     {
         private readonly ISecretInjector _secretInjector;
         
-        public EnvironmentSettingsProvider(ISecretInjector secretInjector)
+        public EnvironmentSettingsConfigurationProvider(ISecretInjector secretInjector)
         {
             _secretInjector = secretInjector;
         }
@@ -47,14 +47,7 @@ namespace NuGet.Services.BasicSearch.Configuration
 
         protected override Task<string> Get(string key)
         {
-            var setting = GetEnvironmentSettingValue(key);
-
-            if (string.IsNullOrEmpty(setting))
-            {
-                throw new ArgumentNullException($"Value for {key} is null or empty!");
-            }
-
-            return _secretInjector.InjectAsync(setting);
+            return _secretInjector.InjectAsync(GetEnvironmentSettingValue(key));
         }
     }
 }

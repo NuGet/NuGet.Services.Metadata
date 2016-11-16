@@ -4,6 +4,7 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
 
 namespace NuGet.Services.BasicSearch.Configuration
@@ -12,41 +13,41 @@ namespace NuGet.Services.BasicSearch.Configuration
     {
         private async Task<ISecretReader> CreateSecretReaderAsync()
         {
-            var settings = new EnvironmentSettingsProvider(CreateSecretInjector(new EmptySecretReader()));
+            var config =
+                await new ConfigurationFactory(
+                        new EnvironmentSettingsConfigurationProvider(CreateSecretInjector(new EmptySecretReader())))
+                    .Get<BasicSearchConfiguration>();
 
-            if (settings == null)
+            if (config == null)
             {
-                throw new ArgumentNullException(nameof(settings));
+                throw new ArgumentNullException(nameof(config));
             }
-
-            var vaultName = await settings.GetOrDefault<string>(BasicSearchSettings.VaultNameKey);
+            
             ISecretReader secretReader;
 
-            // Is key vault configured?
-            if (string.IsNullOrEmpty(vaultName))
+            // Is KeyVault configured?
+            if (string.IsNullOrEmpty(config.VaultName))
             {
                 secretReader = new EmptySecretReader();
             }
             else
             {
-                var clientId = await settings.GetOrThrow<string>(BasicSearchSettings.ClientIdKey);
-                var certificateThumbprint = await settings.GetOrThrow<string>(BasicSearchSettings.CertificateThumbprintKey);
-                var storeName = await settings.GetOrDefault(BasicSearchSettings.StoreNameKey, StoreName.My);
-                var storeLocation = await settings.GetOrDefault(BasicSearchSettings.StoreLocationKey, StoreLocation.LocalMachine);
-                var validateCertificate = await settings.GetOrDefault<bool>(BasicSearchSettings.ValidateCertificate);
-
                 // KeyVault is configured, but not all data is provided. Fail.
-                if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(certificateThumbprint))
+                if (string.IsNullOrEmpty(config.ClientId) || string.IsNullOrEmpty(config.CertificateThumbprint))
                 {
                     throw new ArgumentException("Not all KeyVault configuration provided. " +
-                                                $"Parameter: {BasicSearchSettings.VaultNameKey} Value: {vaultName}, " +
-                                                $"Parameter: {BasicSearchSettings.ClientIdKey} Value: {clientId}, " +
-                                                $"Parameter: {BasicSearchSettings.CertificateThumbprintKey} Value: {certificateThumbprint}");
+                                                $"Parameter: {nameof(BasicSearchConfiguration.VaultName)} Value: {config.VaultName}, " +
+                                                $"Parameter: {nameof(BasicSearchConfiguration.ClientId)} Value: {config.ClientId}, " +
+                                                $"Parameter: {nameof(BasicSearchConfiguration.CertificateThumbprint)} Value: {config.CertificateThumbprint}, " +
+                                                $"Parameter: {nameof(BasicSearchConfiguration.StoreName)} Value: {config.StoreName}, " +
+                                                $"Parameter: {nameof(BasicSearchConfiguration.StoreLocation)} Value: {config.StoreLocation}, " +
+                                                $"Parameter: {nameof(BasicSearchConfiguration.ValidateCertificate)} Value: {config.ValidateCertificate}");
                 }
 
                 secretReader =
-                    new KeyVaultReader(new KeyVaultConfiguration(vaultName, clientId, certificateThumbprint, storeName,
-                        storeLocation, validateCertificate));
+                    new KeyVaultReader(new KeyVaultConfiguration(config.VaultName, config.ClientId,
+                        config.CertificateThumbprint, config.StoreName,
+                        config.StoreLocation, config.ValidateCertificate));
             }
 
             return secretReader;

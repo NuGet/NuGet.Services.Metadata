@@ -19,7 +19,7 @@ namespace NuGet.Indexing
 
         protected abstract Directory GetDirectory();
 
-        public async Task OpenAsync()
+        public void Open()
         {
             if (_currentSearcher == null)
             {
@@ -39,7 +39,7 @@ namespace NuGet.Indexing
             Warm(_currentSearcher);
         }
 
-        protected abstract Task<IndexReader> Reopen(IndexSearcher searcher);
+        protected abstract IndexReader Reopen(IndexingConfiguration config, IndexSearcher searcher);
 
         protected virtual bool RequiresNewSearcher(IndexReader newReader, IndexSearcher currentSearcher)
         {
@@ -72,7 +72,7 @@ namespace NuGet.Indexing
                 Monitor.PulseAll(_sync);
             }
         }
-        public async Task MaybeReopen()
+        public void MaybeReopen(IndexingConfiguration config)
         {
             StartReopen();
 
@@ -81,7 +81,7 @@ namespace NuGet.Indexing
                 TIndexSearcher searcher = Get();
                 try
                 {
-                    var newReader = await Reopen(_currentSearcher);
+                    var newReader = Reopen(config, _currentSearcher);
 
                     if (RequiresNewSearcher(newReader, _currentSearcher))
                     {

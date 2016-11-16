@@ -31,29 +31,5 @@ namespace NuGet.Indexing
                 }
             }
         }
-
-        public static async Task IncrementalAsync(Func<Task> runLogic, Func<Exception, bool> shouldRetry, int maxRetries,
-            TimeSpan waitIncrement)
-        {
-            for (int currentRetry = 0; currentRetry < maxRetries; currentRetry++)
-            {
-                try
-                {
-                    await runLogic();
-                    return;
-                }
-                catch (Exception e)
-                {
-                    if (currentRetry < maxRetries && shouldRetry(e))
-                    {
-                        Thread.Sleep((currentRetry + 1) * (int)waitIncrement.TotalMilliseconds);
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-            }
-        }
     }
 }

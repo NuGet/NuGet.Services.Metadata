@@ -8,6 +8,7 @@ using Lucene.Net.Search;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NuGet.Indexing;
+using NuGet.Services.Configuration;
 
 namespace NuGet.IndexingTests.TestSupport
 {
@@ -33,8 +34,10 @@ namespace NuGet.IndexingTests.TestSupport
 
         private static NuGetSearcherManager InitNuGetSearcherManager(string indexName)
         {
+            var fakeConfig = new ConfigurationFactory(new EmptyConfigurationProvider()).Get<IndexingConfiguration>().Result;
+
             var mockSearcherManager = new Mock<NuGetSearcherManager>(new Mock<ILogger>().Object, null, null,
-                IndexingSettings.AuxiliaryDataRefreshRateSecDefault, IndexingSettings.IndexReloadRateSecDefault)
+                fakeConfig.AuxiliaryDataRefreshRateSec, fakeConfig.IndexReloadRateSec)
             {
                 CallBase = true
             };

@@ -41,8 +41,8 @@ namespace NuGet.Indexing
         public NuGetSearcherManager(FrameworkLogger logger,
             IIndexDirectoryProvider indexProvider,
             ILoader loader,
-            int auxiliaryDataRefreshRateSec = IndexingSettings.AuxiliaryDataRefreshRateSecDefault,
-            int indexReloadRateSec = IndexingSettings.IndexReloadRateSecDefault)
+            int auxiliaryDataRefreshRateSec,
+            int indexReloadRateSec)
         {
             if (logger == null)
             {
@@ -66,13 +66,13 @@ namespace NuGet.Indexing
         /// <summary>Initializes a <see cref="NuGetSearcherManager"/> instance.</summary>
         /// <param name="directory">
         /// Optionally, the Lucene directory to read the index from. If <c>null</c> is provided, the directory
-        /// implementation is determined based off of the configuration (<see cref="settings"/>).
+        /// implementation is determined based off of the configuration (<see cref="config"/>).
         /// </param>
         /// <param name="loader">
         /// Optionally, the loader used to read the JSON data files. If <c>null</c> is provided, the loader
-        /// implementation is determined based off of the configuration (<see cref="settings"/>).
+        /// implementation is determined based off of the configuration (<see cref="config"/>).
         /// </param>
-        /// <param name="settings">
+        /// <param name="config">
         /// The configuration to read which primarily determines whether the resulting instance will read from the local
         /// disk or from blob storage.
         /// </param>
@@ -80,7 +80,7 @@ namespace NuGet.Indexing
         /// Optionally, the logger factory defined by the consuming application.
         /// </param>
         /// <returns>The resulting <see cref="NuGetSearcherManager"/> instance.</returns>
-        public static async Task<NuGetSearcherManager> Create(ISettingsProvider settings,
+        public static NuGetSearcherManager Create(IndexingConfiguration config,
             ILoggerFactory loggerFactory,
             Directory directory = null,
             ILoader loader = null)
@@ -94,43 +94,33 @@ namespace NuGet.Indexing
             var logger = loggerFactory.CreateLogger<NuGetSearcherManager>();
 
             // If a local Lucene directory has been specified, create a directory and loader for the specified directory.
-            var luceneDirectory = await settings.GetOrDefault<string>(IndexingSettings.LocalLuceneDirectory);
+            var luceneDirectory = config.LocalLuceneDirectory;
             if (!string.IsNullOrEmpty(luceneDirectory))
             {
                 directory = directory ?? new SimpleFSDirectory(new DirectoryInfo(luceneDirectory));
-                loader = loader ?? new FileLoader(await settings.GetOrDefault<string>(IndexingSettings.LocalDataDirectory));
+                loader = loader ?? new FileLoader(config.LocalDataDirectory);
             }
 
             IIndexDirectoryProvider indexProvider;
             if (directory == null)
             {
                 // If no directory has been provided, create a CloudIndexDirectoryProvider from the configuration.
-                indexProvider = await CloudIndexDirectoryProvider.Create(settings, logger);
+                indexProvider = new CloudIndexDirectoryProvider(config, logger);
             }
             else
             {
                 // Use the specified directory to create a FixedIndexDirectoryProvider.
-                var indexContainerName = luceneDirectory ?? await settings.GetOrDefault(IndexingSettings.IndexContainer, IndexingSettings.IndexContainerDefault);
+                var indexContainerName = luceneDirectory ?? config.IndexContainer;
                 indexProvider = new LocalIndexDirectoryProvider(directory, indexContainerName);
             }
 
             // If a loader has been specified, use it.
             // Otherwise, create a StorageLoader from the configuration.
-            loader = loader ?? await StorageLoader.Create(settings, logger);
+            loader = loader ?? new StorageLoader(config, logger);
+            
+            var searcherManager = new NuGetSearcherManager(logger, indexProvider, loader, config.AuxiliaryDataRefreshRateSec, config.IndexReloadRateSec);
 
-            var auxDataRefreshRate =
-                await
-                    settings.GetOrDefault(IndexingSettings.AuxiliaryDataRefreshRateSec,
-                        IndexingSettings.AuxiliaryDataRefreshRateSecDefault);
-
-            var indexReloadRate =
-                await
-                    settings.GetOrDefault(IndexingSettings.IndexReloadRateSec,
-                        IndexingSettings.IndexReloadRateSecDefault);
-
-            var searcherManager = new NuGetSearcherManager(logger, indexProvider, loader, auxDataRefreshRate, indexReloadRate);
-
-            var registrationBaseAddress = await settings.GetOrDefault<string>(IndexingSettings.RegistrationBaseAddress);
+            var registrationBaseAddress = config.RegistrationBaseAddress;
             searcherManager.RegistrationBaseAddress["http"] = MakeRegistrationBaseAddress("http", registrationBaseAddress);
             searcherManager.RegistrationBaseAddress["https"] = MakeRegistrationBaseAddress("https", registrationBaseAddress);
 
@@ -144,14 +134,14 @@ namespace NuGet.Indexing
             return _indexProvider.GetDirectory();
         }
         
-        private async Task<bool> ReloadIndexAndLoaderIfExpired()
+        private bool ReloadIndexAndLoaderIfExpired(IndexingConfiguration config)
         {
             var hasReloaded = false;
 
             if (_lastTimeIndexReloaded < DateTime.UtcNow - _indexReloadRate)
             {
-                var hasReloadedIndex = await _indexProvider.Reload();
-                var hasReloadedLoader = await _loader.Reload();
+                var hasReloadedIndex = _indexProvider.Reload(config);
+                var hasReloadedLoader = _loader.Reload(config);
                 hasReloaded = hasReloadedIndex || hasReloadedLoader;
 
                 _lastTimeIndexReloaded = DateTime.UtcNow;
@@ -160,10 +150,10 @@ namespace NuGet.Indexing
             return hasReloaded;
         }
 
-        protected override async Task<IndexReader> Reopen(IndexSearcher searcher)
+        protected override IndexReader Reopen(IndexingConfiguration config, IndexSearcher searcher)
         {
             // Reload the index before we create the new reader so it uses the correct index.
-            await ReloadIndexAndLoaderIfExpired();
+            ReloadIndexAndLoaderIfExpired(config);
 
             if (_indexProvider.GetSynchronizer() != null)
             {

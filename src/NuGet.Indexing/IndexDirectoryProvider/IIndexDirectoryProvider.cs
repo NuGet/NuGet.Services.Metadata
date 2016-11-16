@@ -12,7 +12,8 @@ namespace NuGet.Indexing.IndexDirectoryProvider
         /// <summary>
         /// Reloads the index directory.
         /// </summary>
+        /// <param name="config">Configuration to use.</param>
         /// <returns>Returns true if the index directory has changed.</returns>
-        Task<bool> Reload();
+        bool Reload(IndexingConfiguration config);
     }
 }
