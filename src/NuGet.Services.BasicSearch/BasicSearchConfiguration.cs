@@ -13,7 +13,6 @@ namespace NuGet.Services.BasicSearch
     /// </summary>
     public class BasicSearchConfiguration : IndexingConfiguration
     {
-        private const string KeyVaultPrefix = "keyVault:";
         private const string SearchPrefix = "Search.";
         private const string SerilogPrefix = "serilog:";
 
@@ -25,7 +24,9 @@ namespace NuGet.Services.BasicSearch
         [DefaultValue(300)]
         public int IndexRefreshSec { get; set; }
 
-        // KeyVault
+        #region KeyVault
+        private const string KeyVaultPrefix = "keyVault:";
+
         [ConfigurationKeyPrefix(KeyVaultPrefix)]
         public string VaultName { get; set; }
 
@@ -45,5 +46,6 @@ namespace NuGet.Services.BasicSearch
 
         [ConfigurationKeyPrefix(KeyVaultPrefix)]
         public bool ValidateCertificate { get; set; }
-    }   
+        #endregion
+    }
 }

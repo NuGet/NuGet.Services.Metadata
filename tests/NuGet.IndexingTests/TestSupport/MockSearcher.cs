@@ -34,10 +34,8 @@ namespace NuGet.IndexingTests.TestSupport
 
         private static NuGetSearcherManager InitNuGetSearcherManager(string indexName)
         {
-            var fakeConfig = new ConfigurationFactory(new EmptyConfigurationProvider()).Get<IndexingConfiguration>().Result;
-
             var mockSearcherManager = new Mock<NuGetSearcherManager>(new Mock<ILogger>().Object, null, null,
-                fakeConfig.AuxiliaryDataRefreshRateSec, fakeConfig.IndexReloadRateSec)
+                int.MaxValue, int.MaxValue)
             {
                 CallBase = true
             };
