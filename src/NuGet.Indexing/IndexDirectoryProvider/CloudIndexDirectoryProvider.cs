@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Lucene.Net.Store;
@@ -26,6 +27,16 @@ namespace NuGet.Indexing.IndexDirectoryProvider
 
         public CloudIndexDirectoryProvider(IndexingConfiguration config, FrameworkLogger logger)
         {
+            if (config == null)
+            {
+                throw new ArgumentNullException(nameof(config));
+            }
+
+            if (logger == null)
+            {
+                throw new ArgumentNullException(nameof(logger));
+            }
+
             _logger = logger;
             Reload(config);
         }
