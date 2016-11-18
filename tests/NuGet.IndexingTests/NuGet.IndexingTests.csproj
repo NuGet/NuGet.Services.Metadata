@@ -178,7 +178,6 @@
   <ItemGroup>
     <Compile Include="CamelCaseFilterTests.cs" />
     <Compile Include="DownloadsScoreProviderTests.cs" />
-    <Compile Include="EmptyConfigurationProvider.cs" />
     <Compile Include="ExpandAcronymsFilterTests.cs" />
     <Compile Include="Extraction\CatalogPackageMetadataExtractorTests.cs" />
     <Compile Include="Extraction\DocumentCreatorTests.cs" />
