@@ -3,7 +3,9 @@ using System;
 
 namespace NuGet.Indexing
 {
-    // This class wraps the RAMDirectory so we can correct the return of FileModified function
+    /// <summary>
+    /// This class wraps the RAMDirectory so we can correct the return of FileModified function
+    /// </summary>
     public class RAMDirectoryWrapper: RAMDirectory
     {
         public RAMDirectoryWrapper() : base() { }
@@ -15,7 +17,7 @@ namespace NuGet.Indexing
         /// </summary>
         /// <param name="name">File Name</param>
         /// <returns>A long that represents a UTC Windows FileTime</returns>
-        /// <remarks>The implmentation here is to keep in line with the implmentation is AzureDirectory for use in the AzureDirectorySychronizer.
+        /// <remarks>The implementation here is to keep in line with the implementation in AzureDirectory for use in the <see cref="AzureDirectorySynchronizer"/>.
         /// See https://github.com/azure-contrib/AzureDirectory/blob/master/AzureDirectory/AzureDirectory.cs#L147 for AzureDirectory implementation</remarks>
         public override long FileModified(string name)
         {
