@@ -128,6 +128,7 @@ namespace NuGet.Indexing
 
         private static long LuceneTimestampFromDateTime(DateTime date)
         {
+            // Use ToFileTimeUtc here to stay consistent with the returns from AzureDirectory.
             return date.ToFileTimeUtc();
         }
     }
