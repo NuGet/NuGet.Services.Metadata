@@ -11,9 +11,7 @@ using Lucene.Net.Store;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using FrameworkLogger = Microsoft.Extensions.Logging.ILogger;
-using System.Threading.Tasks;
 using NuGet.Indexing.IndexDirectoryProvider;
-using NuGet.Services.Configuration;
 using Directory = Lucene.Net.Store.Directory;
 
 namespace NuGet.Indexing
