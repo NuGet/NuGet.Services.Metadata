@@ -51,7 +51,7 @@ namespace NuGet.Services.BasicSearchTests.TestSupport
             var luceneDirectory = _luceneDirectoryInitializer.GetInitializedDirectory(enumeratedPackages);
 
             // Set up the configuration.
-            // Note that here we are not using DictionaryConfigurationProvider
+            // Note that here we are using DictionaryConfigurationProvider
             // because we want to restrict the values that the configuration can hold.
             var configProvider =
                 new DictionaryConfigurationProvider(

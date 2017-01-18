@@ -40,6 +40,7 @@ namespace NuGet.Indexing
         public string LocalLuceneDirectory { get; set; }
 
         [ConfigurationKeyPrefix(SearchPrefix)]
+        [DefaultValue("http://api.nuget.org/v3/registration0/")]
         public string RegistrationBaseAddress { get; set; }
 
         [ConfigurationKeyPrefix(StoragePrefix)]

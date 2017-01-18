@@ -153,11 +153,12 @@ namespace NuGet.Indexing
             // Reload the index before we create the new reader so it uses the correct index.
             ReloadIndexAndLoaderIfExpired(config);
 
-            if (_indexProvider.GetSynchronizer() != null)
+            var synchronizer = _indexProvider.GetSynchronizer();
+            if (synchronizer != null)
             {
                 try
                 {
-                    _indexProvider.GetSynchronizer().Sync();
+                    synchronizer.Sync();
                 }
                 catch (Exception ex)
                 {
