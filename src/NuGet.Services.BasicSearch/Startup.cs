@@ -317,7 +317,7 @@ namespace NuGet.Services.BasicSearch
             catch (Exception e)
             {
                 await _responseWriter.WriteResponseAsync(context, e, _logger);
-                throw e;
+                throw;
             }
         }
     }
