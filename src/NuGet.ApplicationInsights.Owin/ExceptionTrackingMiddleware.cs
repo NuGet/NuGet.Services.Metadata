@@ -1,11 +1,12 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
+using System.ComponentModel;
+using System.Threading.Tasks;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.Owin;
-using System;
-using System.Threading.Tasks;
 
 namespace NuGet.ApplicationInsights.Owin
 {
@@ -33,7 +34,7 @@ namespace NuGet.ApplicationInsights.Owin
             {
                 await this.Next.Invoke(context);
             }
-            catch (Exception e)
+            catch (Exception e) when (!(e is StackOverflowException || e is OutOfMemoryException || e is Win32Exception))
             {
                 this._telemetryClient.TrackException(e);
             }
