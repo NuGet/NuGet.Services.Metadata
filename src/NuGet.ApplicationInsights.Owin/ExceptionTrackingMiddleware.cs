@@ -34,7 +34,7 @@ namespace NuGet.ApplicationInsights.Owin
             {
                 await this.Next.Invoke(context);
             }
-            catch (Exception e) when (!(e is StackOverflowException || e is OutOfMemoryException || e is Win32Exception))
+            catch (Exception e)
             {
                 this._telemetryClient.TrackException(e);
             }
