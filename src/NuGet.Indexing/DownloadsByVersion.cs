@@ -9,10 +9,10 @@ namespace NuGet.Indexing
 {
     public class DownloadsByVersion
     {
-        private IDictionary<string, int> _downloadsByVersion =
+        private readonly IDictionary<string, int> _downloadsByVersion =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        private int? total;
+        private int _total = 0;
 
         /// <summary>
         /// The total count of downloads across all versionss
@@ -24,14 +24,7 @@ namespace NuGet.Indexing
         {
             get
             {
-                if (total.HasValue)
-                {
-                    return total.Value;
-                }
-
-                total = _downloadsByVersion.Values.Sum();
-
-                return total.Value;
+                return _total;
             }
         }
 
@@ -48,8 +41,13 @@ namespace NuGet.Indexing
 
             set
             {
+                if (_downloadsByVersion.ContainsKey(version))
+                {
+                    _total = _total - _downloadsByVersion[version];
+                }
+
                 _downloadsByVersion[version] = value;
-                total = null;
+                _total = _total + value;
             }
         }
     }
