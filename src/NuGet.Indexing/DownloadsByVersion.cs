@@ -12,7 +12,7 @@ namespace NuGet.Indexing
         private readonly IDictionary<string, int> _downloadsByVersion =
             new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        private int _total = 0;
+        private int _total;
 
         /// <summary>
         /// The total count of downloads across all versionss
@@ -41,13 +41,11 @@ namespace NuGet.Indexing
 
             set
             {
-                if (_downloadsByVersion.ContainsKey(version))
-                {
-                    _total = _total - _downloadsByVersion[version];
-                }
-
+                int oldValue;
+                _downloadsByVersion.TryGetValue(version, out oldValue);
                 _downloadsByVersion[version] = value;
-                _total = _total + value;
+
+                _total = _total + value - oldValue;
             }
         }
     }
