@@ -15,7 +15,7 @@ namespace NuGet.Indexing
         private int _total;
 
         /// <summary>
-        /// The total count of downloads across all versionss
+        /// The total count of downloads across all versions
         /// </summary>
         /// <remarks>
         /// This is thread safe as long as set is not being called from multiple threads
@@ -39,6 +39,7 @@ namespace NuGet.Indexing
                 return count;
             }
 
+            // Set is only ever called when the auxiliary data is reloaded, which is only ever done on one thread per instance.
             set
             {
                 int oldValue;
