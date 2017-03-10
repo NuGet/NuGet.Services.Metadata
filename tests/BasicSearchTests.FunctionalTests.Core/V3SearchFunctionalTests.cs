@@ -39,7 +39,7 @@ namespace BasicSearchTests.FunctionalTests.Core
         }
 
         [Fact]
-        public async Task ResultForJsonNetHasDownloads()
+        public async Task EmptyQueryResultHasDownloads()
         {
             // Act
             var response = await Client.GetAsync(new V3SearchBuilder().RequestUri);
