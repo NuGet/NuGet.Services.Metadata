@@ -47,6 +47,7 @@ namespace NuGet.Indexing
             AddField(document, "Authors", package, "authors", Field.Index.ANALYZED);
 
             // add fields used by filtering and sorting
+            AddSemVerLevel(document, package, errors);
             AddListed(document, package, errors);
             AddDates(document, package, errors);
             AddSortableTitle(document, package);
@@ -143,6 +144,63 @@ namespace NuGet.Indexing
             AddField(document, "Title", value ?? string.Empty, Field.Index.ANALYZED);
         }
 
+        private static void AddSemVerLevel(Document document, IDictionary<string, string> package, List<string> errors)
+        {
+            string semVerLevel = "1";
+            string semVerLevelKeyValue;
+            if (package.TryGetValue("SemVerLevelKey", out semVerLevelKeyValue))
+            {
+                int semVerLevelKey;
+                if (int.TryParse(semVerLevelKeyValue, out semVerLevelKey))
+                {
+                    semVerLevel = semVerLevelKey >= 2 ? "2" : "1";
+                }
+            }
+
+            AddField(document, "SemVerLevel", semVerLevel, Field.Index.ANALYZED);
+
+            //string semVerLevel = "1.0.0";
+            //string packageVersionString;
+            //if(package.TryGetValue("version", out packageVersionString))
+            //{
+            //    NuGetVersion packageVersion;
+            //    if (NuGetVersion.TryParse(packageVersionString, out packageVersion))
+            //    {
+            //        if(packageVersion.IsSemVer2)
+            //        {
+            //            semVerLevel = "2.0.0";
+            //        }
+            //        else
+            //        {
+            //            string flattenedDependencies;
+            //            if (package.TryGetValue("flattenedDependencies", out flattenedDependencies))
+            //            {
+            //                foreach (var dependency in flattenedDependencies.Split('|'))
+            //                {
+            //                    string[] fields = dependency.Split(':');
+            //                    if (fields.Length > 1)
+            //                    {
+            //                        VersionRange dependencyRange;
+            //                        if(VersionRange.TryParse(fields[1], out dependencyRange))
+            //                        {
+            //                            if((dependencyRange.MaxVersion != null && dependencyRange.MaxVersion.IsSemVer2)
+            //                                || (dependencyRange.MinVersion != null && dependencyRange.MinVersion.IsSemVer2))
+            //                            {
+            //                                semVerLevel = "2.0.0";
+            //                            }
+            //                        }
+            //                    }
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
+            //else
+            //{
+            //    errors.Add("Required property 'version' not found while trying to determine SemVerLevel. Falling back to 1.0.0.");
+            //}
+        }
+
         private static void AddListed(Document document, IDictionary<string, string> package, List<string> errors)
         {
             string value;
@@ -174,7 +232,7 @@ namespace NuGet.Indexing
             {
                 package.TryGetValue("id", out value);
             }
-            
+
             AddField(document, "SortableTitle", (value ?? string.Empty).Trim().ToLower(), Field.Index.NOT_ANALYZED);
         }
 
@@ -391,7 +449,7 @@ namespace NuGet.Indexing
 
         private static void AddField(Document document, string destination, string value, Field.Index index, float boost = 1.0f)
         {
-            var termVector = index == Field.Index.ANALYZED 
+            var termVector = index == Field.Index.ANALYZED
                 ? Field.TermVector.WITH_POSITIONS_OFFSETS
                 : Field.TermVector.NO;
 
