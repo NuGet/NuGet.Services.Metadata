@@ -43,6 +43,7 @@ namespace NuGet.Indexing
                 AddStringArray("tags");
 
                 AddListed();
+                AddSemVerLevelKey();
                 AddString("created");
                 AddString("published");
                 AddString("lastEdited");
@@ -122,6 +123,42 @@ namespace NuGet.Indexing
                 }
 
                 _metadata["listed"] = listed;
+            }
+
+            private void AddSemVerLevelKey()
+            {
+                var version = (string)_catalog["verbatimVersion"];
+                if (version != null)
+                {
+                    NuGetVersion packageOriginalVersion;
+                    if (NuGetVersion.TryParse(version, out packageOriginalVersion))
+                    {
+                        if (packageOriginalVersion.IsSemVer2)
+                        {
+                            _metadata["semVerLevelKey"] = "2";
+                            return;
+                        }
+                    }
+                }
+
+                var dependencyGroups = _reader.GetPackageDependencies().ToList();
+                foreach (var dependencyGroup in dependencyGroups)
+                {
+                    if (dependencyGroup.Packages.Any())
+                    {
+                        // Add packages list
+                        foreach (var packageDependency in dependencyGroup.Packages)
+                        {
+                            var versionRange = packageDependency.VersionRange;
+                            if ((versionRange.MaxVersion != null && versionRange.MaxVersion.IsSemVer2)
+                                || (versionRange.MinVersion != null && versionRange.MinVersion.IsSemVer2))
+                            {
+                                _metadata["semVerLevelKey"] = "2";
+                                return;
+                            }
+                        }
+                    }
+                }
             }
 
             private void AddFlattenedDependencies()
