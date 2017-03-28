@@ -33,32 +33,32 @@ namespace NuGet.Indexing
                 _reader = new CatalogPackageReader(_catalog);
                 _metadata = new Dictionary<string, string>();
 
-                AddString("id");
-                AddString("version");
-                AddString("verbatimVersion", "originalVersion");
-                AddString("title");
-                AddString("description");
-                AddString("summary");
-                AddString("authors");
-                AddStringArray("tags");
+                AddString(MetadataConstants.IdPropertyName);
+                AddString(MetadataConstants.NormalizedVersionPropertyName);
+                AddString(MetadataConstants.VersionPropertyName);
+                AddString(MetadataConstants.TitlePropertyName);
+                AddString(MetadataConstants.DescriptionPropertyName);
+                AddString(MetadataConstants.SummaryPropertyName);
+                AddString(MetadataConstants.AuthorsPropertyName);
+                AddStringArray(MetadataConstants.TagsPropertyName);
 
                 AddListed();
                 AddSemVerLevelKey();
-                AddString("created");
-                AddString("published");
-                AddString("lastEdited");
+                AddString(MetadataConstants.CreatedPropertyName);
+                AddString(MetadataConstants.PublishedPropertyName);
+                AddString(MetadataConstants.LastEditedPropertyName);
 
-                AddString("iconUrl");
-                AddString("projectUrl");
-                AddString("minClientVersion");
-                AddString("releaseNotes");
-                AddString("copyright");
-                AddString("language");
-                AddString("licenseUrl");
-                AddString("packageHash");
-                AddString("packageHashAlgorithm");
-                AddString("packageSize");
-                AddString("requireLicenseAcceptance");
+                AddString(MetadataConstants.IconUrlPropertyName);
+                AddString(MetadataConstants.ProjectUrlPropertyName);
+                AddString(MetadataConstants.MinClientVersionPropertyName);
+                AddString(MetadataConstants.ReleaseNotesPropertyName);
+                AddString(MetadataConstants.CopyrightPropertyName);
+                AddString(MetadataConstants.LanguagePropertyName);
+                AddString(MetadataConstants.LicenseUrlPropertyName);
+                AddString(MetadataConstants.PackageHashPropertyName);
+                AddString(MetadataConstants.PackageHashAlgorithmPropertyName);
+                AddString(MetadataConstants.PackageSizePropertyName);
+                AddString(MetadataConstants.CatalogMetadata.RequiresLicenseAcceptancePropertyName, MetadataConstants.RequiresLicenseAcceptancePropertyName);
 
                 AddFlattenedDependencies();
                 AddSupportedFrameworks();
@@ -108,8 +108,8 @@ namespace NuGet.Indexing
 
             private void AddListed()
             {
-                var listed = (string)_catalog["listed"];
-                var published = _catalog["published"];
+                var listed = (string)_catalog[MetadataConstants.ListedPropertyName];
+                var published = _catalog[MetadataConstants.PublishedPropertyName];
                 if (listed == null)
                 {
                     if (published != null && ((DateTime)published).ToString("yyyyMMdd") == "19000101")
@@ -122,12 +122,12 @@ namespace NuGet.Indexing
                     }
                 }
 
-                _metadata["listed"] = listed;
+                _metadata[MetadataConstants.ListedPropertyName] = listed;
             }
 
             private void AddSemVerLevelKey()
             {
-                var version = (string)_catalog["verbatimVersion"];
+                var version = (string)_catalog[MetadataConstants.VersionPropertyName];
                 if (version != null)
                 {
                     NuGetVersion packageOriginalVersion;
@@ -135,7 +135,7 @@ namespace NuGet.Indexing
                     {
                         if (packageOriginalVersion.IsSemVer2)
                         {
-                            _metadata["semVerLevelKey"] = "2";
+                            _metadata[MetadataConstants.SemVerLevelKeyPropertyName] = MetadataConstants.SemVerLevel2Value;
                             return;
                         }
                     }
@@ -146,14 +146,13 @@ namespace NuGet.Indexing
                 {
                     if (dependencyGroup.Packages.Any())
                     {
-                        // Add packages list
                         foreach (var packageDependency in dependencyGroup.Packages)
                         {
                             var versionRange = packageDependency.VersionRange;
                             if ((versionRange.MaxVersion != null && versionRange.MaxVersion.IsSemVer2)
                                 || (versionRange.MinVersion != null && versionRange.MinVersion.IsSemVer2))
                             {
-                                _metadata["semVerLevelKey"] = "2";
+                                _metadata[MetadataConstants.SemVerLevelKeyPropertyName] = MetadataConstants.SemVerLevel2Value;
                                 return;
                             }
                         }
@@ -191,7 +190,7 @@ namespace NuGet.Indexing
                 
                 if (builder.Length > 0)
                 {
-                    _metadata["flattenedDependencies"] = builder.ToString();
+                    _metadata[MetadataConstants.FlattenedDependenciesPropertyName] = builder.ToString();
                 }
             }
 
@@ -278,7 +277,7 @@ namespace NuGet.Indexing
                 
                 if (supportedFrameworks.Any())
                 {
-                    _metadata["supportedFrameworks"] = string.Join("|", supportedFrameworks);
+                    _metadata[MetadataConstants.SupportedFrameworksPropertyName] = string.Join("|", supportedFrameworks);
                 }
             }
 
