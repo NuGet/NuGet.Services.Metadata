@@ -144,17 +144,14 @@ namespace NuGet.Indexing
                 var dependencyGroups = _reader.GetPackageDependencies().ToList();
                 foreach (var dependencyGroup in dependencyGroups)
                 {
-                    if (dependencyGroup.Packages.Any())
+                    foreach (var packageDependency in dependencyGroup.Packages)
                     {
-                        foreach (var packageDependency in dependencyGroup.Packages)
+                        var versionRange = packageDependency.VersionRange;
+                        if ((versionRange.MaxVersion != null && versionRange.MaxVersion.IsSemVer2)
+                            || (versionRange.MinVersion != null && versionRange.MinVersion.IsSemVer2))
                         {
-                            var versionRange = packageDependency.VersionRange;
-                            if ((versionRange.MaxVersion != null && versionRange.MaxVersion.IsSemVer2)
-                                || (versionRange.MinVersion != null && versionRange.MinVersion.IsSemVer2))
-                            {
-                                _metadata[MetadataConstants.SemVerLevelKeyPropertyName] = MetadataConstants.SemVerLevel2Value;
-                                return;
-                            }
+                            _metadata[MetadataConstants.SemVerLevelKeyPropertyName] = MetadataConstants.SemVerLevel2Value;
+                            return;
                         }
                     }
                 }
@@ -187,7 +184,7 @@ namespace NuGet.Indexing
                         AddFlattenedFrameworkDependency(dependencyGroup, builder);
                     }
                 }
-                
+
                 if (builder.Length > 0)
                 {
                     _metadata[MetadataConstants.FlattenedDependenciesPropertyName] = builder.ToString();
@@ -195,7 +192,7 @@ namespace NuGet.Indexing
             }
 
             private void AddFlattennedPackageDependency(
-                PackageDependencyGroup dependencyGroup, 
+                PackageDependencyGroup dependencyGroup,
                 Packaging.Core.PackageDependency packageDependency,
                 StringBuilder builder)
             {
@@ -255,7 +252,7 @@ namespace NuGet.Indexing
                     Trace.TraceError("CatalogPackageMetadataExtraction.AddSupportedFrameworks exception: " + ex.Message);
                     return;
                 }
-                
+
                 // Filter out special frameworks + get short framework names
                 var supportedFrameworks = supportedFrameworksFromReader
                     .Except(SpecialFrameworks)
@@ -274,7 +271,7 @@ namespace NuGet.Indexing
                     })
                     .Where(f => !String.IsNullOrEmpty(f))
                     .ToArray();
-                
+
                 if (supportedFrameworks.Any())
                 {
                     _metadata[MetadataConstants.SupportedFrameworksPropertyName] = string.Join("|", supportedFrameworks);

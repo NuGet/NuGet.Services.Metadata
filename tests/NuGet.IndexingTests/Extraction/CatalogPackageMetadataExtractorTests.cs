@@ -19,8 +19,8 @@ namespace NuGet.IndexingTests.Extraction
             var metadata = CatalogPackageMetadataExtraction.MakePackageMetadata(catalogEntryJObject);
 
             // Assert
-            Assert.Contains("listed", metadata.Keys);
-            Assert.Equal(expected, metadata["listed"]);
+            Assert.Contains(MetadataConstants.ListedPropertyName, metadata.Keys);
+            Assert.Equal(expected, metadata[MetadataConstants.ListedPropertyName]);
         }
 
         [Theory, MemberData(nameof(AddsSemVerLevelKeyData))]
@@ -34,10 +34,10 @@ namespace NuGet.IndexingTests.Extraction
 
 
             // Assert
-            Assert.Equal(expectedToContainKey, metadata.Keys.Contains("semVerLevelKey"));
+            Assert.Equal(expectedToContainKey, metadata.Keys.Contains(MetadataConstants.SemVerLevelKeyPropertyName));
             if (expectedToContainKey)
             {
-                Assert.Equal(expected, metadata["semVerLevelKey"]);
+                Assert.Equal(expected, metadata[MetadataConstants.SemVerLevelKeyPropertyName]);
             }
         }
 
@@ -51,8 +51,8 @@ namespace NuGet.IndexingTests.Extraction
             var metadata = CatalogPackageMetadataExtraction.MakePackageMetadata(catalogEntryJObject);
 
             // Assert
-            Assert.Contains("supportedFrameworks", metadata.Keys);
-            Assert.Equal(expected.Split('|').OrderBy(f => f), metadata["supportedFrameworks"].Split('|').OrderBy(f => f));
+            Assert.Contains(MetadataConstants.SupportedFrameworksPropertyName, metadata.Keys);
+            Assert.Equal(expected.Split('|').OrderBy(f => f), metadata[MetadataConstants.SupportedFrameworksPropertyName].Split('|').OrderBy(f => f));
         }
 
         [Theory, MemberData(nameof(AddsFlattenedDependenciesData))]
@@ -65,8 +65,8 @@ namespace NuGet.IndexingTests.Extraction
             var metadata = CatalogPackageMetadataExtraction.MakePackageMetadata(catalogEntryJObject);
 
             // Assert
-            Assert.Contains("flattenedDependencies", metadata.Keys);
-            Assert.Equal(expected, metadata["flattenedDependencies"]);
+            Assert.Contains(MetadataConstants.FlattenedDependenciesPropertyName, metadata.Keys);
+            Assert.Equal(expected, metadata[MetadataConstants.FlattenedDependenciesPropertyName]);
         }
 
         public static IEnumerable<object[]> AddsListedData
