@@ -9,13 +9,12 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 using NgTests.Data;
 using NgTests.Infrastructure;
 using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Dnx;
-using NuGet.Versioning;
 using Xunit;
-using Newtonsoft.Json.Linq;
 
 namespace NgTests
 {
@@ -180,7 +179,7 @@ namespace NgTests
         [InlineData("1.2.3.4")]
         [InlineData("1.2.3-beta1")]
         [InlineData("1.2.3-beta.1")]
-        [Description("Test the dnxmarker save and delete scenarios.")]
+        [Description("Test the dnxmaker save and delete scenarios.")]
         public async Task DnxMakerTestVersion(string version)
         {
             string id = "testid";
@@ -225,7 +224,7 @@ namespace NgTests
         [InlineData("1.2")]
         [InlineData("1.2.3.0")]
         [InlineData("1.02.3")]
-        [Description("Test the dnxmarker save and delete scenarios.")]
+        [Description("Test the dnxmaker save and delete scenarios.")]
         public async Task DnxMakerFailsTestVersion(string version)
         {
             string id = "testid";
