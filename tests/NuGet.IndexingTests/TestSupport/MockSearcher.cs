@@ -47,8 +47,10 @@ namespace NuGet.IndexingTests.TestSupport
             mockAuxiliaryFiles.Setup(y => y.LastModifiedTimeForFiles).Returns(lastModifiedTimeForAuxFiles);
 
             mockSearcherManager.Setup(x => x.IndexName).Returns(indexName);
-            // HttpRegistrationAddress is the default when we call into this with "test" scheme, which is technically invalid.
-            mockSearcherManager.Object.RegistrationBaseAddresses.HttpRegistrationAddress = new Uri(Constants.BaseUri);
+            mockSearcherManager.Object.RegistrationBaseAddresses.LegacyHttp = new Uri(Constants.BaseUriHttp);
+            mockSearcherManager.Object.RegistrationBaseAddresses.LegacyHttps = new Uri(Constants.BaseUriHttps);
+            mockSearcherManager.Object.RegistrationBaseAddresses.SemVer2Http = new Uri(Constants.BaseUriSemVer2Http);
+            mockSearcherManager.Object.RegistrationBaseAddresses.SemVer2Https = new Uri(Constants.BaseUriSemVer2Https);
             mockSearcherManager.Setup(x => x.LastIndexReloadTime).Returns(time);
             mockSearcherManager.Setup(x => x.LastAuxiliaryDataLoadTime).Returns(time);
             mockSearcherManager.Setup(x => x.MachineName).Returns(machineName);

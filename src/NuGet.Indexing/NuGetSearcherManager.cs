@@ -26,7 +26,7 @@ namespace NuGet.Indexing
         public virtual DateTime? LastIndexReloadTime { get; private set; } = null;
         public virtual DateTime? LastAuxiliaryDataLoadTime { get; private set; } = null;
         public virtual string MachineName => Environment.MachineName;
-        public RegistrationAddresses RegistrationBaseAddresses { get; }
+        public RegistrationBaseAddresses RegistrationBaseAddresses { get; }
 
         private readonly FrameworkLogger _logger;
         private readonly IIndexDirectoryProvider _indexProvider;
@@ -53,7 +53,7 @@ namespace NuGet.Indexing
 
             _logger = logger;
 
-            RegistrationBaseAddresses = new RegistrationAddresses();
+            RegistrationBaseAddresses = new RegistrationBaseAddresses();
 
             _indexProvider = indexProvider;
             _loader = loader;
@@ -124,10 +124,10 @@ namespace NuGet.Indexing
             var registrationBaseAddress = config.RegistrationBaseAddress;
             var semVer2RegistrationBaseAddress = config.SemVer2RegistrationBaseAddress;
 
-            searcherManager.RegistrationBaseAddresses.HttpRegistrationAddress = MakeRegistrationBaseAddress("http", registrationBaseAddress);
-            searcherManager.RegistrationBaseAddresses.HttpsRegistrationAddress = MakeRegistrationBaseAddress("https", registrationBaseAddress);
-            searcherManager.RegistrationBaseAddresses.SemVer2HttpRegistrationAddress = MakeRegistrationBaseAddress("http", semVer2RegistrationBaseAddress);
-            searcherManager.RegistrationBaseAddresses.SemVer2HttpsRegistrationAddress = MakeRegistrationBaseAddress("https", semVer2RegistrationBaseAddress);
+            searcherManager.RegistrationBaseAddresses.LegacyHttp = MakeRegistrationBaseAddress("http", registrationBaseAddress);
+            searcherManager.RegistrationBaseAddresses.LegacyHttps = MakeRegistrationBaseAddress("https", registrationBaseAddress);
+            searcherManager.RegistrationBaseAddresses.SemVer2Http = MakeRegistrationBaseAddress("http", semVer2RegistrationBaseAddress);
+            searcherManager.RegistrationBaseAddresses.SemVer2Https = MakeRegistrationBaseAddress("https", semVer2RegistrationBaseAddress);
 
             return searcherManager;
         }

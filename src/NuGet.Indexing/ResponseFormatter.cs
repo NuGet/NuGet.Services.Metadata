@@ -28,21 +28,17 @@ namespace NuGet.Indexing
         {
             Uri baseAddress;
             var useSemVer2Registration = SemVerHelpers.ShouldIncludeSemVer2Results(semVerLevel);
-            RegistrationAddresses registrationAddresses = searcher.Manager.RegistrationBaseAddresses;
+            RegistrationBaseAddresses registrationAddresses = searcher.Manager.RegistrationBaseAddresses;
 
             switch (scheme)
             {
-                case "http":
-                    baseAddress = (useSemVer2Registration ? registrationAddresses.SemVer2HttpRegistrationAddress : registrationAddresses.HttpRegistrationAddress);
-                    break;
                 case "https":
-                    baseAddress = (useSemVer2Registration ? registrationAddresses.SemVer2HttpsRegistrationAddress : registrationAddresses.HttpsRegistrationAddress);
+                    baseAddress = (useSemVer2Registration ? registrationAddresses.SemVer2Https : registrationAddresses.LegacyHttps);
                     break;
-                case "test":
-                    // this case is explicitly for test purposes. When ResponseFormatterTests calls into this, it calls with "test" scheme, which we will then return the default value.
+                case "http":
                 default:
-                    // if scheme specified is invalid, fall back to the most widely compatible version
-                    baseAddress = registrationAddresses.HttpRegistrationAddress;
+                    // if scheme specified is invalid, fall back to using as much information as we can
+                    baseAddress = (useSemVer2Registration ? registrationAddresses.SemVer2Http : registrationAddresses.LegacyHttp);
                     break;
             }
 

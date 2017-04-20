@@ -5,11 +5,11 @@ using System;
 
 namespace NuGet.Indexing
 {
-    public class RegistrationAddresses
+    public class RegistrationBaseAddresses
     {
-        public Uri HttpRegistrationAddress { get; set; }
-        public Uri HttpsRegistrationAddress { get; set; }
-        public Uri SemVer2HttpRegistrationAddress { get; set; }
-        public Uri SemVer2HttpsRegistrationAddress { get; set; }
+        public Uri LegacyHttp { get; set; }
+        public Uri LegacyHttps { get; set; }
+        public Uri SemVer2Http { get; set; }
+        public Uri SemVer2Https { get; set; }
     }
 }
