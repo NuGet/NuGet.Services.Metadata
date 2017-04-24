@@ -32,5 +32,10 @@ namespace NuGet.Services.BasicSearch
         {
             _telemetryClient.TrackMetric(name, value, properties);
         }
+
+        public void TrackMetric1(string message)
+        {
+            _telemetryClient.TrackTrace(message);
+        }
     }
 }

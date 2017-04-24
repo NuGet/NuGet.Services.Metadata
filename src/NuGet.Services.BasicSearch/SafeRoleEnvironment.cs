@@ -21,24 +21,26 @@ namespace NuGet.Services.BasicSearch
         static SafeRoleEnvironment()
         {
             // Find out if the code is running in the cloud service context.
-            Assembly assembly = GetServiceRuntimeAssembly();
-            if (assembly != null)
-            {
-                Type roleEnvironmentType = assembly.GetType(_roleEnvironmentTypeName, false);
-                if (roleEnvironmentType != null)
-                {
-                    PropertyInfo isAvailableProperty = roleEnvironmentType.GetProperty(_isAvailablePropertyName);
+            //Assembly assembly = GetServiceRuntimeAssembly();
+            //if (assembly != null)
+            //{
+            //    Type roleEnvironmentType = assembly.GetType(_roleEnvironmentTypeName, false);
+            //    if (roleEnvironmentType != null)
+            //    {
+            //        PropertyInfo isAvailableProperty = roleEnvironmentType.GetProperty(_isAvailablePropertyName);
 
-                    try
-                    {
-                        IsAvailable = isAvailableProperty != null && (bool)isAvailableProperty.GetValue(null, new object[] { });
-                    }
-                    catch (TargetInvocationException)
-                    {
-                        IsAvailable = false;
-                    }
-                }
-            }
+            //        try
+            //        {
+            //            IsAvailable = isAvailableProperty != null && (bool)isAvailableProperty.GetValue(null, new object[] { });
+            //        }
+            //        catch (TargetInvocationException)
+            //        {
+            //            IsAvailable = false;
+            //        }
+            //    }
+            //}
+
+            IsAvailable = true;
         }
 
         /// <summary>

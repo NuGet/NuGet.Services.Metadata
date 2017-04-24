@@ -59,7 +59,7 @@ namespace Ng.Jobs
             };
 
             var storage = storageFactory.Create();
-            _front = new DurableCursor(storage.ResolveUri("cursor.json"), storage, MemoryCursor.MinValue);
+            _front = new MemoryCursor(new DateTime(2017, 03, 20).AddHours(9).ToUniversalTime());// new DurableCursor(storage.ResolveUri("cursor.json"), storage, MemoryCursor.MinValue);
             _back = MemoryCursor.CreateMax();
         }
 

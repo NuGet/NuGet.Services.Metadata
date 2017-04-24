@@ -126,6 +126,15 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
             {
                 await storage.Delete(nuspecUri, cancellationToken);
             }
+            //else
+            //{
+            //    relativeAddress = string.Format("{1}/{0}.nuspec", id, Normalize(version));
+            //    nuspecUri = new Uri(storage.BaseAddress, relativeAddress);
+            //    if (storage.Exists(relativeAddress))
+            //    {
+            //        await storage.Delete(nuspecUri, cancellationToken);
+            //    }
+            //}
         }
 
         private async Task DeleteNupkg(Storage storage, string id, string version, CancellationToken cancellationToken)
@@ -136,6 +145,22 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
             {
                 await storage.Delete(nupkgUri, cancellationToken);
             }
+            //else
+            //{
+            //    await DeleteNupkg(storage, id, Normalize(version), cancellationToken);
+            //}
+
+        }
+
+        private string Normalize(string version)
+        {
+            NuGetVersion parsed;
+            if (!NuGetVersion.TryParse(version, out parsed))
+            {
+                return version;
+            }
+
+            return parsed.ToNormalizedString();
         }
     }
 }

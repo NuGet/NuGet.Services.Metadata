@@ -26,6 +26,8 @@ using Serilog.Events;
 using SerilogWeb.Classic;
 using SerilogWeb.Classic.Enrichers;
 using NuGet.Services.KeyVault;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Extensibility;
 
 [assembly: OwinStartup("NuGet.Services.BasicSearch", typeof(NuGet.Services.BasicSearch.Startup))]
 
@@ -50,9 +52,11 @@ namespace NuGet.Services.BasicSearch
             // Configure
             Logging.ApplicationInsights.Initialize(config.ApplicationInsightsInstrumentationKey);
 
+            TelemetryConfiguration.Active.InstrumentationKey = config.ApplicationInsightsInstrumentationKey;
             // Create telemetry sink
             _searchTelemetryClient = new SearchTelemetryClient();
 
+            _searchTelemetryClient.TrackMetric1("Hello AI");
             // Create an ILoggerFactory
             var loggerConfiguration = LoggingSetup.CreateDefaultLoggerConfiguration(withConsoleLogger: false)
                 .Enrich.With<HttpRequestIdEnricher>()

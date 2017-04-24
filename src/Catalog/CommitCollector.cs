@@ -40,6 +40,9 @@ namespace NuGet.Services.Metadata.Catalog
                     .Select(item => new CatalogItem(item))
                     .Where(item => item.CommitTimeStamp > front.Value && item.CommitTimeStamp <= back.Value));
 
+#if DEBUG
+                int batchCount= batches.Count();
+#endif
                 var orderedBatches = batches
                     .OrderBy(batch => batch.CommitTimeStamp)
                     .ToList();
