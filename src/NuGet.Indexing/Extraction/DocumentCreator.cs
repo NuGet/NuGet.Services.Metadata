@@ -106,7 +106,7 @@ namespace NuGet.Indexing
                 NuGetVersion parsedVerbatimVersion;
                 if (NuGetVersion.TryParse(verbatimVersion, out parsedVerbatimVersion))
                 {
-                    AddField(document, LuceneConstants.NormalizedVersionPropertyName, parsedVerbatimVersion.ToNormalizedString(), Field.Index.NOT_ANALYZED);
+                    AddField(document, LuceneConstants.NormalizedVersionPropertyName, parsedVerbatimVersion.ToNormalizedString(), Field.Index.ANALYZED);
                     AddField(document, LuceneConstants.FullVersionPropertyName, parsedVerbatimVersion.ToFullString(), Field.Index.NOT_ANALYZED);
                 }
                 else
