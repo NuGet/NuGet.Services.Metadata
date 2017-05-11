@@ -180,7 +180,7 @@ namespace NuGet.IndexingTests
                     Constants.LucenePropertyId.ToLower(),
                     Constants.MockBase,
                     Constants.LucenePropertyId,
-                    Constants.LucenePropertyOriginalVersion,
+                    Constants.LucenePropertyFullVersion,
                     Constants.LucenePropertyDescription,
                     Constants.LucenePropertySummary,
                     Constants.LucenePropertyTitle,
