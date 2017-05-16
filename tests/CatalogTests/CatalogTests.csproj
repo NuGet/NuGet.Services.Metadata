@@ -141,6 +141,7 @@
   <ItemGroup>
     <Compile Include="CatalogIndexReaderTests.cs" />
     <Compile Include="Helpers\NuGetVersionUtilityTests.cs" />
+    <Compile Include="PackageCatalogItemTests.cs" />
     <Compile Include="ReadOnlyGraphTests.cs" />
     <Compile Include="Registration\RegistrationEntryKeyTests.cs" />
     <Compile Include="Registration\RegistrationKeyTests.cs" />
