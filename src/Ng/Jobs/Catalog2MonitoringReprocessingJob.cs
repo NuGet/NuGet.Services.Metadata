@@ -18,7 +18,6 @@ namespace Ng.Jobs
         private IPackageMonitoringStatusService _statusService;
         private IStorageQueue<PackageValidatorContext> _queue;
         private CatalogIndexReader _catalogIndexReader;
-        private ReadCursor _front;
 
         public Catalog2MonitoringReprocessingJob(ILoggerFactory loggerFactory)
             : base(loggerFactory)
@@ -43,9 +42,6 @@ namespace Ng.Jobs
 
             _queue = CommandHelpers.CreateStorageQueue<PackageValidatorContext>(arguments);
 
-            var storage = monitoringStorageFactory.Create();
-            _front = ValidationCollectorFactory.GetFront(monitoringStorageFactory);
-
             _catalogIndexReader = new CatalogIndexReader(new Uri(source), new CollectorHttpClient(messageHandlerFactory()));
         }
 
@@ -57,11 +53,7 @@ namespace Ng.Jobs
             Logger.LogInformation("Parsing catalog for all entries.");
             var entries = await _catalogIndexReader.GetEntries();
 
-            await _front.Load(cancellationToken);
-            var currentTimestamp = _front.Value;
-
             var packageEntries = entries
-                .Where(c => c.CommitTimeStamp < currentTimestamp)
                 .GroupBy(c => new PackageIdentity(c.Id, c.Version))
                 .Select(g => g.OrderByDescending(c => c.CommitTimeStamp).First());
 
