@@ -6,9 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using Microsoft.Extensions.Logging;
-using NuGet.Configuration;
-using NuGet.Protocol;
-using NuGet.Protocol.Core.Types;
 using NuGet.Services.Metadata.Catalog.Persistence;
 
 namespace NuGet.Services.Metadata.Catalog.Monitoring
@@ -42,63 +39,28 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
         }
 
         public Result Create(
-            string galleryUrl,
-            string indexUrl,
+            IStorageQueue<PackageValidatorContext> queue,
             string catalogIndexUrl,
             StorageFactory monitoringStorageFactory,
-            StorageFactory auditingStorageFactory,
-            IEnumerable<EndpointFactory.Input> endpointContexts,
-            Func<HttpMessageHandler> messageHandlerFactory,
-            IMonitoringNotificationService notificationService,
-            bool verbose = false)
+            IEnumerable<EndpointFactory.Input> endpointInputs,
+            Func<HttpMessageHandler> messageHandlerFactory)
         {
-            _logger.LogInformation(
-                "CONFIG gallery: {Gallery} index: {Index} source: {ConfigSource} storage: {Storage} auditingStorage: {AuditingStorage} endpoints: {Endpoints}",
-                galleryUrl, indexUrl, catalogIndexUrl, monitoringStorageFactory, auditingStorageFactory, string.Join(", ", endpointContexts.Select(e => e.Name)));
-
-            var validationFactory = new ValidatorFactory(new Dictionary<FeedType, SourceRepository>()
-            {
-                {FeedType.HttpV2, new SourceRepository(new PackageSource(galleryUrl), GetResourceProviders(ResourceProvidersToInjectV2), FeedType.HttpV2)},
-                {FeedType.HttpV3, new SourceRepository(new PackageSource(indexUrl), GetResourceProviders(ResourceProvidersToInjectV3), FeedType.HttpV3)}
-            }, _loggerFactory);
-
-            var endpointFactory = new EndpointFactory(
-                validationFactory,
-                messageHandlerFactory,
-                _loggerFactory);
-
-            var endpoints = endpointContexts.Select(e => endpointFactory.Create(e)).ToList();
-
             var collector = new ValidationCollector(
-                new PackageValidator(endpoints, auditingStorageFactory, _loggerFactory.CreateLogger<PackageValidator>()),
+                queue,
                 new Uri(catalogIndexUrl),
-                notificationService,
+                _loggerFactory.CreateLogger<ValidationCollector>(),
                 messageHandlerFactory);
 
-            var storage = monitoringStorageFactory.Create();
-            var front = new DurableCursor(storage.ResolveUri("cursor.json"), storage, MemoryCursor.MinValue);
-            var back = new AggregateCursor(endpoints.Select(e => e.Cursor));
+            var front = GetFront(monitoringStorageFactory);
+            var back = new AggregateCursor(endpointInputs.Select(input => new HttpReadCursor(input.CursorUri, messageHandlerFactory)));
 
             return new Result(collector, front, back);
         }
 
-        private IList<Lazy<INuGetResourceProvider>> ResourceProvidersToInjectV2 => new List<Lazy<INuGetResourceProvider>>
+        public static DurableCursor GetFront(StorageFactory storageFactory)
         {
-            new Lazy<INuGetResourceProvider>(() => new NonhijackableV2HttpHandlerResourceProvider()),
-            new Lazy<INuGetResourceProvider>(() => new PackageTimestampMetadataResourceV2Provider(_loggerFactory)),
-            new Lazy<INuGetResourceProvider>(() => new PackageRegistrationMetadataResourceV2FeedProvider())
-        };
-
-        private IList<Lazy<INuGetResourceProvider>> ResourceProvidersToInjectV3 => new List<Lazy<INuGetResourceProvider>>
-        {
-            new Lazy<INuGetResourceProvider>(() => new PackageRegistrationMetadataResourceV3Provider())
-        };
-
-        private IEnumerable<Lazy<INuGetResourceProvider>> GetResourceProviders(IList<Lazy<INuGetResourceProvider>> providersToInject)
-        {
-            var resourceProviders = Repository.Provider.GetCoreV3().ToList();
-            resourceProviders.AddRange(providersToInject);
-            return resourceProviders;
+            var storage = storageFactory.Create();
+            return new DurableCursor(storage.ResolveUri("cursor.json"), storage, MemoryCursor.MinValue);
         }
     }
 }

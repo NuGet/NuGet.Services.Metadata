@@ -7,8 +7,9 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using NuGet.Services.Metadata.Catalog.Persistence;
 using NuGet.Services.Metadata.Catalog.Helpers;
+using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace NuGet.Services.Metadata.Catalog.Monitoring
 {
@@ -17,35 +18,36 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
     /// </summary>
     public class ValidationCollector : SortingIdVersionCollector
     {
+        private readonly IStorageQueue<PackageValidatorContext> _queue;
+
+        private ILogger<ValidationCollector> _logger;
+
         public ValidationCollector(
-            PackageValidator packageValidator, 
+            IStorageQueue<PackageValidatorContext> queue,
             Uri index,
-            IMonitoringNotificationService notificationService,
-            Func<HttpMessageHandler> handlerFunc = null) 
+            ILogger<ValidationCollector> logger,
+            Func<HttpMessageHandler> handlerFunc = null)
             : base(index, handlerFunc)
         {
-            _packageValidator = packageValidator ?? throw new ArgumentNullException(nameof(packageValidator));
-            _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
+            _queue = queue;
+            _logger = logger;
         }
-        
-        private readonly PackageValidator _packageValidator;
-        private readonly IMonitoringNotificationService _notificationService;
 
         protected override async Task ProcessSortedBatch(CollectorHttpClient client, KeyValuePair<FeedPackageIdentity, IList<JObject>> sortedBatch, JToken context, CancellationToken cancellationToken)
         {
             var packageId = sortedBatch.Key.Id;
             var packageVersion = sortedBatch.Key.Version;
-            var catalogEntriesJson = sortedBatch.Value;
+            var feedPackage = new FeedPackageIdentity(packageId, packageVersion);
 
-            try
-            {
-                var result = await _packageValidator.ValidateAsync(packageId, packageVersion, catalogEntriesJson, client, cancellationToken);
-                await _notificationService.OnPackageValidationFinishedAsync(result, cancellationToken);
-            }
-            catch (Exception e)
-            {
-                await _notificationService.OnPackageValidationFailedAsync(packageId, packageVersion, catalogEntriesJson, e, cancellationToken);
-            }
+            _logger.LogInformation("Processing catalog entries for {PackageId} {PackageVersion}.", packageId, packageVersion);
+
+            var catalogEntries = sortedBatch.Value.Select(c => new CatalogIndexEntry(c));
+
+            _logger.LogInformation("Adding {MostRecentCatalogEntryUri} to queue.", catalogEntries.OrderByDescending(c => c.CommitTimeStamp).First().Uri);
+
+            await _queue.Add(
+                new StorageQueueMessage<PackageValidatorContext>() { Contents = new PackageValidatorContext(feedPackage, catalogEntries) },
+                cancellationToken);
         }
     }
 }

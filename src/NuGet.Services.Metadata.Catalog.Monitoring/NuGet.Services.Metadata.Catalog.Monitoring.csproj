@@ -109,9 +109,7 @@
     <Compile Include="Model\PackageRegistrationIndexMetadata.cs" />
     <Compile Include="Model\PackageRegistrationLeafMetadata.cs" />
     <Compile Include="Model\PackageTimestampMetadata.cs" />
-    <Compile Include="Notification\AggregateMonitoringNotificationService.cs" />
     <Compile Include="Notification\IMonitoringNotificationService.cs" />
-    <Compile Include="Notification\PackageMonitoringStatusNotificationService.cs" />
     <Compile Include="Status\IPackageMonitoringStatusService.cs" />
     <Compile Include="Notification\LoggerMonitoringNotificationService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -125,12 +123,14 @@
     <Compile Include="Resources\PackageRegistrationMetadataResourceV2Feed.cs" />
     <Compile Include="Resources\PackageRegistrationMetadataResourceV3.cs" />
     <Compile Include="Resources\PackageTimestampMetadataResourceV2.cs" />
+    <Compile Include="Status\PackageMonitoringStatusListItem.cs" />
     <Compile Include="Status\PackageMonitoringStatusService.cs" />
     <Compile Include="Status\PackageMonitoringStatus.cs" />
     <Compile Include="Status\PackageState.cs" />
     <Compile Include="Status\StatusDeserializationException.cs" />
     <Compile Include="Utility\CommonLogger.cs" />
     <Compile Include="Utility\ILoggerExtensions.cs" />
+    <Compile Include="Utility\JsonSerializerUtility.cs" />
     <Compile Include="Utility\NullableNuGetVersionConverter.cs" />
     <Compile Include="Utility\LogEvents.cs" />
     <Compile Include="Utility\ILoggerFactoryExtensions.cs" />
@@ -152,6 +152,8 @@
     <Compile Include="Validation\Test\IValidatorIdentity.cs" />
     <Compile Include="Validation\Test\PackageValidator.cs" />
     <Compile Include="Validation\Test\Endpoint\RegistrationEndpoint.cs" />
+    <Compile Include="Validation\Test\PackageValidatorContext.cs" />
+    <Compile Include="Validation\Test\PackageValidatorFactory.cs" />
     <Compile Include="Validation\Test\Registration\RegistrationExistsValidator.cs" />
     <Compile Include="Validation\Test\Registration\RegistrationIndexValidator.cs" />
     <Compile Include="Validation\Test\Registration\RegistrationValidator.cs" />
@@ -163,6 +165,7 @@
     <Compile Include="Validation\Test\ValidationContext.cs" />
     <Compile Include="Validation\Test\Validator.cs" />
     <Compile Include="Validation\Test\ValidatorFactory.cs" />
+    <Compile Include="Validation\Test\ValidatorFactoryFactory.cs" />
     <Compile Include="Validation\Test\ValidatorIdentity.cs" />
   </ItemGroup>
   <ItemGroup>
