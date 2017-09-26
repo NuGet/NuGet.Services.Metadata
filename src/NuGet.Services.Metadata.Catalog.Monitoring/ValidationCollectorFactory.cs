@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using Microsoft.Extensions.Logging;
 using NuGet.Services.Metadata.Catalog.Persistence;
+using NuGet.Services.Storage;
 
 namespace NuGet.Services.Metadata.Catalog.Monitoring
 {
@@ -41,7 +42,7 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
         public Result Create(
             IStorageQueue<PackageValidatorContext> queue,
             string catalogIndexUrl,
-            StorageFactory monitoringStorageFactory,
+            Persistence.IStorageFactory monitoringStorageFactory,
             IEnumerable<EndpointFactory.Input> endpointInputs,
             Func<HttpMessageHandler> messageHandlerFactory)
         {
@@ -57,7 +58,7 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
             return new Result(collector, front, back);
         }
 
-        public static DurableCursor GetFront(StorageFactory storageFactory)
+        public static DurableCursor GetFront(Persistence.IStorageFactory storageFactory)
         {
             var storage = storageFactory.Create();
             return new DurableCursor(storage.ResolveUri("cursor.json"), storage, MemoryCursor.MinValue);

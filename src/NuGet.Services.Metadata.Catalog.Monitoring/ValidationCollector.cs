@@ -10,6 +10,7 @@ using Newtonsoft.Json.Linq;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using NuGet.Services.Storage;
 
 namespace NuGet.Services.Metadata.Catalog.Monitoring
 {
@@ -46,7 +47,7 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
             _logger.LogInformation("Adding {MostRecentCatalogEntryUri} to queue.", catalogEntries.OrderByDescending(c => c.CommitTimeStamp).First().Uri);
 
             await _queue.Add(
-                new StorageQueueMessage<PackageValidatorContext>() { Contents = new PackageValidatorContext(feedPackage, catalogEntries) },
+                new PackageValidatorContext(feedPackage, catalogEntries),
                 cancellationToken);
         }
     }

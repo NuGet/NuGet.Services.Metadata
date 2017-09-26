@@ -9,8 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using NuGet.Protocol;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using NuGet.Services.Metadata.Catalog.Persistence;
 
@@ -150,17 +148,17 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
             await storage.Delete(GetPackageUri(storage, package), token);
         }
 
-        private Storage GetStorage(PackageState state)
+        private Persistence.Storage GetStorage(PackageState state)
         {
             return GetStorage(state.ToString());
         }
 
-        private Storage GetStorage(string stateString)
+        private Persistence.Storage GetStorage(string stateString)
         {
             return _storageFactory.Create(stateString.ToLowerInvariant());
         }
 
-        private Uri GetPackageUri(Storage storage, FeedPackageIdentity package)
+        private Uri GetPackageUri(Persistence.Storage storage, FeedPackageIdentity package)
         {
             return storage.ResolveUri(GetPackageFileName(package));
         }
@@ -189,12 +187,12 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
             return new FeedPackageIdentity(id, version);
         }
 
-        private Task<PackageMonitoringStatus> GetPackageAsync(Storage storage, FeedPackageIdentity package, CancellationToken token)
+        private Task<PackageMonitoringStatus> GetPackageAsync(Persistence.Storage storage, FeedPackageIdentity package, CancellationToken token)
         {
             return GetPackageAsync(storage, GetPackageFileName(package), token);
         }
 
-        private Task<PackageMonitoringStatus> GetPackageAsync(Storage storage, string fileName, CancellationToken token)
+        private Task<PackageMonitoringStatus> GetPackageAsync(Persistence.Storage storage, string fileName, CancellationToken token)
         {
             if (!storage.Exists(fileName))
             {
@@ -204,7 +202,7 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
             return GetPackageAsync(storage, storage.ResolveUri(fileName), token);
         }
 
-        private async Task<PackageMonitoringStatus> GetPackageAsync(Storage storage, Uri packageUri, CancellationToken token)
+        private async Task<PackageMonitoringStatus> GetPackageAsync(Persistence.Storage storage, Uri packageUri, CancellationToken token)
         {
             try
             {
