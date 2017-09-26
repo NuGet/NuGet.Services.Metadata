@@ -31,6 +31,8 @@
     <file src="Scripts\DB2Catalog.cmd" />
 
     <file src="Scripts\Catalog2Monitoring.cmd" />
+    <file src="Scripts\Catalog2MonitoringReprocessing.cmd " />
+    <file src="Scripts\Feed2Monitoring.cmd " />
     <file src="Scripts\Monitoring2Monitoring.cmd " />
     <file src="Scripts\MonitoringProcessor.cmd " />
 	
