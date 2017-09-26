@@ -330,12 +330,14 @@
     <Compile Include="Jobs\Catalog2DnxJob.cs" />
     <Compile Include="Jobs\Catalog2LuceneJob.cs" />
     <Compile Include="Jobs\Catalog2MonitoringJob.cs" />
+    <Compile Include="Jobs\Catalog2MonitoringReprocessingJob.cs" />
     <Compile Include="Jobs\Catalog2RegistrationJob.cs" />
     <Compile Include="Jobs\CheckLuceneJob.cs" />
     <Compile Include="Jobs\ClearLuceneJob.cs" />
     <Compile Include="Jobs\CopyLuceneJob.cs" />
     <Compile Include="Jobs\Db2LuceneJob.cs" />
     <Compile Include="Jobs\Feed2CatalogJob.cs" />
+    <Compile Include="Jobs\Feed2MonitoringJob.cs" />
     <Compile Include="Jobs\LightningJob.cs" />
     <Compile Include="Jobs\LoopingNgJob.cs" />
     <Compile Include="Jobs\Monitoring2MonitoringJob.cs" />
