@@ -54,7 +54,6 @@ namespace Ng.Jobs
             var entries = await _catalogIndexReader.GetEntries();
 
             var packageEntries = entries
-                .Where(c => !c.IsDelete())
                 .GroupBy(c => new PackageIdentity(c.Id, c.Version))
                 .Select(g => g.OrderByDescending(c => c.CommitTimeStamp).First());
 
