@@ -5,17 +5,21 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using Lucene.Net.Store;
 using Lucene.Net.Store.Azure;
+using Microsoft.Extensions.Logging;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Auth;
 using NuGet.Services.Configuration;
 using NuGet.Services.KeyVault;
 using NuGet.Services.Metadata.Catalog;
+using NuGet.Services.Metadata.Catalog.Monitoring;
 using NuGet.Services.Metadata.Catalog.Persistence;
+using NuGet.Services.Storage;
 
 namespace Ng
 {
@@ -79,7 +83,7 @@ namespace Ng
 
         public static RegistrationStorageFactories CreateRegistrationStorageFactories(IDictionary<string, string> arguments, bool verbose)
         {
-            StorageFactory legacyStorageFactory;
+            NuGet.Services.Metadata.Catalog.Persistence.StorageFactory legacyStorageFactory;
             var semVer2StorageFactory = CreateSemVer2StorageFactory(arguments, verbose);
 
             var storageFactory = CreateStorageFactory(arguments, verbose);
@@ -92,7 +96,7 @@ namespace Ng
                     new KeyValuePair<string, string>(storageFactory.BaseAddress.ToString(), compressedStorageFactory.BaseAddress.ToString())
                 });
 
-                var aggregateStorageFactory = new AggregateStorageFactory(
+                var aggregateStorageFactory = new NuGet.Services.Metadata.Catalog.Persistence.AggregateStorageFactory(
                     storageFactory,
                     new[] { compressedStorageFactory },
                     secondaryStorageBaseUrlRewriter.Rewrite)
@@ -110,7 +114,7 @@ namespace Ng
             return new RegistrationStorageFactories(legacyStorageFactory, semVer2StorageFactory);
         }
 
-        public static StorageFactory CreateStorageFactory(IDictionary<string, string> arguments, bool verbose)
+        public static NuGet.Services.Metadata.Catalog.Persistence.StorageFactory CreateStorageFactory(IDictionary<string, string> arguments, bool verbose)
         {
             IDictionary<string, string> names = new Dictionary<string, string>
             {
@@ -126,7 +130,7 @@ namespace Ng
             return CreateStorageFactoryImpl(arguments, names, verbose, compressed: false);
         }
 
-        public static StorageFactory CreateCompressedStorageFactory(IDictionary<string, string> arguments, bool verbose)
+        public static NuGet.Services.Metadata.Catalog.Persistence.StorageFactory CreateCompressedStorageFactory(IDictionary<string, string> arguments, bool verbose)
         {
             if (!arguments.GetOrDefault(Arguments.UseCompressedStorage, false))
             {
@@ -147,7 +151,7 @@ namespace Ng
             return CreateStorageFactoryImpl(arguments, names, verbose, compressed: true);
         }
 
-        public static StorageFactory CreateSemVer2StorageFactory(IDictionary<string, string> arguments, bool verbose)
+        public static NuGet.Services.Metadata.Catalog.Persistence.StorageFactory CreateSemVer2StorageFactory(IDictionary<string, string> arguments, bool verbose)
         {
             if (!arguments.GetOrDefault(Arguments.UseSemVer2Storage, false))
             {
@@ -168,7 +172,7 @@ namespace Ng
             return CreateStorageFactoryImpl(arguments, names, verbose, compressed: true);
         }
 
-        public static StorageFactory CreateSuffixedStorageFactory(string suffix, IDictionary<string, string> arguments, bool verbose)
+        public static NuGet.Services.Metadata.Catalog.Persistence.StorageFactory CreateSuffixedStorageFactory(string suffix, IDictionary<string, string> arguments, bool verbose)
         {
             if (string.IsNullOrEmpty(suffix))
             {
@@ -189,7 +193,7 @@ namespace Ng
             return CreateStorageFactoryImpl(arguments, names, verbose, compressed: false);
         }
 
-        private static StorageFactory CreateStorageFactoryImpl(IDictionary<string, string> arguments,
+        private static NuGet.Services.Metadata.Catalog.Persistence.StorageFactory CreateStorageFactoryImpl(IDictionary<string, string> arguments,
                                                                IDictionary<string, string> argumentNameMap,
                                                                bool verbose,
                                                                bool compressed)
@@ -211,7 +215,7 @@ namespace Ng
 
                 if (storageBaseAddress != null)
                 {
-                    return new FileStorageFactory(storageBaseAddress, storagePath) {Verbose = verbose};
+                    return new NuGet.Services.Metadata.Catalog.Persistence.FileStorageFactory(storageBaseAddress, storagePath) { Verbose = verbose };
                 }
 
                 TraceRequiredArgument(argumentNameMap[Arguments.StorageBaseAddress]);
@@ -232,7 +236,7 @@ namespace Ng
                 var account = string.IsNullOrEmpty(storageSuffix) ?
                                 new CloudStorageAccount(credentials, true) :
                                 new CloudStorageAccount(credentials, storageSuffix, true);
-                return new AzureStorageFactory(account,
+                return new NuGet.Services.Metadata.Catalog.Persistence.AzureStorageFactory(account,
                                                storageContainer,
                                                storageOperationMaxExecutionTimeInSeconds,
                                                storagePath,
@@ -244,13 +248,13 @@ namespace Ng
 
         private static TimeSpan MaxExecutionTime(int seconds)
         {
-            if(seconds < 0)
+            if (seconds < 0)
             {
                 throw new ArgumentException($"{nameof(seconds)} cannot be negative.");
             }
-            if(seconds == 0)
+            if (seconds == 0)
             {
-                return AzureStorage.DefaultMaxExecutionTime;
+                return NuGet.Services.Metadata.Catalog.Persistence.AzureStorage.DefaultMaxExecutionTime;
             }
             return TimeSpan.FromSeconds(seconds);
         }
@@ -362,6 +366,53 @@ namespace Ng
             }
 
             return handlerFunc;
+        }
+
+        public static IEnumerable<EndpointFactory.Input> GetEndpointFactoryInputs(IDictionary<string, string> arguments)
+        {
+            return arguments.GetOrThrow<string>(Arguments.EndpointsToTest).Split(';').Select(e => {
+                var endpointParts = e.Split('|');
+
+                if (endpointParts.Count() < 2)
+                {
+                    throw new ArgumentException(
+                        $"\"{e}\" is not a valid endpoint! Each endpoint must follow this format: " +
+                        $"<endpoint-to-test-name>|<endpoint-to-test-cursor>.");
+                }
+
+                return new EndpointFactory.Input(endpointParts[0], new Uri(endpointParts[1]));
+            });
+        }
+
+        public static IPackageMonitoringStatusService GetPackageMonitoringStatusService(IDictionary<string, string> arguments, NuGet.Services.Metadata.Catalog.Persistence.IStorageFactory storageFactory, ILoggerFactory loggerFactory)
+        {
+            return new PackageMonitoringStatusService(
+                new NamedStorageFactory(storageFactory, arguments.GetOrDefault(Arguments.PackageStatusFolder, Arguments.PackageStatusFolderDefault)),
+                loggerFactory.CreateLogger<PackageMonitoringStatusService>());
+        }
+
+        public static IStorageQueue<T> CreateStorageQueue<T>(IDictionary<string, string> arguments)
+        {
+            var storageType = arguments.GetOrThrow<string>(Arguments.StorageType);
+
+            if (storageType.Equals(Arguments.FileStorageType, StringComparison.InvariantCultureIgnoreCase))
+            {
+                throw new NotImplementedException("Only Azure storage queues are supported!");
+            }
+
+            if (Arguments.AzureStorageType.Equals(storageType, StringComparison.InvariantCultureIgnoreCase))
+            {
+                var storageAccountName = arguments.GetOrThrow<string>(Arguments.StorageAccountName);
+                var storageKeyValue = arguments.GetOrThrow<string>(Arguments.StorageKeyValue);
+                var storageQueueName = arguments.GetOrDefault<string>(Arguments.StorageQueueName);
+
+                var credentials = new StorageCredentials(storageAccountName, storageKeyValue);
+                var account = new CloudStorageAccount(credentials, true);
+                return new AzureStorageQueue<T>(account, storageQueueName,
+                    new JsonStorageQueueMessageSerializer<T>(JsonSerializerUtility.SerializerSettings));
+            }
+
+            throw new ArgumentException($"Unrecognized storageType \"{storageType}\"");
         }
     }
 }
