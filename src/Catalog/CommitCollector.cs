@@ -25,9 +25,14 @@ namespace NuGet.Services.Metadata.Catalog
 
         protected override async Task<bool> Fetch(CollectorHttpClient client, ReadWriteCursor front, ReadCursor back, CancellationToken cancellationToken)
         {
-            var stopwatch = Stopwatch.StartNew();
-            JObject root = await client.GetJObjectAsync(Index, cancellationToken);
-            _telemetryService.TrackCatalogIndexReadDuration(stopwatch.Elapsed, Index);
+            JObject root;
+
+            using (var durationMetric =
+                _telemetryService.TrackDuration(TelemetryConstants.CatalogIndexReadDurationSeconds,
+                                                new Dictionary<string, string>() { { TelemetryConstants.Uri, Index.AbsoluteUri } }))
+            {
+                root = await client.GetJObjectAsync(Index, cancellationToken);
+            }
 
             IEnumerable<CatalogItem> rootItems = root["items"]
                 .Select(item => new CatalogItem(item))

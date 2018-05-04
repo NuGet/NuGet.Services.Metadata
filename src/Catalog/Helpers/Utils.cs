@@ -501,7 +501,7 @@ namespace NuGet.Services.Metadata.Catalog
             }
         }
 
-        public static CatalogItem CreateCatalogItem(string origin, Stream stream, DateTime createdDate, DateTime? lastEditedDate = null, DateTime? publishedDate = null, string licenseNames = null, string licenseReportUrl = null)
+        public static PackageCatalogItem CreateCatalogItem(string origin, Stream stream, DateTime createdDate, DateTime? lastEditedDate = null, DateTime? publishedDate = null, string licenseNames = null, string licenseReportUrl = null)
         {
             try
             {

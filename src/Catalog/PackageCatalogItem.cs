@@ -20,6 +20,8 @@ namespace NuGet.Services.Metadata.Catalog
         private string _fullVersion;
         private string _normalizedVersion;
 
+        public long GetPackageSize() => _nupkgMetadata.PackageSize;
+
         public PackageCatalogItem(NupkgMetadata nupkgMetadata, DateTime? createdDate = null, DateTime? lastEditedDate = null, DateTime? publishedDate = null, string licenseNames = null, string licenseReportUrl = null)
         {
             _nupkgMetadata = nupkgMetadata;

@@ -75,12 +75,22 @@ namespace Ng.Jobs
             CatalogStorage = catalogStorageFactory.Create();
             AuditingStorage = auditingStorageFactory.Create();
 
+            TelemetryService.GlobalDimensions[TelemetryConstants.Destination] = catalogStorageFactory.BaseAddress.AbsoluteUri;
+
             Top = 20;
             Timeout = TimeSpan.FromSeconds(300);
         }
 
         protected override async Task RunInternal(CancellationToken cancellationToken)
         {
+            IDictionary<string, string> telemetryProperties = new Dictionary<string, string>();
+
+            int countDeleted = 0;
+            int countCreated = 0;
+            int countEdited = 0;
+
+            using (var durationMetric = 
+                TelemetryService.TrackDuration(TelemetryConstants.CatalogIterationProcessing, telemetryProperties))
             using (var client = CreateHttpClient())
             {
                 client.Timeout = Timeout;
@@ -109,7 +119,8 @@ namespace Ng.Jobs
                         deletedPackages = await GetDeletedPackages(AuditingStorage, lastDeleted);
 
                         Logger.LogInformation("FEED DeletedPackages: {DeletedPackagesCount}", deletedPackages.Count);
-
+                        countDeleted += deletedPackages.Count;
+                        
                         // We want to ensure a commit only contains each package once at most.
                         // Therefore we segment by package id + version.
                         var deletedPackagesSegments = SegmentPackageDeletes(deletedPackages);
@@ -140,6 +151,7 @@ namespace Ng.Jobs
 
                     createdPackages = await GetCreatedPackages(client, Gallery, lastCreated, Top);
                     Logger.LogInformation("FEED CreatedPackages: {CreatedPackagesCount}", createdPackages.Count);
+                    countCreated += createdPackages.Count;
 
                     lastCreated = await FeedHelpers.DownloadMetadata2Catalog(
                         client,
@@ -170,6 +182,7 @@ namespace Ng.Jobs
                     editedPackages = await GetEditedPackages(client, Gallery, lastEdited, Top);
 
                     Logger.LogInformation("FEED EditedPackages: {EditedPackagesCount}", editedPackages.Count);
+                    countEdited += editedPackages.Count;
 
                     lastEdited = await FeedHelpers.DownloadMetadata2Catalog(
                         client,
@@ -189,6 +202,10 @@ namespace Ng.Jobs
                     previousLastEdited = lastEdited;
                 }
                 while (editedPackages.Count > 0);
+
+                telemetryProperties[TelemetryConstants.Deletes] = countDeleted.ToString();
+                telemetryProperties[TelemetryConstants.Creates] = countCreated.ToString();
+                telemetryProperties[TelemetryConstants.Edits] = countEdited.ToString();
             }
         }
 

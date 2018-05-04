@@ -12,6 +12,7 @@ using System.Web;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using NuGet.Services.Logging;
 using NuGet.Services.Metadata.Catalog.Persistence;
 
 namespace NuGet.Services.Metadata.Catalog.Helpers
@@ -261,10 +262,22 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
                 return lastDate;
             }
 
+            var packageProcessingDurationTelemetryList = new List<DurationMetric>();
+
             foreach (var entry in packages)
             {
                 foreach (var packageItem in entry.Value)
                 {
+                    // Initialize telemetry for package
+                    IDictionary<string, string> packageProperties = new Dictionary<string, string>();
+                    if (TryExtractIdAndVersionFromFeedDetails(packageItem, out string id, out string version))
+                    {
+                        packageProperties[TelemetryConstants.Id] = id;
+                        packageProperties[TelemetryConstants.Version] = version;
+                    }
+
+                    var telemetry = telemetryService.TrackDuration(TelemetryConstants.CatalogPackageProcessing, packageProperties);
+
                     // When downloading the package binary, add a query string parameter
                     // that corresponds to the operation's timestamp.
                     // This query string will ensure the package is not cached
@@ -273,7 +286,10 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
                     HttpResponseMessage response = null;
                     try
                     {
-                        response = await client.GetAsync(packageUri, cancellationToken);
+                        using (var durationMetric = telemetryService.TrackDuration(TelemetryConstants.CatalogPackageDownloadDuration, packageProperties))
+                        {
+                            response = await client.GetAsync(packageUri, cancellationToken);
+                        }
                     }
                     catch (TaskCanceledException tce)
                     {
@@ -285,7 +301,7 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
                     {
                         using (var stream = await response.Content.ReadAsStreamAsync())
                         {
-                            CatalogItem item = Utils.CreateCatalogItem(
+                            PackageCatalogItem item = Utils.CreateCatalogItem(
                                 packageItem.ContentUri.ToString(),
                                 stream,
                                 packageItem.CreatedDate,
@@ -297,6 +313,9 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
                                 writer.Add(item);
 
                                 logger?.LogInformation("Add metadata from: {PackageDetailsContentUri}", packageItem.ContentUri);
+
+                                packageProperties[TelemetryConstants.Size] = item.GetPackageSize().ToString();
+                                packageProcessingDurationTelemetryList.Add(telemetry);
                             }
                             else
                             {
@@ -336,6 +355,12 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
 
             logger?.LogInformation("COMMIT metadata to catalog.");
 
+            // The package processing is completed only after Commit. Now we can dispose of the duration telemetry.
+            foreach (var telemetry in packageProcessingDurationTelemetryList)
+            {
+                telemetry.Dispose();
+            }
+
             return lastDate;
         }
 
@@ -346,6 +371,22 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
                 return DateTime.MinValue;
             }
             return createdPackages.Value ? lastCreated : lastEdited;
+        }
+
+        private static bool TryExtractIdAndVersionFromFeedDetails(FeedPackageDetails feedPackageDetails, out string id, out string version)
+        {
+            // Expected format for V2: https://dev.nugettest.org/api/v2/package/MyAmazingPackage/1.0.0
+            if (feedPackageDetails.ContentUri.Segments.Length > 2)
+            {
+                id = feedPackageDetails.ContentUri.Segments[feedPackageDetails.ContentUri.Segments.Length - 2].Trim('/');
+                version = feedPackageDetails.ContentUri.Segments[feedPackageDetails.ContentUri.Segments.Length - 1];
+
+                return true;
+            }
+
+            id = string.Empty;
+            version = string.Empty;
+            return false;
         }
     }
 }

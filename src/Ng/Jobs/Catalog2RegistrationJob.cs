@@ -111,6 +111,8 @@ namespace Ng.Jobs
             var cursorStorage = storageFactories.LegacyStorageFactory.Create();
             _front = new DurableCursor(cursorStorage.ResolveUri("cursor.json"), cursorStorage, MemoryCursor.MinValue);
             storageFactories.SemVer2StorageFactory?.Create();
+
+            TelemetryService.GlobalDimensions[TelemetryConstants.Destination] = storageFactories.LegacyStorageFactory.BaseAddress.AbsoluteUri;
         }
 
         protected override async Task RunInternal(CancellationToken cancellationToken)
