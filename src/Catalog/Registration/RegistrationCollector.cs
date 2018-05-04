@@ -66,6 +66,8 @@ namespace NuGet.Services.Metadata.Catalog.Registration
             // from the correct location (even though we may have
             // a little rework).
 
+
+            // TODO: this is where processing of a package starts...
             var batches = catalogItems
                 .GroupBy(item => GetKey(item.Value))
                 .Select(group => new CatalogItemBatch(
@@ -87,6 +89,8 @@ namespace NuGet.Services.Metadata.Catalog.Registration
             CancellationToken cancellationToken)
         {
             var tasks = new List<Task>();
+
+            // TODO: this is where processing of a package ends. 
 
             var legacyTask = RegistrationMaker.Process(
                 registrationKey: new RegistrationKey(sortedGraphs.Key),
