@@ -8,9 +8,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using NuGet.Packaging.Core;
 using NuGet.Services.Metadata.Catalog.Persistence;
+using NuGetGallery;
+using NuGetGallery.Auditing;
+using NuGetGallery.Auditing.AuditedEntities;
 
 namespace NuGet.Services.Metadata.Catalog.Helpers
 {
@@ -78,8 +82,30 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
             }
 
             Uri = uri;
-            Record = JObject.Parse(contents);
-            InitValues();
+
+            var jEntry = JObject.Parse(contents);
+            var record = GetPart<PackageAuditRecord>(jEntry, RecordPart);
+            var actor = GetPart<AuditActor>(jEntry, ActorPart);
+            Entry = new AuditEntry(record, actor);
+
+            PackageId = record.Id;
+            PackageVersion = record.Version;
+            TimestampUtc = Entry.Actor.TimestampUtc;
+        }
+
+        private const string RecordPart = "Record";
+        private const string ActorPart = "Actor";
+
+        private static T GetPart<T>(JObject entry, string partName)
+        {
+            return entry.GetValue(partName, StringComparison.OrdinalIgnoreCase).ToObject<T>(JsonSerializer.Create(
+                    new JsonSerializerSettings { Converters = new JsonConverter[]
+                        {
+                            new DeletionAuditEntryAuditedPackageActionJsonConverter(),
+                            new DeletionAuditEntryAuditedEntityJsonConverter<AuditedPackage>(),
+                            new DeletionAuditEntryAuditedEntityJsonConverter<AuditedPackageRegistration>(),
+                            new StringEnumConverter(),
+                        } }));
         }
 
         [JsonConstructor]
@@ -90,10 +116,26 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
         /// <summary>
         /// Constructor for testing.
         /// </summary>
-        public DeletionAuditEntry(Uri uri, JObject record, string id, string version, DateTime? timestamp)
+        public DeletionAuditEntry(Uri uri, string id, string version, DateTime? timestamp)
         {
             Uri = uri;
-            Record = record;
+            Entry = 
+                new AuditEntry(
+                    new PackageAuditRecord(
+                        id, 
+                        version, 
+                        "hash", 
+                        AuditedPackage.CreateFrom(new Package { UserKey = 1414, FlattenedAuthors = "hello i made this" }),
+                        new AuditedPackageRegistration(), 
+                        AuditedPackageAction.Delete, 
+                        "reason"), 
+                    new AuditActor(
+                        "machineName", 
+                        "127.0.0.1", 
+                        "username", 
+                        "authType", 
+                        "credKey", 
+                        new DateTime(2018, 5, 7)));
             PackageId = id;
             PackageVersion = version;
             TimestampUtc = timestamp;
@@ -109,7 +151,7 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
         /// The entire contents of the audit entry file.
         /// </summary>
         [JsonProperty("record")]
-        public JObject Record { get; private set; }
+        public AuditEntry Entry { get; private set; }
 
         /// <summary>
         /// The id of the package being audited.
@@ -128,22 +170,6 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
         /// </summary>
         [JsonProperty("timestamp")]
         public DateTime? TimestampUtc { get; private set; }
-
-        private const string RecordPart = "Record";
-        private const string ActorPart = "Actor";
-
-        private JObject GetPart(string partName)
-        {
-            return (JObject)Record?.GetValue(partName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private void InitValues()
-        {
-            PackageId = GetPart(RecordPart).GetValue("Id", StringComparison.OrdinalIgnoreCase).ToString();
-            PackageVersion = GetPart(RecordPart).GetValue("Version", StringComparison.OrdinalIgnoreCase).ToString();
-            TimestampUtc =
-                GetPart(ActorPart).GetValue("TimestampUtc", StringComparison.OrdinalIgnoreCase).Value<DateTime>();
-        }
 
         /// <summary>
         /// Fetches <see cref="DeletionAuditEntry"/>s.
@@ -224,9 +250,9 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
 
             return
                 (await Task.WhenAll(
-                    auditRecords.Select(record => DeletionAuditEntry.CreateAsync(auditingStorage, record.Uri, cancellationToken, logger))))
+                    auditRecords.Select(record => CreateAsync(auditingStorage, record.Uri, cancellationToken, logger))))
                 // Filter out null records.
-                .Where(entry => entry?.Record != null);
+                .Where(entry => entry?.Entry != null);
         }
 
         /// <summary>

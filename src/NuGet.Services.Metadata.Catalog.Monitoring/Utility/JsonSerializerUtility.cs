@@ -4,6 +4,8 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using NuGet.Protocol;
+using NuGet.Services.Metadata.Catalog.Helpers;
+using NuGetGallery.Auditing.AuditedEntities;
 
 namespace NuGet.Services.Metadata.Catalog.Monitoring
 {
@@ -19,7 +21,13 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
                 var settings = new JsonSerializerSettings();
 
                 settings.Converters.Add(new NuGetVersionConverter());
+                settings.Converters.Add(new DeletionAuditEntryAuditedPackageActionJsonConverter());
+                settings.Converters.Add(new DeletionAuditEntryAuditedEntityJsonConverter<AuditedPackage>());
+                settings.Converters.Add(new DeletionAuditEntryAuditedEntityJsonConverter<AuditedPackageRegistration>());
+                settings.Converters.Add(new DeletionAuditEntryAuditEntryJsonConverter());
                 settings.Converters.Add(new StringEnumConverter());
+                
+                settings.ContractResolver = new NonPublicPropertiesObfuscatorContractResolver();
 
                 return settings;
             }

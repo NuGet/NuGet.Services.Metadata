@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Newtonsoft.Json.Linq;
 using NgTests.Infrastructure;
 using NuGet.Packaging.Core;
 using NuGet.Services.Metadata.Catalog;
@@ -17,6 +16,9 @@ using NuGet.Services.Metadata.Catalog.Helpers;
 using NuGet.Services.Metadata.Catalog.Monitoring;
 using NuGet.Services.Metadata.Catalog.Persistence;
 using NuGet.Versioning;
+using NuGetGallery.Auditing;
+using NuGetGallery.Auditing.AuditedEntities;
+using NuGetGallery.Auditing.Obfuscation;
 using Xunit;
 
 namespace NgTests
@@ -130,7 +132,6 @@ namespace NgTests
         {
             return new DeletionAuditEntry(
                 new UriBuilder() { Path = $"auditing/{id}/{version}/{Guid.NewGuid().ToString()}{DeletionAuditEntry.FileNameSuffixes[0]}" }.Uri,
-                JObject.Parse("{\"help\":\"i'm trapped in a json factory!\"}"),
                 id,
                 version,
                 DateTime.UtcNow);
@@ -270,9 +271,120 @@ namespace NgTests
 
             AssertFieldEqual(expected, actual, i => i.PackageId);
             AssertFieldEqual(expected, actual, i => i.PackageVersion);
-            AssertFieldEqual(expected, actual, i => i.Record);
+            AssertFieldEqual(expected, actual, i => i.Entry, AssertAuditEntry);
             AssertFieldEqual(expected, actual, i => i.TimestampUtc);
             AssertFieldEqual(expected, actual, i => i.Uri);
+        }
+
+        private static void AssertAuditEntry(AuditEntry expected, AuditEntry actual)
+        {
+            if (expected == null)
+            {
+                Assert.Null(actual);
+
+                return;
+            }
+
+            AssertFieldEqual(expected, actual, i => i.Record as PackageAuditRecord, AssertPackageAuditRecord);
+            AssertFieldEqual(expected, actual, i => i.Actor, AssertAuditActor);
+        }
+
+        private static void AssertPackageAuditRecord(PackageAuditRecord expected, PackageAuditRecord actual)
+        {
+            if (expected == null)
+            {
+                Assert.Null(actual);
+
+                return;
+            }
+
+            AssertFieldEqual(expected, actual, i => i.Id);
+            AssertFieldEqual(expected, actual, i => i.Version);
+            AssertFieldEqual(expected, actual, i => i.Hash);
+            AssertFieldEqual(expected, actual, i => i.PackageRecord, AssertAuditedPackage);
+            AssertFieldEqual(expected, actual, i => i.RegistrationRecord, AssertAuditedPackageRegistration);
+            AssertFieldEqual(expected, actual, i => i.Action);
+        }
+
+        private static void AssertAuditedPackage(AuditedPackage expected, AuditedPackage actual)
+        {
+            if (expected == null)
+            {
+                Assert.Null(actual);
+
+                return;
+            }
+
+            AssertFieldEqual(expected, actual, i => i.Copyright);
+            AssertFieldEqual(expected, actual, i => i.Created);
+            AssertFieldEqual(expected, actual, i => i.Deleted);
+            AssertFieldEqual(expected, actual, i => i.Description);
+            AssertFieldEqual(expected, actual, i => i.DownloadCount);
+            AssertFieldEqual(expected, actual, i => i.ExternalPackageUrl);
+            Assert.Equal(ObfuscatorJsonConverter.Obfuscate(expected.FlattenedAuthors, ObfuscationType.Authors), actual.FlattenedAuthors);
+            AssertFieldEqual(expected, actual, i => i.FlattenedDependencies);
+            AssertFieldEqual(expected, actual, i => i.Hash);
+            AssertFieldEqual(expected, actual, i => i.HashAlgorithm);
+            AssertFieldEqual(expected, actual, i => i.HasReadMe);
+            AssertFieldEqual(expected, actual, i => i.HideLicenseReport);
+            AssertFieldEqual(expected, actual, i => i.IconUrl);
+            AssertFieldEqual(expected, actual, i => i.IsLatest);
+            AssertFieldEqual(expected, actual, i => i.IsLatestStable);
+            AssertFieldEqual(expected, actual, i => i.IsPrerelease);
+            AssertFieldEqual(expected, actual, i => i.Key);
+            AssertFieldEqual(expected, actual, i => i.Language);
+            AssertFieldEqual(expected, actual, i => i.LastEdited);
+            AssertFieldEqual(expected, actual, i => i.LastUpdated);
+            AssertFieldEqual(expected, actual, i => i.LicenseNames);
+            AssertFieldEqual(expected, actual, i => i.LicenseReportUrl);
+            AssertFieldEqual(expected, actual, i => i.LicenseUrl);
+            AssertFieldEqual(expected, actual, i => i.Listed);
+            AssertFieldEqual(expected, actual, i => i.MinClientVersion);
+            AssertFieldEqual(expected, actual, i => i.NormalizedVersion);
+            AssertFieldEqual(expected, actual, i => i.PackageFileSize);
+            AssertFieldEqual(expected, actual, i => i.PackageRegistrationKey);
+            AssertFieldEqual(expected, actual, i => i.PackageStatusKey);
+            AssertFieldEqual(expected, actual, i => i.ProjectUrl);
+            AssertFieldEqual(expected, actual, i => i.Published);
+            AssertFieldEqual(expected, actual, i => i.ReleaseNotes);
+            AssertFieldEqual(expected, actual, i => i.RequiresLicenseAcceptance);
+            AssertFieldEqual(expected, actual, i => i.Summary);
+            AssertFieldEqual(expected, actual, i => i.Tags);
+            AssertFieldEqual(expected, actual, i => i.Title);
+            Assert.Equal(ObfuscatorJsonConverter.Obfuscate(expected.UserKey, ObfuscationType.UserKey), actual.UserKey.ToString());
+            AssertFieldEqual(expected, actual, i => i.Version);
+        }
+
+        private static void AssertAuditedPackageRegistration(AuditedPackageRegistration expected, AuditedPackageRegistration actual)
+        {
+            if (expected == null)
+            {
+                Assert.Null(actual);
+
+                return;
+            }
+
+            AssertFieldEqual(expected, actual, i => i.Id);
+            AssertFieldEqual(expected, actual, i => i.DownloadCount);
+            AssertFieldEqual(expected, actual, i => i.IsVerified);
+            AssertFieldEqual(expected, actual, i => i.Key);
+        }
+
+        private static void AssertAuditActor(AuditActor expected, AuditActor actual)
+        {
+            if (expected == null)
+            {
+                Assert.Null(actual);
+
+                return;
+            }
+
+            AssertFieldEqual(expected, actual, i => i.AuthenticationType);
+            AssertFieldEqual(expected, actual, i => i.CredentialKey);
+            Assert.Equal(Obfuscator.ObfuscateIp(expected.MachineIP), actual.MachineIP);
+            AssertFieldEqual(expected, actual, i => i.MachineName);
+            AssertFieldEqual(expected, actual, i => i.OnBehalfOf);
+            AssertFieldEqual(expected, actual, i => i.TimestampUtc);
         }
 
         private static void AssertAggregateValidationResult(AggregateValidationResult expected, AggregateValidationResult actual)
