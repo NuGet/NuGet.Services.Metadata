@@ -341,6 +341,7 @@
     <Compile Include="Jobs\LoopingNgJob.cs" />
     <Compile Include="Jobs\Monitoring2MonitoringJob.cs" />
     <Compile Include="Jobs\MonitoringProcessorJob.cs" />
+    <Compile Include="Jobs\MonitoringStatusReserializerJob.cs" />
     <Compile Include="Jobs\NgJob.cs" />
     <Compile Include="Jobs\Package2CatalogJob.cs" />
     <Compile Include="Json\RegistrationBaseUrlRewritingJsonReader.cs" />
