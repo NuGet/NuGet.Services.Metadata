@@ -22,7 +22,7 @@ cd Ng
 		-vaultName #{Deployment.Azure.KeyVault.VaultName} ^
 		-clientId #{Deployment.Azure.KeyVault.ClientId} ^
 		-certificateThumbprint #{Deployment.Azure.KeyVault.CertificateThumbprint} ^
-		-verbose true -Once
+		-verbose true
 
 	echo "Finished #{Jobs.monitoringstatusreserializer.Title}"
 
