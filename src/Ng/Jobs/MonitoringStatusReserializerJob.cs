@@ -41,51 +41,40 @@ namespace Ng.Jobs
 
         protected override async Task RunInternal(CancellationToken cancellationToken)
         {
-            var validStatusesTask = _statusService.GetAsync(PackageState.Valid, cancellationToken);
-            var invalidStatusesTask = _statusService.GetAsync(PackageState.Invalid, cancellationToken);
-            var statuses = 
-                (await Task.WhenAll(
-                    new[] { validStatusesTask, invalidStatusesTask }))
-                    .SelectMany(p => p)
-                    .Where(p => p.ValidationResult?.DeletionAuditEntries.Any() ?? false);
-
-            foreach (var status in statuses)
-            {
-                try
-                {
-                    var existingStatus = await _statusService.GetAsync(status.Package, cancellationToken);
-
-                    if (existingStatus?.ValidationResult != null && CompareCatalogEntries(status.ValidationResult.CatalogEntries, existingStatus.ValidationResult.CatalogEntries))
-                    {
-                        // A newer catalog entry of this package has already been validated.
-                        Logger.LogInformation("A newer catalog entry of {PackageId} {PackageVersion} has already been processed ({OldCommitTimeStamp} < {NewCommitTimeStamp}).",
-                            status.Package.Id, status.Package.Version,
-                            status.ValidationResult.CatalogEntries.Max(c => c.CommitTimeStamp),
-                            existingStatus.ValidationResult.CatalogEntries.Max(c => c.CommitTimeStamp));
-
-                        continue;
-                    }
-
-                    await _statusService.UpdateAsync(status, cancellationToken);
-                }
-                catch (Exception e)
-                {
-                    Logger.LogError(
-                        NuGet.Services.Metadata.Catalog.Monitoring.LogEvents.StatusReserializationFailure, 
-                        e, 
-                        "Failed to reserialize the status of {PackageId} {PackageVersion}", 
-                        status.Package.Id, 
-                        status.Package.Version);
-                }
-            }
+            Logger.LogInformation("Fetching list of package monitoring statuses");
+            var statuses = await _statusService.ListAsync(cancellationToken);
+            Logger.LogInformation("Finished fetching list of package monitoring statuses");
+            Logger.LogInformation("Processing package monitoring statuses");
+            await Task.WhenAll(statuses.Select(s => ReserializePackage(s, cancellationToken)));
         }
 
-        /// <summary>
-        /// Returns if the newest entry in <paramref name="first"/> is older than the newest entry in <paramref name="second"/>.
-        /// </summary>
-        private bool CompareCatalogEntries(IEnumerable<CatalogIndexEntry> first, IEnumerable<CatalogIndexEntry> second)
+        public async Task ReserializePackage(PackageMonitoringStatusListItem listItem, CancellationToken cancellationToken)
         {
-            return first.Max(c => c.CommitTimeStamp) < second.Max(c => c.CommitTimeStamp);
+            var packageId = listItem.Package.Id;
+            var packageVersion = listItem.Package.Version;
+
+            try
+            {
+                Logger.LogInformation("Processing status for {PackageId} {PackageVersion}", packageId, packageVersion);
+                var status = await _statusService.GetAsync(listItem.Package, cancellationToken);
+                Logger.LogInformation("Successfully retrieved current status of {PackageId} {PackageVersion}", packageId, packageVersion);
+
+                if (!status.ValidationResult?.DeletionAuditEntries.Any() ?? true)
+                {
+                    Logger.LogInformation("Status of {PackageId} {PackageVersion} does not have any deletion audit entries, will not reserialize", 
+                        packageId, packageVersion);
+                    return;
+                }
+
+                Logger.LogInformation("Reserializing status of {PackageId} {PackageVersion}", packageId, packageVersion);
+                await _statusService.UpdateAsync(status, cancellationToken);
+                Logger.LogInformation("Successfully reserialized status of {PackageId} {PackageVersion}", packageId, packageVersion);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(NuGet.Services.Metadata.Catalog.Monitoring.LogEvents.StatusReserializationFailure, e, 
+                    "Failed to reserialize status of {PackageId} {PackageVersion}", packageId, packageVersion);
+            }
         }
     }
 }
