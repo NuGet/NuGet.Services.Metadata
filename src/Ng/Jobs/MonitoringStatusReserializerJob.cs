@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -15,6 +16,8 @@ namespace Ng.Jobs
 {
     public class MonitoringStatusReserializerJob : NgJob
     {
+        public const int DegreeOfParallelism = 32;
+
         private IPackageMonitoringStatusService _statusService;
         private CatalogIndexReader _catalogIndexReader;
 
@@ -45,7 +48,25 @@ namespace Ng.Jobs
             var statuses = await _statusService.ListAsync(cancellationToken);
             Logger.LogInformation("Finished fetching list of package monitoring statuses");
             Logger.LogInformation("Processing package monitoring statuses");
-            await Task.WhenAll(statuses.Select(s => ReserializePackage(s, cancellationToken)));
+
+            var bag = new ConcurrentBag<PackageMonitoringStatusListItem>(statuses);
+            var bagTakers = new List<Task>(DegreeOfParallelism);
+            for (var i = 0; i < DegreeOfParallelism; i++)
+            {
+                bagTakers.Add(TakeFromBag(bag, ReserializePackage, cancellationToken));
+            }
+
+            await Task.WhenAll(bagTakers);
+        }
+
+        public async Task TakeFromBag<T>(ConcurrentBag<T> bag, Func<T, CancellationToken, Task> getTaskPerItem, CancellationToken cancellationToken)
+        {
+            await Task.Yield();
+
+            while (bag.TryTake(out var item))
+            {
+                await getTaskPerItem(item, cancellationToken);
+            }
         }
 
         public async Task ReserializePackage(PackageMonitoringStatusListItem listItem, CancellationToken cancellationToken)
