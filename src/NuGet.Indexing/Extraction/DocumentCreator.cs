@@ -6,14 +6,11 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Text;
-using System.Threading.Tasks;
-using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Microsoft.Azure.Search;
 using Microsoft.Azure.Search.Models;
 using Newtonsoft.Json;
 using NuGet.Versioning;
-using LuceneConstants = NuGet.Indexing.MetadataConstants.LuceneMetadata;
 
 namespace NuGet.Indexing
 {
@@ -335,26 +332,13 @@ namespace NuGet.Indexing
 
         private static void AddSupportedFrameworks(PackageDocument document, IDictionary<string, string> package)
         {
-            string value;
-            if (package.TryGetValue(MetadataConstants.SupportedFrameworksPropertyName, out value))
+            if (package.TryGetValue(MetadataConstants.SupportedFrameworksPropertyName, out string value))
             {
-                using (var textWriter = new StringWriter())
-                {
-                    using (var jsonWriter = new JsonTextWriter(textWriter))
-                    {
-                        jsonWriter.WriteStartArray();
-                        foreach (var s in value.Split('|'))
-                        {
-                            jsonWriter.WriteValue(s);
-                        }
-                        jsonWriter.WriteEndArray();
-                        jsonWriter.Flush();
-                        textWriter.Flush();
-                        string supportedFrameworks = textWriter.ToString();
-
-                        document.SupportedFrameworks = supportedFrameworks;
-                    }
-                }
+                document.SupportedFrameworks = value.Split('|');
+            }
+            else
+            {
+                document.SupportedFrameworks = new string[0];
             }
         }
 
@@ -476,12 +460,13 @@ namespace NuGet.Indexing
         public DateTimeOffset Published { get; set; }
         public DateTimeOffset LastEdited { get; set; }
 
-
         public int PackageSize { get; set; }
         public bool RequiresLicenseAcceptance { get; set; }
         public string FlattenedDependencies { get; set; }
         public string Dependencies { get; set; }
-        public string SupportedFrameworks { get; set; }
+
+        [IsSearchable, IsFilterable, IsFacetable]
+        public string[] SupportedFrameworks { get; set; }
         public string SemVerLevel { get; set; }
         public string MinClientVersion { get; set; }
         public string ReleaseNotes { get; set; }
