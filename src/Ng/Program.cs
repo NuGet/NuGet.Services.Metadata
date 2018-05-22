@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
@@ -73,9 +74,9 @@ namespace Ng
                 job = NgJobFactory.GetJob(jobName, telemetryService, loggerFactory);
                 await job.Run(arguments, cancellationTokenSource.Token);
             }
-            catch (ArgumentException ae)
+            catch (Exception e) when (e is ArgumentException || e is KeyNotFoundException)
             {
-                _logger?.LogError("A required argument was not found or was malformed/invalid: {Exception}", ae);
+                _logger?.LogError("A required argument was not found or was malformed/invalid: {Exception}", e);
                 
                 Console.WriteLine(job != null ? job.GetUsage() : NgJob.GetUsageBase());
             }

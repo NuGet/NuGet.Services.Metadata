@@ -43,6 +43,7 @@ namespace NuGet.Indexing
             var document = new PackageDocument();
 
             // add fields used by search queries
+            AddKey(document, package, errors);
             AddId(document, package, errors);
             AddVersion(document, package, errors);
             AddTitle(document, package);
@@ -79,6 +80,18 @@ namespace NuGet.Indexing
             CheckErrors(errors);
 
             return document;
+        }
+
+        private static void AddKey(PackageDocument document, IDictionary<string, string> package, List<string> errors)
+        {
+            if (package.TryGetValue(MetadataConstants.KeyPropertyName, out string value))
+            {
+                document.Key = value;
+            }
+            else
+            {
+                errors.Add($"Required property '{MetadataConstants.KeyPropertyName}' not found.");
+            }
         }
 
         private static void AddId(PackageDocument document, IDictionary<string, string> package, List<string> errors)
@@ -389,19 +402,24 @@ namespace NuGet.Indexing
         {
             if (document == null) throw new ArgumentNullException(nameof(document));
 
-            PrepareActions();
+            if (_actions == null)
+            {
+                ResetActions();
+            }
 
             _actions.Add(IndexAction.Upload(document));
         }
 
         public void Commit()
         {
-            if (_actions == null) return;
+            if (_actions == null || _actions.Count == 0) return;
 
             var batch = IndexBatch.New(_actions);
 
             // TODO: Use IndexAsync, requires API change for IndexWriter.
             _indexClient.Documents.Index(batch);
+
+            ResetActions();
         }
 
         public void Dispose() => _indexClient?.Dispose();
@@ -410,12 +428,17 @@ namespace NuGet.Indexing
         {
             if (_actions == null)
             {
-                _actions = new List<IndexAction<PackageDocument>>();
+                ResetActions();
             }
             else if (_actions.Count >= MaxBatchSize)
             {
-                throw new InvalidOperationException($"Cannot index more than {MaxBatchSize} packages at once");
+
             }
+        }
+
+        private void ResetActions()
+        {
+            _actions = new List<IndexAction<PackageDocument>>();
         }
     }
 

@@ -70,6 +70,7 @@ namespace NuGet.Indexing
         public const string FlattenedDependenciesPropertyName = "flattenedDependencies";
         public const string IconUrlPropertyName = "iconUrl";
         public const string IdPropertyName = "id";
+        public const string KeyPropertyName = "key";
         public const string LanguagePropertyName = "language";
         public const string LastEditedPropertyName = "lastEdited";
         public const string LicenseUrlPropertyName = "licenseUrl";

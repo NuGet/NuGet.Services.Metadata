@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Search;
+using Microsoft.Azure.Search.Models;
 using Microsoft.Extensions.Logging;
 using NuGet.Indexing;
 using NuGet.Services.Configuration;
@@ -19,6 +20,7 @@ namespace Ng.Jobs
         private string _searchAccountName;
         private string _searchApiKey;
         private string _indexName;
+        private bool _createIndex;
         private Uri _catalogIndexUrl;
 
         public Db2LuceneJob(ITelemetryService telemetryService, ILoggerFactory loggerFactory) : base(telemetryService, loggerFactory)
@@ -32,6 +34,7 @@ namespace Ng.Jobs
                    + $"-{Arguments.SearchAccountName} <searchAccountName> "
                    + $"-{Arguments.SearchApiKey} <searchApiKey> "
                    + $"-{Arguments.IndexName} <searchIndex> "
+                   + $"[-{Arguments.CreateIndex} true|false]"
                    + $"[-{Arguments.Verbose} true|false]";
         }
 
@@ -41,16 +44,36 @@ namespace Ng.Jobs
             _searchAccountName = arguments.GetOrThrow<string>(Arguments.SearchAccountName);
             _searchApiKey = arguments.GetOrThrow<string>(Arguments.SearchApiKey);
             _indexName = arguments.GetOrThrow<string>(Arguments.IndexName);
+            _createIndex = false;
+
+            if (arguments.TryGetValue(Arguments.CreateIndex, out string createIndexString))
+            {
+                if (bool.TryParse(createIndexString, out bool createIndex))
+                {
+                    _createIndex = createIndex;
+                }
+            }
         }
         
-        protected override Task RunInternal(CancellationToken cancellationToken)
+        protected async override Task RunInternal(CancellationToken cancellationToken)
         {
             var searchCredentials = new SearchCredentials(_searchApiKey);
             var searchClient = new SearchServiceClient(_searchAccountName, searchCredentials);
 
-            Sql2Lucene.Export(_connectionString, searchClient, _indexName, LoggerFactory);
+            if (_createIndex)
+            {
+                Logger.LogInformation("Creating index {Name}...", _indexName);
 
-            return Task.FromResult(false);
+                await searchClient.Indexes.CreateAsync(new Index
+                {
+                    Name = _indexName,
+                    Fields = FieldBuilder.BuildForType<PackageDocument>()
+                });
+
+                Logger.LogInformation("Created index {Name}", _indexName);
+            }
+
+            Sql2Lucene.Export(_connectionString, searchClient, _indexName, LoggerFactory);
         }
     }
 }

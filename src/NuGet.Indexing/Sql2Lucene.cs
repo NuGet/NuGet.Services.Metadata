@@ -104,7 +104,7 @@ namespace NuGet.Indexing
 
                         writer.AddDocument(document);
 
-                        if (batch++ == 1000)
+                        if (++batch == 1000)
                         {
                             writer.Commit();
                             batch = 0;

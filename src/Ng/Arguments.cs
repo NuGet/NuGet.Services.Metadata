@@ -20,6 +20,7 @@ namespace Ng
         public const string SearchAccountName = "searchAccountName";
         public const string SearchApiKey = "searchApiKey";
         public const string IndexName = "indexName";
+        public const string CreateIndex = "createIndex";
         public const string Source = "source";
         public const string Verbose = "verbose";
 
