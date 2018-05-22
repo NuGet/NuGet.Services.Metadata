@@ -21,7 +21,6 @@ namespace Ng.Jobs
         private string _searchApiKey;
         private string _indexName;
         private bool _createIndex;
-        private Uri _catalogIndexUrl;
 
         public Db2LuceneJob(ITelemetryService telemetryService, ILoggerFactory loggerFactory) : base(telemetryService, loggerFactory)
         {

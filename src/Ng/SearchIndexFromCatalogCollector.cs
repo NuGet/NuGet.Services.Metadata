@@ -4,14 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Lucene.Net.Documents;
-using Lucene.Net.Index;
-using Lucene.Net.Search;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NuGet.Indexing;
@@ -24,7 +21,7 @@ namespace Ng
     {
         private readonly string _baseAddress;
 
-        private readonly IndexWriter _indexWriter;
+        private readonly AzureSearchIndexWriter _indexWriter;
         private readonly bool _commitEachBatch;
         private readonly ILogger _logger;
 
@@ -32,7 +29,7 @@ namespace Ng
 
         public SearchIndexFromCatalogCollector(
             Uri index,
-            IndexWriter indexWriter,
+            AzureSearchIndexWriter indexWriter,
             bool commitEachBatch,
             string baseAddress,
             ITelemetryService telemetryService,
@@ -58,23 +55,9 @@ namespace Ng
 
             IEnumerable<JObject> catalogItems = await FetchCatalogItems(client, items, cancellationToken);
 
-            var numDocs = _indexWriter.NumDocs();
-            _logger.LogInformation(string.Format("Index contains {0} documents.", _indexWriter.NumDocs()));
-
-            ProcessCatalogIndex(_indexWriter, catalogIndex, _baseAddress);
             ProcessCatalogItems(_indexWriter, catalogItems, _baseAddress);
 
-            var docsDifference = _indexWriter.NumDocs() - numDocs;
-
-            UpdateCommitMetadata(commitTimeStamp, docsDifference);
-
-            _logger.LogInformation(string.Format("Processed catalog items. Index now contains {0} documents. (total uncommitted {1}, batch {2})",
-                _indexWriter.NumDocs(), _metadataForNextCommit.Count, docsDifference));
-
-            if (_commitEachBatch || isLastBatch)
-            {
-               EnsureCommitted();
-            }
+            _logger.LogInformation("Processed catalog items.");
 
             return true;
         }
@@ -90,24 +73,6 @@ namespace Ng
 
             _metadataForNextCommit = DocumentCreator.CreateCommitMetadata(
                 commitTimeStamp, "from catalog", count, Guid.NewGuid().ToString());
-        }
-
-        public void EnsureCommitted()
-        {
-            if (_metadataForNextCommit == null)
-            {
-                // this means no changes have been made to the index - no need to commit
-                _logger.LogInformation(string.Format("SKIP COMMIT No changes. Index contains {0} documents.", _indexWriter.NumDocs()));
-                return;
-            }
-            
-            _indexWriter.ExpungeDeletes();
-            _indexWriter.Commit(_metadataForNextCommit.ToDictionary());
-
-            _logger.LogInformation("COMMIT index contains {0} documents. Metadata: commitTimeStamp {CommitTimeStamp}; change count {ChangeCount}; trace {CommitTrace}",
-                _indexWriter.NumDocs(), _metadataForNextCommit.CommitTimeStamp.ToString("O"), _metadataForNextCommit.Count, _metadataForNextCommit.Trace);
-
-            _metadataForNextCommit = null;
         }
 
         private static async Task<IEnumerable<JObject>> FetchCatalogItems(CollectorHttpClient client, IEnumerable<JToken> items, CancellationToken cancellationToken)
@@ -126,27 +91,10 @@ namespace Ng
             return tasks.Select(t => t.Result);
         }
 
-        private static void ProcessCatalogIndex(IndexWriter indexWriter, JObject catalogIndex, string baseAddress)
-        {
-            indexWriter.DeleteDocuments(new Term("@type", Schema.DataTypes.CatalogInfastructure.AbsoluteUri));
-
-            Document doc = new Document();
-
-            Add(doc, "@type", Schema.DataTypes.CatalogInfastructure.AbsoluteUri, Field.Store.YES, Field.Index.NOT_ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
-            Add(doc, "Visibility", "Public", Field.Store.YES, Field.Index.NOT_ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
-
-            if (catalogIndex != null)
-            {
-                IEnumerable<string> storagePaths = GetCatalogStoragePaths(catalogIndex);
-                AddStoragePaths(doc, storagePaths, baseAddress);
-            }
-
-            indexWriter.AddDocument(doc);
-        }
-
-        private void ProcessCatalogItems(IndexWriter indexWriter, IEnumerable<JObject> catalogItems, string baseAddress)
+        private void ProcessCatalogItems(AzureSearchIndexWriter indexWriter, IEnumerable<JObject> catalogItems, string baseAddress)
         {
             int count = 0;
+            int batch = 0;
 
             foreach (JObject catalogItem in catalogItems)
             {
@@ -167,7 +115,18 @@ namespace Ng
                     _logger.LogInformation("Unrecognized @type ignoring CatalogItem");
                 }
 
+                if (++batch == 1000)
+                {
+                    indexWriter.Commit();
+                    batch = 0;
+                }
+
                 count++;
+            }
+
+            if (batch > 0)
+            {
+                indexWriter.Commit();
             }
 
             _logger.LogInformation(string.Format("Processed {0} CatalogItems", count));
@@ -188,84 +147,26 @@ namespace Ng
             return catalogItem["@context"];
         }
 
-        private void ProcessPackageDetails(IndexWriter indexWriter, JObject catalogItem)
+        private void ProcessPackageDetails(AzureSearchIndexWriter indexWriter, JObject catalogItem)
         {
             _logger.LogDebug("ProcessPackageDetails");
-
-            indexWriter.DeleteDocuments(CreateDeleteQuery(catalogItem));
 
             var package = CatalogPackageMetadataExtraction.MakePackageMetadata(catalogItem);
             var document = DocumentCreator.CreateDocument(package);
 
-            // TODO!!
-            indexWriter.AddDocument(null);
-            //indexWriter.AddDocument(document);
+            indexWriter.AddDocument(document);
         }
 
-        private void ProcessPackageDelete(IndexWriter indexWriter, JObject catalogItem)
+        private void ProcessPackageDelete(AzureSearchIndexWriter indexWriter, JObject catalogItem)
         {
             _logger.LogDebug("ProcessPackageDelete");
 
-            indexWriter.DeleteDocuments(CreateDeleteQuery(catalogItem));
-        }
-
-        private static Query CreateDeleteQuery(JObject catalogItem)
-        {
             string id = catalogItem["id"].ToString();
             string version = catalogItem["version"].ToString();
 
-            //  note as we are not using the QueryParser we are not running this data through the analyzer so we need to mimic its behavior
-            string analyzedId = id.ToLowerInvariant();
-            string analyzedVersion = NuGetVersion.Parse(version).ToNormalizedString();
+            version = NuGetVersion.Parse(version).ToNormalizedString();
 
-            JToken nsJToken;
-            if (catalogItem.TryGetValue("namespace", out nsJToken))
-            {
-                string ns = nsJToken.ToString();
-
-                BooleanQuery query = new BooleanQuery();
-                query.Add(new BooleanClause(new TermQuery(new Term("Id", analyzedId)), Occur.MUST));
-                query.Add(new BooleanClause(new TermQuery(new Term("Version", analyzedVersion)), Occur.MUST));
-                query.Add(new BooleanClause(new TermQuery(new Term("Namespace", ns)), Occur.MUST));
-                return query;
-            }
-            else
-            {
-                BooleanQuery query = new BooleanQuery();
-                query.Add(new BooleanClause(new TermQuery(new Term("Id", analyzedId)), Occur.MUST));
-                query.Add(new BooleanClause(new TermQuery(new Term("Version", analyzedVersion)), Occur.MUST));
-                return query;
-            }
-        }
-
-        private static void Add(Document doc, string name, string value, Field.Store store, Field.Index index, Field.TermVector termVector, float boost = 1.0f)
-        {
-            if (value == null)
-            {
-                return;
-            }
-
-            Field newField = new Field(name, value, store, index, termVector);
-            newField.Boost = boost;
-            doc.Add(newField);
-        }
-
-        private static void Add(Document doc, string name, int value, Field.Store store, Field.Index index, Field.TermVector termVector, float boost = 1.0f)
-        {
-            Add(doc, name, value.ToString(CultureInfo.InvariantCulture), store, index, termVector, boost);
-        }
-
-        private static float DetermineLanguageBoost(string id, string language)
-        {
-            if (!string.IsNullOrWhiteSpace(language))
-            {
-                string languageSuffix = "." + language.Trim();
-                if (id.EndsWith(languageSuffix, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    return 0.1f;
-                }
-            }
-            return 1.0f;
+            indexWriter.DeleteDocument(id, version);
         }
 
         private static void AddStoragePaths(Document doc, IEnumerable<string> storagePaths, string baseAddress)

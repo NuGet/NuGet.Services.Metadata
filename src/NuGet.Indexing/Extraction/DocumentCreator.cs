@@ -40,11 +40,11 @@ namespace NuGet.Indexing
             var document = new PackageDocument();
 
             // add fields used by search queries
-            AddKey(document, package, errors);
             AddId(document, package, errors);
             AddVersion(document, package, errors);
             AddTitle(document, package);
 
+            document.Key = BuildPackageKey(document.Id, document.Version);
             document.Description = GetStringField(package, MetadataConstants.DescriptionPropertyName);
             document.Summary = GetStringField(package, MetadataConstants.SummaryPropertyName);
 
@@ -79,16 +79,15 @@ namespace NuGet.Indexing
             return document;
         }
 
-        private static void AddKey(PackageDocument document, IDictionary<string, string> package, List<string> errors)
+        public static string BuildPackageKey(string packageId, string normalizedVersion)
         {
-            if (package.TryGetValue(MetadataConstants.KeyPropertyName, out string value))
-            {
-                document.Key = value;
-            }
-            else
-            {
-                errors.Add($"Required property '{MetadataConstants.KeyPropertyName}' not found.");
-            }
+            var keyString = $"{packageId.ToLowerInvariant()}:{normalizedVersion.ToLowerInvariant()}";
+
+            // Keys can only contain letters, digits, underscore(_), dash(-), or equal sign(=).
+            var bytes = Encoding.UTF8.GetBytes(keyString);
+            var base64 = Convert.ToBase64String(bytes);
+
+            return base64.Replace('+', '-').Replace('/', '_');
         }
 
         private static void AddId(PackageDocument document, IDictionary<string, string> package, List<string> errors)
@@ -394,6 +393,22 @@ namespace NuGet.Indexing
             _actions.Add(IndexAction.Upload(document));
         }
 
+        public void DeleteDocument(string packageId, string version)
+        {
+            if (string.IsNullOrEmpty(nameof(packageId))) throw new ArgumentNullException(nameof(packageId));
+            if (string.IsNullOrEmpty(nameof(version))) throw new ArgumentNullException(nameof(version));
+
+            if (_actions == null)
+            {
+                ResetActions();
+            }
+
+            _actions.Add(IndexAction.Delete(new PackageDocument
+            {
+                Key = DocumentCreator.BuildPackageKey(packageId, version)
+            }));
+        }
+
         public void Commit()
         {
             if (_actions == null || _actions.Count == 0) return;
@@ -407,18 +422,6 @@ namespace NuGet.Indexing
         }
 
         public void Dispose() => _indexClient?.Dispose();
-
-        private void PrepareActions()
-        {
-            if (_actions == null)
-            {
-                ResetActions();
-            }
-            else if (_actions.Count >= MaxBatchSize)
-            {
-
-            }
-        }
 
         private void ResetActions()
         {

@@ -8,6 +8,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Lucene.Net.Index;
+using Microsoft.Azure.Search;
+using Microsoft.Azure.Search.Models;
 using Microsoft.Extensions.Logging;
 using NuGet.Indexing;
 using NuGet.Services.Configuration;
@@ -20,10 +22,14 @@ namespace Ng.Jobs
         private bool _verbose;
         private string _source;
         private string _registration;
-        private Lucene.Net.Store.Directory _directory;
         private string _catalogBaseAddress;
         private string _storageBaseAddress;
         private Func<HttpMessageHandler> _handlerFunc;
+
+        private string _searchAccountName;
+        private string _searchApiKey;
+        private string _indexName;
+        private bool _createIndex;
 
         public Catalog2LuceneJob(ITelemetryService telemetryService, ILoggerFactory loggerFactory)
             : base(telemetryService, loggerFactory)
@@ -35,12 +41,10 @@ namespace Ng.Jobs
             return "Usage: ng catalog2lucene "
                    + $"-{Arguments.Source} <catalog> "
                    + $"[-{Arguments.Registration} <registration-root>. Multiple registration cursors are supported, separated by ';'.] "
-                   + $"-{Arguments.LuceneDirectoryType} file|azure "
-                   + $"[-{Arguments.LucenePath} <file-path>] "
-                   + "|"
-                   + $"[-{Arguments.LuceneStorageAccountName} <azure-acc> "
-                   + $"-{Arguments.LuceneStorageKeyValue} <azure-key> "
-                   + $"-{Arguments.LuceneStorageContainer} <azure-container> "
+                   + $"-{Arguments.SearchAccountName} <searchAccountName> "
+                   + $"-{Arguments.SearchApiKey} <searchApiKey> "
+                   + $"-{Arguments.IndexName} <searchIndex> "
+                   + $"[-{Arguments.CreateIndex} true|false]"
                    + $"[-{Arguments.VaultName} <keyvault-name> "
                    + $"-{Arguments.ClientId} <keyvault-client-id> "
                    + $"-{Arguments.CertificateThumbprint} <keyvault-certificate-thumbprint> "
@@ -51,7 +55,6 @@ namespace Ng.Jobs
 
         protected override void Init(IDictionary<string, string> arguments, CancellationToken cancellationToken)
         {
-            _directory = CommandHelpers.GetLuceneDirectory(arguments);
             _source = arguments.GetOrThrow<string>(Arguments.Source);
             _verbose = arguments.GetOrDefault(Arguments.Verbose, false);
 
@@ -81,11 +84,40 @@ namespace Ng.Jobs
                 _verbose,
                 _catalogBaseAddress,
                 _storageBaseAddress);
+
+            _searchAccountName = arguments.GetOrThrow<string>(Arguments.SearchAccountName);
+            _searchApiKey = arguments.GetOrThrow<string>(Arguments.SearchApiKey);
+            _indexName = arguments.GetOrThrow<string>(Arguments.IndexName);
+            _createIndex = false;
+
+            if (arguments.TryGetValue(Arguments.CreateIndex, out string createIndexString))
+            {
+                if (bool.TryParse(createIndexString, out bool createIndex))
+                {
+                    _createIndex = createIndex;
+                }
+            }
         }
 
         protected override async Task RunInternal(CancellationToken cancellationToken)
         {
-            using (var indexWriter = CreateIndexWriter(_directory))
+            var searchCredentials = new SearchCredentials(_searchApiKey);
+            var searchClient = new SearchServiceClient(_searchAccountName, searchCredentials);
+
+            if (_createIndex)
+            {
+                Logger.LogInformation("Creating index {Name}...", _indexName);
+
+                await searchClient.Indexes.CreateAsync(new Index
+                {
+                    Name = _indexName,
+                    Fields = FieldBuilder.BuildForType<PackageDocument>()
+                });
+
+                Logger.LogInformation("Created index {Name}", _indexName);
+            }
+
+            using (var indexWriter = new AzureSearchIndexWriter(searchClient.Indexes.GetClient(_indexName)))
             {
                 var collector = new SearchIndexFromCatalogCollector(
                     index: new Uri(_source),
@@ -96,7 +128,7 @@ namespace Ng.Jobs
                     logger: Logger,
                     handlerFunc: _handlerFunc);
 
-                ReadWriteCursor front = new LuceneCursor(indexWriter, MemoryCursor.MinValue);
+                ReadWriteCursor front = MemoryCursor.CreateMin(); //new DurableCursor(cursorStorage.ResolveUri("cursor.json"), cursorStorage, MemoryCursor.MinValue);
                 var back = _registration == null
                                  ? (ReadCursor)MemoryCursor.CreateMax()
                                  : GetTheLeastAdvancedRegistrationCursor(_registration, cancellationToken);
@@ -105,8 +137,6 @@ namespace Ng.Jobs
                 do
                 {
                     run = await collector.Run(front, back, cancellationToken);
-
-                    collector.EnsureCommitted(); // commit after each catalog page
                 }
                 while (run);
             }
