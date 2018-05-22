@@ -19,7 +19,6 @@ namespace Ng.Jobs
         private string _searchAccountName;
         private string _searchApiKey;
         private string _indexName;
-        private string _source;
         private Uri _catalogIndexUrl;
 
         public Db2LuceneJob(ITelemetryService telemetryService, ILoggerFactory loggerFactory) : base(telemetryService, loggerFactory)
@@ -42,8 +41,6 @@ namespace Ng.Jobs
             _searchAccountName = arguments.GetOrThrow<string>(Arguments.SearchAccountName);
             _searchApiKey = arguments.GetOrThrow<string>(Arguments.SearchApiKey);
             _indexName = arguments.GetOrThrow<string>(Arguments.IndexName);
-
-            _catalogIndexUrl = new Uri(_source);
         }
         
         protected override Task RunInternal(CancellationToken cancellationToken)
