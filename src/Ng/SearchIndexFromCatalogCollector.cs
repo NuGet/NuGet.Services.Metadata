@@ -196,7 +196,10 @@ namespace Ng
 
             var package = CatalogPackageMetadataExtraction.MakePackageMetadata(catalogItem);
             var document = DocumentCreator.CreateDocument(package);
-            indexWriter.AddDocument(document);
+
+            // TODO!!
+            indexWriter.AddDocument(null);
+            //indexWriter.AddDocument(document);
         }
 
         private void ProcessPackageDelete(IndexWriter indexWriter, JObject catalogItem)

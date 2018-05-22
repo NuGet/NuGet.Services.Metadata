@@ -1,23 +1,20 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using Lucene.Net.Documents;
-using Lucene.Net.Store;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Azure.Search;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace NuGet.Indexing
 {
     public class Sql2Lucene
     {
-        static Document CreateDocument(SqlDataReader reader, IDictionary<int, List<string>> packageFrameworks)
+        static PackageDocument CreateDocument(SqlDataReader reader, IDictionary<int, List<string>> packageFrameworks)
         {
             var package = new Dictionary<string, string>();
             for (var i = 0; i < reader.FieldCount; i++)
@@ -46,17 +43,13 @@ namespace NuGet.Indexing
             return DocumentCreator.CreateDocument(package);
         }
 
-        static string IndexBatch(string path, string connectionString, IDictionary<int, List<string>> packageFrameworks, int beginKey, int endKey)
+        static void IndexBatch(string connectionString, ISearchServiceClient searchClient, string indexName, IDictionary<int, List<string>> packageFrameworks, int beginKey, int endKey)
         {
-            var folder = string.Format(@"{0}\index_{1}_{2}", path, beginKey, endKey);
-
-            var directoryInfo = new DirectoryInfo(folder);
-            directoryInfo.Create();
-
             using (var connection = new SqlConnection(connectionString))
             {
                 connection.Open();
 
+                // TODO: This query should be where PackageStatusKey = Available
                 var cmdText = @"
                     SELECT
                         Packages.[Key]                          'key',
@@ -66,6 +59,7 @@ namespace NuGet.Indexing
                         Packages.Title                          'title',
                         Packages.Tags                           'tags',
                         Packages.[Description]                  'description',
+                        Packages.DownloadCount                  'downloadCount',
                         Packages.FlattenedAuthors               'authors',
                         Packages.Summary                        'summary',
                         Packages.IconUrl                        'iconUrl',
@@ -102,9 +96,7 @@ namespace NuGet.Indexing
 
                 var batch = 0;
 
-                var directory = new SimpleFSDirectory(directoryInfo);
-
-                using (var writer = DocumentCreator.CreateIndexWriter(directory, true))
+                using (var writer = new AzureSearchIndexWriter(searchClient.Indexes.GetClient(indexName)))
                 {
                     while (reader.Read())
                     {
@@ -125,8 +117,6 @@ namespace NuGet.Indexing
                     }
                 }
             }
-
-            return folder;
         }
 
         static List<Tuple<int, int>> CalculateBatches(string connectionString)
@@ -219,13 +209,10 @@ namespace NuGet.Indexing
             return result;
         }
 
-        public static void Export(string sourceConnectionString, Uri catalogIndexUrl, string destinationPath, ILoggerFactory loggerFactory)
+        public static void Export(string sourceConnectionString, SearchServiceClient searchClient, string indexName, ILoggerFactory loggerFactory)
         {
             var logger = loggerFactory.CreateLogger<Sql2Lucene>();
             var stopwatch = new Stopwatch();
-
-            // Get the commit timestamp from catalog index page for lucene index
-            var initTime = GetCommitTimestampFromCatalogAsync(catalogIndexUrl, logger).Result;
 
             stopwatch.Start();
 
@@ -239,10 +226,10 @@ namespace NuGet.Indexing
 
             stopwatch.Restart();
 
-            var tasks = new List<Task<string>>();
+            var tasks = new List<Task>();
             foreach (var batch in batches)
             {
-                tasks.Add(Task.Run(() => { return IndexBatch(destinationPath + @"\batches", sourceConnectionString, packageFrameworks, batch.Item1, batch.Item2); }));
+                tasks.Add(Task.Run(() => { IndexBatch(sourceConnectionString, searchClient, indexName, packageFrameworks, batch.Item1, batch.Item2); }));
             }
 
             try
@@ -256,58 +243,9 @@ namespace NuGet.Indexing
                 throw;
             }
 
-            logger.LogInformation("Partition indexes generated (took {PartitionIndexGenerationTime} seconds", stopwatch.Elapsed.TotalSeconds);
-
-            stopwatch.Restart();
-
-            using (var directory = new SimpleFSDirectory(new DirectoryInfo(destinationPath)))
-            {
-                using (var writer = DocumentCreator.CreateIndexWriter(directory, true))
-                {
-                    NuGetMergePolicyApplyer.ApplyTo(writer);
-
-                    var partitions = tasks.Select(t => new SimpleFSDirectory(new DirectoryInfo(t.Result))).ToArray();
-
-                    writer.AddIndexesNoOptimize(partitions);
-
-                    foreach (var partition in partitions)
-                    {
-                        partition.Dispose();
-                    }
-
-                    writer.Commit(DocumentCreator.CreateCommitMetadata(initTime, "from SQL", writer.NumDocs(), Guid.NewGuid().ToString())
-                        .ToDictionary());
-                }
-            }
-
-            logger.LogInformation("Sql2Lucene.Export done (took {Sql2LuceneExportTime} seconds)", stopwatch.Elapsed.TotalSeconds);
+            logger.LogInformation("Indexes generated (took {PartitionIndexGenerationTime} seconds)", stopwatch.Elapsed.TotalSeconds);
 
             stopwatch.Reset();
         }
-
-        private static async Task<DateTime> GetCommitTimestampFromCatalogAsync(Uri indexUrl, ILogger<Sql2Lucene> logger)
-        {
-            DateTime commitTime = DateTime.UtcNow;
-            try
-            {
-                using (var client = new System.Net.Http.HttpClient())
-                using (var response = await client.GetAsync(indexUrl))
-                {
-                    logger.LogInformation("Fetching catalog index page: {0}", response.StatusCode);
-                    response.EnsureSuccessStatusCode();
-
-                    string json = response.Content.ReadAsStringAsync().Result;
-                    JObject obj = JObject.Parse(json);
-                    commitTime = obj["commitTimeStamp"].ToObject<DateTime>();
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning("Error retrieving timestamp from catalog index({0})! Defaulting to current time! {1}", indexUrl.ToString(), ex);
-            }
-
-            return commitTime;
-        }
-
     }
 }

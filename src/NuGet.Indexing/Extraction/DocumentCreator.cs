@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Microsoft.Azure.Search;
@@ -36,66 +37,6 @@ namespace NuGet.Indexing
             return new LuceneCommitMetadata(commitTimeStamp, description, count, trace);
         }
 
-        // See: https://docs.microsoft.com/en-us/nuget/api/search-query-service-resource#search-for-packages
-        [SerializePropertyNamesAsCamelCase]
-        public class PackageDocument
-        {
-            public const string IndexName = "packages";
-
-            [Key]
-            public string Key { get; set; }
-
-            [IsSearchable, IsFilterable, IsSortable]
-            public string Id { get; set; }
-
-            [IsSearchable, IsFilterable, IsSortable]
-            public string Version { get; set; }
-
-            [IsSearchable, IsFilterable, IsSortable]
-            public string VerbatimVersion { get; set; }
-
-            [IsSearchable, IsFilterable, IsSortable]
-            public string FullVersion { get; set; }
-
-            [IsSearchable]
-            public string Description { get; set; }
-            public string[] Authors { get; set; }
-            public string IconUrl { get; set; }
-            public string LicenseUrl { get; set; }
-            [IsFilterable]
-            public bool Listed { get; set; }
-            public string ProjectUrl { get; set; }
-
-            public DateTimeOffset Created { get; set; }
-            public DateTimeOffset Published { get; set; }
-            public DateTimeOffset LastEdited { get; set; }
-
-
-            public int PackageSize { get; set; }
-            public bool RequiresLicenseAcceptance { get; set; }
-            public string FlattenedDependencies { get; set; }
-            public string Dependencies { get; set; }
-            public string SupportedFrameworks { get; set; }
-
-            [IsSearchable]
-            public string Summary { get; set; }
-
-            [IsSearchable, IsFilterable, IsFacetable]
-            public string[] Tags { get; set; }
-
-            [IsSearchable]
-            public string Title { get; set; }
-
-            [IsFilterable, IsSortable]
-            public long TotalDownloads { get; set; }
-
-            [IsFilterable, IsSortable]
-            public int DownloadsMagnitude { get; set; }
-
-            public string[] Versions { get; set; }
-            public string[] VersionDownloads { get; set; }
-        }
-
         public static PackageDocument CreateDocument(IDictionary<string, string> package)
         {
             var errors = new List<string>();
@@ -105,28 +46,31 @@ namespace NuGet.Indexing
             AddId(document, package, errors);
             AddVersion(document, package, errors);
             AddTitle(document, package);
+
             document.Description = GetStringField(package, MetadataConstants.DescriptionPropertyName);
             document.Summary = GetStringField(package, MetadataConstants.SummaryPropertyName);
 
-            //AddField(document, LuceneConstants.TagsPropertyName, package, MetadataConstants.TagsPropertyName, Field.Index.ANALYZED, 2.0f);
-            //AddField(document, LuceneConstants.AuthorsPropertyName, package, MetadataConstants.AuthorsPropertyName, Field.Index.ANALYZED);
+            AddTags(document, package);
+            AddAuthors(document, package);
 
             // add fields used by filtering and sorting
-            //AddField(document, LuceneConstants.SemVerLevelPropertyName, package, MetadataConstants.SemVerLevelKeyPropertyName, Field.Index.ANALYZED);
+            document.SemVerLevel = GetStringField(package, MetadataConstants.SemVerLevelKeyPropertyName);
             AddListed(document, package, errors);
             AddDates(document, package, errors);
             AddSortableTitle(document, package);
+            AddDownloads(document, package, errors);
 
             // add fields used when materializing the result
-            //AddField(document, LuceneConstants.IconUrlPropertyName, package, MetadataConstants.IconUrlPropertyName, Field.Index.NOT_ANALYZED);
-            //AddField(document, LuceneConstants.ProjectUrlPropertyName, package, MetadataConstants.ProjectUrlPropertyName, Field.Index.NOT_ANALYZED);
-            //AddField(document, LuceneConstants.MinClientVersionPropertyName, package, MetadataConstants.MinClientVersionPropertyName, Field.Index.NOT_ANALYZED);
-            //AddField(document, LuceneConstants.ReleaseNotesPropertyName, package, MetadataConstants.ReleaseNotesPropertyName, Field.Index.NOT_ANALYZED);
-            //AddField(document, LuceneConstants.CopyrightPropertyName, package, MetadataConstants.CopyrightPropertyName, Field.Index.NOT_ANALYZED);
-            //AddField(document, LuceneConstants.LanguagePropertyName, package, MetadataConstants.LanguagePropertyName, Field.Index.NOT_ANALYZED);
-            //AddField(document, LuceneConstants.LicenseUrlPropertyName, package, MetadataConstants.LicenseUrlPropertyName, Field.Index.NOT_ANALYZED);
-            //AddField(document, LuceneConstants.PackageHashPropertyName, package, MetadataConstants.PackageHashPropertyName, Field.Index.NOT_ANALYZED);
-            //AddField(document, LuceneConstants.PackageHashAlgorithmPropertyName, package, MetadataConstants.PackageHashAlgorithmPropertyName, Field.Index.NOT_ANALYZED);
+            document.IconUrl = GetStringField(package, MetadataConstants.IconUrlPropertyName);
+            document.ProjectUrl = GetStringField(package, MetadataConstants.ProjectUrlPropertyName);
+            document.MinClientVersion = GetStringField(package, MetadataConstants.MinClientVersionPropertyName);
+            document.ReleaseNotes = GetStringField(package, MetadataConstants.ReleaseNotesPropertyName);
+            document.Copyright = GetStringField(package, MetadataConstants.CopyrightPropertyName);
+            document.Language = GetStringField(package, MetadataConstants.LanguagePropertyName);
+            document.LicenseUrl = GetStringField(package, MetadataConstants.LicenseUrlPropertyName);
+            document.PackageHash = GetStringField(package, MetadataConstants.PackageHashPropertyName);
+            document.PackageHashAlgorithm = GetStringField(package, MetadataConstants.PackageHashAlgorithmPropertyName);
+
             AddPackageSize(document, package, errors);
             AddRequiresLicenseAcceptance(document, package, errors);
             AddDependencies(document, package);
@@ -183,6 +127,34 @@ namespace NuGet.Indexing
             document.Title = value ?? string.Empty;
         }
 
+        private static void AddTags(PackageDocument document, IDictionary<string, string> package)
+        {
+            package.TryGetValue(MetadataConstants.TagsPropertyName, out string tagsString);
+
+            if (string.IsNullOrEmpty(tagsString))
+            {
+                document.Tags = new string[0];
+            }
+            else
+            {
+                document.Tags = tagsString.Split(new[] { ',', ';', ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            }
+        }
+
+        private static void AddAuthors(PackageDocument document, IDictionary<string, string> package)
+        {
+            package.TryGetValue(MetadataConstants.AuthorsPropertyName, out string authorsString);
+
+            if (string.IsNullOrEmpty(authorsString))
+            {
+                document.Authors = new string[0];
+            }
+            else
+            {
+                document.Authors = authorsString.Split(new[] { ',', ';', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+            }
+        }
+
         private static void AddListed(PackageDocument document, IDictionary<string, string> package, List<string> errors)
         {
             if (package.TryGetValue(MetadataConstants.ListedPropertyName, out string value))
@@ -212,6 +184,21 @@ namespace NuGet.Indexing
             }
 
             document.Title = (value ?? string.Empty).Trim().ToLower();
+        }
+
+        private static void AddDownloads(PackageDocument document, IDictionary<string, string> package, List<string> errors)
+        {
+            if (package.TryGetValue(MetadataConstants.DownloadCountPropertyName, out string value))
+            {
+                if (int.TryParse(value, out int downloads))
+                {
+                    document.Downloads = downloads;
+                }
+                else
+                {
+                    errors.Add($"Unable to parse '{MetadataConstants.DownloadCountPropertyName}' as Int32.");
+                }
+            }
         }
 
         private static void AddDates(PackageDocument document, IDictionary<string, string> package, List<string> errors)
@@ -380,5 +367,116 @@ namespace NuGet.Indexing
                 throw new Exception(sb.ToString());
             }
         }
+    }
+
+    public class AzureSearchIndexWriter : IDisposable
+    {
+        public const int MaxBatchSize = 1000;
+
+        private readonly ISearchIndexClient _indexClient;
+        private List<IndexAction<PackageDocument>> _actions;
+
+        public AzureSearchIndexWriter(
+            ISearchIndexClient indexClient //,
+            /*ILogger<BatchIndexer> logger*/)
+        {
+            _indexClient = indexClient ?? throw new ArgumentNullException(nameof(indexClient));
+            _actions = null;
+        }
+
+        // This is not thread-safe
+        public void AddDocument(PackageDocument document)
+        {
+            if (document == null) throw new ArgumentNullException(nameof(document));
+
+            PrepareActions();
+
+            _actions.Add(IndexAction.Upload(document));
+        }
+
+        public void Commit()
+        {
+            if (_actions == null) return;
+
+            var batch = IndexBatch.New(_actions);
+
+            // TODO: Use IndexAsync, requires API change for IndexWriter.
+            _indexClient.Documents.Index(batch);
+        }
+
+        public void Dispose() => _indexClient?.Dispose();
+
+        private void PrepareActions()
+        {
+            if (_actions == null)
+            {
+                _actions = new List<IndexAction<PackageDocument>>();
+            }
+            else if (_actions.Count >= MaxBatchSize)
+            {
+                throw new InvalidOperationException($"Cannot index more than {MaxBatchSize} packages at once");
+            }
+        }
+    }
+
+    // See: https://docs.microsoft.com/en-us/nuget/api/search-query-service-resource#search-for-packages
+    [SerializePropertyNamesAsCamelCase]
+    public class PackageDocument
+    {
+        public const string IndexName = "packages";
+
+        [Key]
+        public string Key { get; set; }
+
+        [IsSearchable, IsFilterable, IsSortable]
+        public string Id { get; set; }
+
+        [IsSearchable, IsFilterable, IsSortable]
+        public string Version { get; set; }
+
+        [IsSearchable, IsFilterable, IsSortable]
+        public string VerbatimVersion { get; set; }
+
+        [IsSearchable, IsFilterable, IsSortable]
+        public string FullVersion { get; set; }
+
+        [IsSearchable]
+        public string Description { get; set; }
+        public string[] Authors { get; set; }
+        public string IconUrl { get; set; }
+        public string LicenseUrl { get; set; }
+        [IsFilterable]
+        public bool Listed { get; set; }
+        public string ProjectUrl { get; set; }
+
+        public DateTimeOffset Created { get; set; }
+        public DateTimeOffset Published { get; set; }
+        public DateTimeOffset LastEdited { get; set; }
+
+
+        public int PackageSize { get; set; }
+        public bool RequiresLicenseAcceptance { get; set; }
+        public string FlattenedDependencies { get; set; }
+        public string Dependencies { get; set; }
+        public string SupportedFrameworks { get; set; }
+        public string SemVerLevel { get; set; }
+        public string MinClientVersion { get; set; }
+        public string ReleaseNotes { get; set; }
+        public string Copyright { get; set; }
+        public string Language { get; set; }
+        public string PackageHash { get; set; }
+        public string PackageHashAlgorithm { get; set; }
+
+        [IsSearchable]
+        public string Summary { get; set; }
+
+        [IsSearchable, IsFilterable, IsFacetable]
+        public string[] Tags { get; set; }
+
+        [IsSearchable]
+        public string Title { get; set; }
+
+        [IsFilterable, IsSortable]
+        public long Downloads { get; set; }
     }
 }

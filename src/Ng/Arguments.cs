@@ -17,6 +17,9 @@ namespace Ng
         public const string Id = "id";
         public const string InstrumentationKey = "instrumentationkey";
         public const string Path = "path";
+        public const string SearchAccountName = "searchAccountName";
+        public const string SearchApiKey = "searchApiKey";
+        public const string IndexName = "indexName";
         public const string Source = "source";
         public const string Verbose = "verbose";
 

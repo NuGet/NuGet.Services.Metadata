@@ -66,6 +66,7 @@ namespace NuGet.Indexing
         public const string CopyrightPropertyName = "copyright";
         public const string CreatedPropertyName = "created";
         public const string DescriptionPropertyName = "description";
+        public const string DownloadCountPropertyName = "downloadCount";
         public const string FlattenedDependenciesPropertyName = "flattenedDependencies";
         public const string IconUrlPropertyName = "iconUrl";
         public const string IdPropertyName = "id";
