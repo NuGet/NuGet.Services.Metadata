@@ -9,12 +9,12 @@ namespace NuGet.Indexing
     public class AuxiliaryFiles
     {
         // List of all auxiliary files
-        internal const string Owners = "owners.json";
-        internal const string DownloadsV1 = "downloads.v1.json";
-        internal const string CuratedFeeds = "curatedfeeds.json";
-        internal const string RankingsV1 = "rankings.v1.json";
-        internal const string SearchSettingsV1 = "searchSettings.v1.json";
-        internal const string VerifiedPackages = "verifiedPackages.json";
+        public const string Owners = "owners.json";
+        public const string DownloadsV1 = "downloads.v1.json";
+        public const string CuratedFeeds = "curatedfeeds.json";
+        public const string RankingsV1 = "rankings.v1.json";
+        public const string SearchSettingsV1 = "searchSettings.v1.json";
+        public const string VerifiedPackages = "verifiedPackages.json";
 
         public virtual IDictionary<string, DateTime?> LastModifiedTimeForFiles { get; }
 
@@ -35,7 +35,7 @@ namespace NuGet.Indexing
             LastModifiedTimeForFiles = new Dictionary<string, DateTime?>();
         }
 
-        internal void UpdateLastModifiedTime()
+        public void UpdateLastModifiedTime()
         {
             foreach (string fileName in fileList)
             {

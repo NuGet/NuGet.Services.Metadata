@@ -87,6 +87,7 @@ namespace NuGet.Indexing
         public const string SemVerLevelKeyPropertyName = "semVerLevelKey";
         public const string SummaryPropertyName = "summary";
         public const string SupportedFrameworksPropertyName = "supportedFrameworks";
+        public const string VerifiedPropertyName = "isVerified";
         public const string TagsPropertyName = "tags";
         public const string TitlePropertyName = "title";
         public const string VerbatimVersionPropertyName = "verbatimVersion";

@@ -73,6 +73,7 @@ namespace NuGet.Indexing
             AddRequiresLicenseAcceptance(document, package, errors);
             AddDependencies(document, package);
             AddSupportedFrameworks(document, package);
+            AddVerified(document, package);
 
             CheckErrors(errors);
 
@@ -341,6 +342,21 @@ namespace NuGet.Indexing
             }
         }
 
+        private static void AddVerified(PackageDocument document, IDictionary<string, string> package)
+        {
+            if (package.TryGetValue(MetadataConstants.VerifiedPropertyName, out string value))
+            {
+                if (bool.TryParse(value, out bool verified))
+                {
+                    document.Verified = verified;
+                }
+                else
+                {
+                    document.Verified = false;
+                }
+            }
+        }
+
         private static string GetStringField(IDictionary<string, string> package, string field)
         {
             if (!package.TryGetValue(field, out string value))
@@ -477,6 +493,7 @@ namespace NuGet.Indexing
         public string Language { get; set; }
         public string PackageHash { get; set; }
         public string PackageHashAlgorithm { get; set; }
+        public bool Verified { get; set; }
 
         [IsSearchable]
         public string Summary { get; set; }

@@ -8,6 +8,9 @@ namespace NuGet.Services.AzureSearch
         public string ApiKey { get; set; }
         public string IndexName { get; set; }
 
+        public string StorageConnectionString { get; set; }
+        public string StorageContainerName { get; set; }
+
         public Uri RegistrationBase { get; set; }
     }
 }

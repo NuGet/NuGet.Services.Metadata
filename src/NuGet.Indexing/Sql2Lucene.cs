@@ -45,12 +45,14 @@ namespace NuGet.Indexing
 
         static void IndexBatch(string connectionString, ISearchServiceClient searchClient, string indexName, IDictionary<int, List<string>> packageFrameworks, int beginKey, int endKey)
         {
-            using (var connection = new SqlConnection(connectionString))
+            using (var writer = new AzureSearchIndexWriter(searchClient.Indexes.GetClient(indexName)))
             {
-                connection.Open();
+                using (var connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
 
-                // TODO: This query should be where PackageStatusKey = Available
-                var cmdText = @"
+                    // TODO: This query should be where PackageStatusKey = Available
+                    var cmdText = @"
                     SELECT
                         Packages.[Key]                          'key',
                         PackageRegistrations.Id                 'id',
@@ -74,6 +76,7 @@ namespace NuGet.Indexing
                         Packages.HashAlgorithm                  'packageHashAlgorithm',
                         Packages.PackageFileSize                'packageSize',
                         Packages.FlattenedDependencies          'flattenedDependencies',
+                        PackageRegistrations.IsVerified         'isVerified',
                         Packages.Created                        'created',
                         Packages.LastEdited                     'lastEdited',
                         Packages.Published                      'published',
@@ -87,35 +90,33 @@ namespace NuGet.Indexing
                     ORDER BY Packages.[Key]
                 ";
 
-                var command = new SqlCommand(cmdText, connection);
-                command.CommandTimeout = (int)TimeSpan.FromMinutes(15).TotalSeconds;
-                command.Parameters.AddWithValue("BeginKey", beginKey);
-                command.Parameters.AddWithValue("EndKey", endKey);
-
-                var reader = command.ExecuteReader();
-
-                var batch = 0;
-
-                using (var writer = new AzureSearchIndexWriter(searchClient.Indexes.GetClient(indexName)))
-                {
-                    while (reader.Read())
+                    using (var command = new SqlCommand(cmdText, connection))
                     {
-                        var document = CreateDocument(reader, packageFrameworks);
+                        command.CommandTimeout = (int)TimeSpan.FromMinutes(15).TotalSeconds;
+                        command.Parameters.AddWithValue("BeginKey", beginKey);
+                        command.Parameters.AddWithValue("EndKey", endKey);
 
-                        writer.AddDocument(document);
+                        var batch = 0;
 
-                        if (++batch == 1000)
+                        using (var reader = command.ExecuteReader())
                         {
-                            writer.Commit();
-                            batch = 0;
+                            while (reader.Read())
+                            {
+                                if (batch == 1000)
+                                {
+                                    throw new Exception("Batch max size is 1000");
+                                }
+
+                                var document = CreateDocument(reader, packageFrameworks);
+
+                                writer.AddDocument(document);
+                                ++batch;
+                            }
                         }
                     }
-
-                    if (batch > 0)
-                    {
-                        writer.Commit();
-                    }
                 }
+
+                writer.Commit();
             }
         }
 
@@ -156,7 +157,7 @@ namespace NuGet.Indexing
                 {
                     endKey = x;
 
-                    if (batch++ == 50000)
+                    if (++batch == 1000)
                     {
                         batches.Add(Tuple.Create(beginKey, endKey));
                         batch = 0;
@@ -226,26 +227,48 @@ namespace NuGet.Indexing
 
             stopwatch.Restart();
 
-            var tasks = new List<Task>();
-            foreach (var batch in batches)
+            foreach (var group in GroupBatches(batches, 20))
             {
-                tasks.Add(Task.Run(() => { IndexBatch(sourceConnectionString, searchClient, indexName, packageFrameworks, batch.Item1, batch.Item2); }));
-            }
+                var tasks = new List<Task>();
+                foreach (var batch in group)
+                {
+                    tasks.Add(Task.Run(() => { IndexBatch(sourceConnectionString, searchClient, indexName, packageFrameworks, batch.Item1, batch.Item2); }));
+                }
 
-            try
-            {
-                Task.WaitAll(tasks.ToArray());
-            }
-            catch (AggregateException ex)
-            {
-                logger.LogError("An AggregateException occurred while running batches.", ex);
+                try
+                {
+                    Task.WaitAll(tasks.ToArray());
+                }
+                catch (AggregateException ex)
+                {
+                    logger.LogError("An AggregateException occurred while running batches.", ex);
 
-                throw;
+                    throw;
+                }
             }
 
             logger.LogInformation("Indexes generated (took {PartitionIndexGenerationTime} seconds)", stopwatch.Elapsed.TotalSeconds);
 
             stopwatch.Reset();
+        }
+
+        private static List<List<Tuple<int, int>>> GroupBatches(List<Tuple<int, int>> batches, int groupSize)
+        {
+            var result = new List<List<Tuple<int, int>>>();
+            List<Tuple<int, int>> current = null;
+
+            foreach (var batch in batches)
+            {
+                if (current == null || current.Count == groupSize)
+                {
+                    current = new List<Tuple<int, int>>();
+                    result.Add(current);
+                }
+
+                current.Add(batch);
+            }
+
+            return result;
         }
     }
 }
