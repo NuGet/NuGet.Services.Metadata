@@ -195,6 +195,7 @@ namespace NuGet.Services.AzureSearch.Controllers
             public string[] Tags => _result.Tags;
             public string Title => _result.Title;
             public long TotalDownloads => _result.TotalDownloads;
+            public bool Verified => _result.Verified;
 
             public IReadOnlyList<SearchResultVersionModel> Versions { get; }
         }
