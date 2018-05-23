@@ -82,7 +82,7 @@ namespace NuGet.Services.AzureSearch.Controllers
                     Tags = latest.Tags,
                     Title = latest.Title,
                     TotalDownloads = package.Sum(p => p.Downloads),
-                    Verified = data.Verified,
+                    Verified = latest.Verified,
                     Versions = versionResults.ToList().AsReadOnly(),
                 });
             }
