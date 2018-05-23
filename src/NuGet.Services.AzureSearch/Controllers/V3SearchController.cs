@@ -53,6 +53,8 @@ namespace NuGet.Services.AzureSearch.Controllers
 
         private async Task<IReadOnlyList<SearchResult>> SearchAsync(string query)
         {
+            query = query.Trim().Trim('*') + '*';
+
             var search = await _searchClient.Documents.SearchAsync<PackageDocument>(query);
             var packages = search.Results
                 .Select(r => r.Document)
