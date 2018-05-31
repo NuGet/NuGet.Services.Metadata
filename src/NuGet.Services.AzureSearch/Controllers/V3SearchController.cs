@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Search;
+using Microsoft.Azure.Search.Models;
 using Newtonsoft.Json;
 using NuGet.Indexing;
 using NuGet.Versioning;
@@ -23,11 +24,11 @@ namespace NuGet.Services.AzureSearch.Controllers
             _url = urlBuilder ?? throw new ArgumentNullException(nameof(urlBuilder));
         }
 
-        public async Task<object> Get([FromQuery(Name = "q")] string query = null)
+        public async Task<object> Get([FromQuery(Name = "q")] string query = null, [FromQuery(Name = "take")] int take = 20)
         {
             query = query ?? string.Empty;
 
-            var results = await SearchAsync(query);
+            var results = await SearchAsync(query, take);
 
             return new
             {
@@ -51,81 +52,41 @@ namespace NuGet.Services.AzureSearch.Controllers
             return Json(new { });
         }
 
-        private async Task<IReadOnlyList<SearchResult>> SearchAsync(string query)
+        private async Task<IReadOnlyList<SearchResult>> SearchAsync(string query, int take)
         {
             query = query.Trim().Trim('*') + '*';
 
-            var search = await _searchClient.Documents.SearchAsync<PackageDocument>(query);
-            var packages = search.Results
-                .Select(r => r.Document)
-                .GroupBy(p => p.Id)
-                .ToList();
+            var parameters = new SearchParameters
+            {
+                Top = take,
+                Filter = "latest"
+            };
+
+            var search = await _searchClient.Documents.SearchAsync<PackageDocument>(query, parameters);
+            var packages = search.Results.Select(r => r.Document).ToList();
 
             var result = new List<SearchResult>();
 
-            // TODO: Don't parse NuGetVersion three times
             foreach (var package in packages)
             {
-                var versions = package.OrderByDescending(p => NuGetVersion.Parse(p.Version)).ToList();
-                var latest = versions.First();
-
-                var versionResults = versions.Select(p => new SearchResultVersion(NuGetVersion.Parse(p.Version), p.Downloads));
+                var data = _auxiliary[package.Id];
+                var versionResults = data.Downloads?.All?.Select(d => new SearchResultVersion(d.Key, d.Value)) ?? new List<SearchResultVersion>();
+                var totalDownloads = data.Downloads?.Total ?? package.Downloads;
 
                 result.Add(new SearchResult
                 {
-                    Id = latest.Id,
-                    Version = NuGetVersion.Parse(latest.Version),
-                    Description = latest.Description,
-                    Authors = string.Join(", ", latest.Authors),
-                    IconUrl = latest.IconUrl,
-                    LicenseUrl = latest.LicenseUrl,
-                    ProjectUrl = latest.ProjectUrl,
-                    Summary = latest.Summary,
-                    Tags = latest.Tags,
-                    Title = latest.Title,
-                    TotalDownloads = package.Sum(p => p.Downloads),
-                    Verified = latest.Verified,
-                    Versions = versionResults.ToList().AsReadOnly(),
-                });
-            }
-
-            return result.AsReadOnly();
-        }
-
-        private async Task<IReadOnlyList<SearchResult>> SearchWithAuxiliaryAsync(string query)
-        {
-            var search = await _searchClient.Documents.SearchAsync<PackageDocument>(query);
-            var packages = search.Results
-                .Select(r => r.Document)
-                .GroupBy(p => p.Id)
-                .ToList();
-
-            var result = new List<SearchResult>();
-
-            // TODO: Don't parse NuGetVersion three times
-            foreach (var package in packages)
-            {
-                var data = _auxiliary[package.Key];
-
-                var versions = package.OrderByDescending(p => NuGetVersion.Parse(p.Version)).ToList();
-                var latest = versions.First();
-
-                var versionResults = versions.Select(p => new SearchResultVersion(NuGetVersion.Parse(p.Version), data.Downloads[p.Version]));
-
-                result.Add(new SearchResult
-                {
-                    Id = latest.Id,
-                    Version = NuGetVersion.Parse(latest.Version),
-                    Description = latest.Description,
-                    Authors = string.Join(", ", latest.Authors),
-                    IconUrl = latest.IconUrl,
-                    LicenseUrl = latest.LicenseUrl,
-                    ProjectUrl = latest.ProjectUrl,
-                    Summary = latest.Summary,
-                    Tags = latest.Tags,
-                    Title = latest.Title,
-                    TotalDownloads = data.Downloads.Total,
-                    Verified = data.Verified,
+                    Id = package.Id,
+                    Version = NuGetVersion.Parse(package.Version),
+                    Description = package.Description,
+                    Authors = string.Join(", ", package.Authors),
+                    IconUrl = package.IconUrl,
+                    LicenseUrl = package.LicenseUrl,
+                    ProjectUrl = package.ProjectUrl,
+                    Summary = package.Summary,
+                    Tags = package.Tags,
+                    Title = package.Title,
+                    TotalDownloads = totalDownloads,
+                    Verified = package.Verified,
                     Versions = versionResults.ToList().AsReadOnly(),
                 });
             }
@@ -155,13 +116,13 @@ namespace NuGet.Services.AzureSearch.Controllers
 
         private class SearchResultVersion
         {
-            public SearchResultVersion(NuGetVersion version, long downloads)
+            public SearchResultVersion(string version, long downloads)
             {
                 Version = version ?? throw new ArgumentNullException(nameof(version));
                 Downloads = downloads;
             }
 
-            public NuGetVersion Version { get; }
+            public string Version { get; }
 
             public long Downloads { get; }
         }
@@ -179,7 +140,7 @@ namespace NuGet.Services.AzureSearch.Controllers
                 var versions = result.Versions.Select(
                     v => new SearchResultVersionModel(
                         url.Registration(result.Id, v.Version),
-                        v.Version.ToNormalizedString(),
+                        v.Version,
                         v.Downloads));
 
                 Versions = versions.ToList().AsReadOnly();

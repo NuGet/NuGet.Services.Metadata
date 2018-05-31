@@ -16,6 +16,8 @@ namespace NuGet.Services.AzureSearch
 
         public string Registration(string packageId) => $"{_registrationBase}/{packageId.ToLowerInvariant()}/index.json";
 
-        public string Registration(string packageId, NuGetVersion version) => $"{_registrationBase}/{packageId.ToLowerInvariant()}/{version.ToNormalizedString()}.json";
+        public string Registration(string packageId, NuGetVersion version) => Registration(packageId, version.ToNormalizedString());
+
+        public string Registration(string packageId, string version) => $"{_registrationBase}/{packageId.ToLowerInvariant()}/{version.ToLowerInvariant()}.json";
     }
 }

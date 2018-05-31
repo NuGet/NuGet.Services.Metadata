@@ -198,15 +198,27 @@ namespace NuGet.Indexing
 
         private static void AddDownloads(PackageDocument document, IDictionary<string, string> package, List<string> errors)
         {
-            if (package.TryGetValue(MetadataConstants.DownloadCountPropertyName, out string value))
+            if (package.TryGetValue(MetadataConstants.DownloadCountPropertyName, out string downloadsString))
             {
-                if (int.TryParse(value, out int downloads))
+                if (int.TryParse(downloadsString, out int downloads))
                 {
                     document.Downloads = downloads;
                 }
                 else
                 {
                     errors.Add($"Unable to parse '{MetadataConstants.DownloadCountPropertyName}' as Int32.");
+                }
+            }
+
+            if (package.TryGetValue(MetadataConstants.TotalDownloadCountPropertyName, out string totalDownloadsString))
+            {
+                if (int.TryParse(totalDownloadsString, out int totalDownloads))
+                {
+                    document.TotalDownloads = totalDownloads;
+                }
+                else
+                {
+                    errors.Add($"Unable to parse '{MetadataConstants.TotalDownloadCountPropertyName}' as Int32.");
                 }
             }
         }
@@ -506,5 +518,33 @@ namespace NuGet.Indexing
 
         [IsFilterable, IsSortable]
         public long Downloads { get; set; }
+
+        [IsFilterable, IsSortable]
+        public long TotalDownloads { get; set; }
+
+        // Latest filters, including unlisted, prelease, and semver2 state
+        [IsFilterable]
+        public bool Latest { get; set; }      
+
+        [IsFilterable]
+        public bool LatestIncludeSemVer2 { get; set; }
+
+        [IsFilterable]
+        public bool LatestIncludePrerelease { get; set; }
+
+        [IsFilterable]
+        public bool LatestIncludePrereleaseAndSemVer2 { get; set; }
+
+        [IsFilterable]
+        public bool LatestIncludeUnlisted { get; set; }
+
+        [IsFilterable]
+        public bool LatestIncludeUnlistedAndSemVer2 { get; set; }
+
+        [IsFilterable]
+        public bool LatestIncludeUnlistedAndPrerelease { get; set; }
+
+        [IsFilterable]
+        public bool LatestIncludeUnlistedAndPrereleaseAndSemVer2 { get; set; }
     }
 }

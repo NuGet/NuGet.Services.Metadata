@@ -79,7 +79,7 @@ namespace NuGet.Services.AzureSearch
             {
                 routes.MapRoute(
                     "v3-search",
-                    "search",
+                    "query",
                     defaults: new { controller = "V3Search", action = "Get" });
             });
         }

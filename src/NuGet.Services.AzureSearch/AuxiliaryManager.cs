@@ -20,8 +20,6 @@ namespace NuGet.Services.AzureSearch
         private readonly TimeSpan _auxiliaryDataRefreshRate;
         private readonly IDictionary<string, HashSet<string>> _owners = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
         private readonly Downloads _downloads = new Downloads();
-        private IReadOnlyDictionary<string, int> _rankings;
-        private HashSet<string> _verifiedPackages;
 
         public AuxiliaryManager(
             FrameworkLogger logger,
@@ -36,38 +34,34 @@ namespace NuGet.Services.AzureSearch
             AuxiliaryFiles = new AuxiliaryFiles(_loader);
 
             _auxiliaryDataRefreshRate = TimeSpan.FromSeconds(auxiliaryDataRefreshRateSec);
+
+            ReloadAuxiliaryDataIfExpired();
         }
 
         public AuxiliaryData this[string packageId]
         {
             get
             {
-                // TODO: Don't do this in requests' threads...
-                ReloadAuxiliaryDataIfExpired();
-
-                _owners.TryGetValue(packageId, out var owners);
+                //_owners.TryGetValue(packageId, out var owners);
 
                 return new AuxiliaryData
                 {
-                    Verified = _verifiedPackages.Contains(packageId),
                     Downloads = _downloads[packageId],
-                    Owners = owners,
+                    //Owners = owners,
                 };
             }
         }
 
         private void ReloadAuxiliaryDataIfExpired()
         {
-            if (LastAuxiliaryDataLoadTime == null || LastAuxiliaryDataLoadTime < DateTime.UtcNow - _auxiliaryDataRefreshRate)
-            {
+            //if (LastAuxiliaryDataLoadTime == null || LastAuxiliaryDataLoadTime < DateTime.UtcNow - _auxiliaryDataRefreshRate)
+            //{
                 IndexingUtils.Load(AuxiliaryFiles.Owners, _loader, _logger, _owners);
                 _downloads.Load(AuxiliaryFiles.DownloadsV1, _loader, _logger);
-                _rankings = DownloadRankings.Load(AuxiliaryFiles.RankingsV1, _loader, _logger);
-                _verifiedPackages = VerifiedPackages.Load(AuxiliaryFiles.VerifiedPackages, _loader, _logger);
 
                 LastAuxiliaryDataLoadTime = DateTime.UtcNow;
                 AuxiliaryFiles.UpdateLastModifiedTime();
-            }
+            //}
         }
     }
 
@@ -75,6 +69,5 @@ namespace NuGet.Services.AzureSearch
     {
         public DownloadsByVersion Downloads { get; set; }
         public HashSet<string> Owners { get; set; }
-        public bool Verified { get; set; }
     }
 }
