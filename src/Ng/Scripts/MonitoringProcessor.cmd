@@ -13,7 +13,7 @@ start /w .\Ng.exe monitoringprocessor ^
     -gallery #{Jobs.common.v3.f2c.Gallery} ^
     -endpointsToTest #{Jobs.endpointmonitoring.EndpointsToTest} ^
     -statusFolder #{Jobs.endpointmonitoring.StatusFolder} ^
-    -requireSignature #{Jobs.endpointmonitoring.RequireSignature}
+    -requireSignature #{Jobs.endpointmonitoring.RequireSignature} ^
     -storageType azure ^
     -storageAccountName #{Jobs.common.v3.c2r.StorageAccountName} ^
     -storageKeyValue #{Jobs.common.v3.c2r.StorageAccountKey} ^
