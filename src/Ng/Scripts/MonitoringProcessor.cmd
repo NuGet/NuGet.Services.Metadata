@@ -11,7 +11,7 @@ start /w .\Ng.exe monitoringprocessor ^
     -source #{Jobs.common.v3.Source} ^
     -index #{Jobs.common.v3.index} ^
     -gallery #{Jobs.common.v3.f2c.Gallery} ^
-    -endpointsToTest "#{Jobs.endpointmonitoring.EndpointsToTest}" ^
+    -endpointsToTest #{Jobs.endpointmonitoring.EndpointsToTest} ^
     -statusFolder #{Jobs.endpointmonitoring.StatusFolder} ^
     -requireSignature #{Jobs.endpointmonitoring.RequireSignature}
     -storageType azure ^
