@@ -25,20 +25,19 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
         public PackageValidator Create(
             string galleryUrl,
             string indexUrl,
-            string packageBaseAddress,
             StorageFactory auditingStorageFactory,
             IEnumerable<EndpointFactory.Input> endpointInputs,
             Func<HttpMessageHandler> messageHandlerFactory,
-            bool requireSignature = false,
+            ValidatorConfig validatorConfig,
             bool verbose = false)
         {
-            var validatorFactory = new ValidatorFactoryFactory(_loggerFactory).Create(galleryUrl, indexUrl, packageBaseAddress);
+            var validatorFactory = new ValidatorFactoryFactory(validatorConfig, _loggerFactory).Create(galleryUrl, indexUrl);
             var endpointFactory = new EndpointFactory(validatorFactory, messageHandlerFactory, _loggerFactory);
 
             var validators = new List<IAggregateValidator>();
 
             validators.AddRange(endpointInputs.Select(e => endpointFactory.Create(e)));
-            validators.Add(new CatalogAggregateValidator(validatorFactory, requireSignature));
+            validators.Add(new CatalogAggregateValidator(validatorFactory));
 
             return new PackageValidator(validators, auditingStorageFactory, _loggerFactory.CreateLogger<PackageValidator>());
         }

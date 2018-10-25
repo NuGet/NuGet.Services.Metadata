@@ -19,57 +19,32 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
     {
         public PackageIsRepositorySignedValidator(
             IDictionary<FeedType, SourceRepository> feedToSource,
+            ValidatorConfig config,
             ILogger<PackageIsRepositorySignedValidator> logger)
-            : base(feedToSource, logger)
+            : base(feedToSource, config, logger)
         {
         }
 
         protected async override Task RunInternalAsync(ValidationContext context)
         {
-            // Get the package's signature, if any.
             var signature = await GetPrimarySignatureOrNullAsync(context);
+            var validationException = ValidateSignature(context, signature);
 
-            if (signature == null)
+            if (validationException != null)
             {
-                throw new MissingRepositorySignatureException(
-                    $"Package {context.Package.Id} {context.Package.Version} is unsigned",
-                    MissingRepositorySignatureReason.Unsigned);
+                Logger.LogWarning(
+                    "Package {PackageId} {Package) has an invalid repository signature. {Reason}: {Message}",
+                    context.Package.Id,
+                    context.Package.Version,
+                    validationException.Reason,
+                    validationException.Message);
+
+                // Only report the validation exception if the "RequireSignature" config is enabled.
+                if (Config.RequireSignature)
+                {
+                    throw validationException;
+                }
             }
-
-            // The repository signature can be the primary signature or the author signature's countersignature.
-            IRepositorySignature repositorySignature = null;
-
-            switch (signature.Type)
-            {
-                case SignatureType.Repository:
-                    repositorySignature = (RepositoryPrimarySignature)signature;
-                    break;
-
-                case SignatureType.Author:
-                    repositorySignature = RepositoryCountersignature.GetRepositoryCountersignature(signature);
-
-                    if (repositorySignature == null)
-                    {
-                        throw new MissingRepositorySignatureException(
-                            $"Package {context.Package.Id} {context.Package.Version} is author signed but not repository signed",
-                            MissingRepositorySignatureReason.AuthorSignedNoRepositoryCountersignature);
-                    }
-
-                    break;
-
-                default:
-                case SignatureType.Unknown:
-                    throw new MissingRepositorySignatureException(
-                        $"Package {context.Package.Id} {context.Package.Version} has an unknown signature type '{signature.Type}'",
-                        MissingRepositorySignatureReason.UnknownSignature);
-            }
-
-            Logger.LogInformation(
-                "Package {PackageId} {PackageVersion} has a repository signature with service index {ServiceIndex} and owners {Owners}",
-                context.Package.Id,
-                context.Package.Version,
-                repositorySignature.V3ServiceIndexUrl,
-                repositorySignature.PackageOwners);
         }
 
         private async Task<PrimarySignature> GetPrimarySignatureOrNullAsync(ValidationContext context)
@@ -89,6 +64,59 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
                     return await package.GetPrimarySignatureAsync(context.CancellationToken);
                 }
             }
+        }
+
+        /// <summary>
+        /// Validate the package's signature.
+        /// </summary>
+        /// <param name="context">The package's validation context.</param>
+        /// <param name="signature">The package's signature.</param>
+        /// <returns>Null if the signature is valid, otherwise an exception that can be thrown.</returns>
+        private MissingRepositorySignatureException ValidateSignature(ValidationContext context, PrimarySignature signature)
+        {
+            if (signature == null)
+            {
+                return new MissingRepositorySignatureException(
+                    $"Package {context.Package.Id} {context.Package.Version} is unsigned",
+                    MissingRepositorySignatureReason.Unsigned);
+            }
+
+            // The repository signature can be the primary signature or the author signature's countersignature.
+            IRepositorySignature repositorySignature = null;
+
+            switch (signature.Type)
+            {
+                case SignatureType.Repository:
+                    repositorySignature = (RepositoryPrimarySignature)signature;
+                    break;
+
+                case SignatureType.Author:
+                    repositorySignature = RepositoryCountersignature.GetRepositoryCountersignature(signature);
+
+                    if (repositorySignature == null)
+                    {
+                        return new MissingRepositorySignatureException(
+                            $"Package {context.Package.Id} {context.Package.Version} is author signed but not repository signed",
+                            MissingRepositorySignatureReason.AuthorSignedNoRepositoryCountersignature);
+                    }
+
+                    break;
+
+                default:
+                case SignatureType.Unknown:
+                    return new MissingRepositorySignatureException(
+                        $"Package {context.Package.Id} {context.Package.Version} has an unknown signature type '{signature.Type}'",
+                        MissingRepositorySignatureReason.UnknownSignature);
+            }
+
+            Logger.LogInformation(
+                "Package {PackageId} {PackageVersion} has a repository signature with service index {ServiceIndex} and owners {Owners}",
+                context.Package.Id,
+                context.Package.Version,
+                repositorySignature.V3ServiceIndexUrl,
+                repositorySignature.PackageOwners);
+
+            return null;
         }
     }
 }

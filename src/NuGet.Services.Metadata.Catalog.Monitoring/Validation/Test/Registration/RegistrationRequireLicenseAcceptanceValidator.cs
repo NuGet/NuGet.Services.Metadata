@@ -13,8 +13,9 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
     {
         public RegistrationRequireLicenseAcceptanceValidator(
             IDictionary<FeedType, SourceRepository> feedToSource,
+            ValidatorConfig config,
             ILogger<RegistrationRequireLicenseAcceptanceValidator> logger)
-            : base(feedToSource, logger)
+            : base(feedToSource, config, logger)
         {
         }
 

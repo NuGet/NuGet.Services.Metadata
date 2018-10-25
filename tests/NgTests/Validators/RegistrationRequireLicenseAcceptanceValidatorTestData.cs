@@ -16,7 +16,9 @@ namespace NgTests
             IDictionary<FeedType, SourceRepository> feedToSource, 
             ILogger<RegistrationRequireLicenseAcceptanceValidator> logger)
         {
-            return new RegistrationRequireLicenseAcceptanceValidator(feedToSource, logger);
+            var config = new ValidatorConfig("https://localhost/packages", requireSignature: false);
+
+            return new RegistrationRequireLicenseAcceptanceValidator(feedToSource, config, logger);
         }
         
         public override IEnumerable<Func<PackageRegistrationIndexMetadata>> CreateIndexes => new Func<PackageRegistrationIndexMetadata>[]

@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Internal;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -32,14 +33,16 @@ namespace NgTests
             [Fact]
             public void SkipsIfNoEntries()
             {
+                var target = CreateTarget();
                 var context = CreateValidationContext(catalogEntries: new CatalogIndexEntry[0]);
 
-                Assert.False(_target.ShouldRunValidator(context));
+                Assert.False(target.ShouldRunValidator(context));
             }
 
             [Fact]
             public void SkipsIfLatestEntryIsDelete()
             {
+                var target = CreateTarget();
                 var context = CreateValidationContext(
                     catalogEntries: new[]
                     {
@@ -59,12 +62,13 @@ namespace NgTests
                             version: PackageNuGetVersion),
                     });
 
-                Assert.False(_target.ShouldRunValidator(context));
+                Assert.False(target.ShouldRunValidator(context));
             }
 
             [Fact]
             public void RunsIfLatestEntryIsntDelete()
             {
+                var target = CreateTarget();
                 var context = CreateValidationContext(
                     catalogEntries: new[]
                     {
@@ -84,7 +88,7 @@ namespace NgTests
                             version: PackageNuGetVersion),
                     });
 
-                Assert.True(_target.ShouldRunValidator(context));
+                Assert.True(target.ShouldRunValidator(context));
             }
         }
 
@@ -94,6 +98,7 @@ namespace NgTests
             public async Task ReturnsGracefullyIfLatestLeafHasSignatureFile()
             {
                 // Arrange
+                var target = CreateTarget();
                 var context = CreateValidationContext(
                     catalogEntries: new[]
                     {
@@ -131,15 +136,16 @@ namespace NgTests
                 });
 
                 // Act & Assert
-                await _target.RunValidatorAsync(context);
+                await target.RunValidatorAsync(context);
             }
 
             [Fact]
-            public async Task ThrowsIfLatestLeafIsMissingASignatureFile()
+            public async Task DoesntThrowIfLatestLeafIsMissingASignatureFileButSignatureNotRequired()
             {
                 // Arrange
                 var malformedUri = new Uri("http://localhost/b.json");
 
+                var target = CreateTarget(requireSignature: false);
                 var context = CreateValidationContext(
                     catalogEntries: new[]
                     {
@@ -176,7 +182,62 @@ namespace NgTests
                 });
 
                 // Act & Assert
-                var e = await Assert.ThrowsAsync<MissingPackageSignatureFileException>(() => _target.RunValidatorAsync(context));
+                await target.RunValidatorAsync(context);
+
+                _logger.Verify(
+                    l => l.Log(
+                        LogLevel.Warning,
+                        It.IsAny<EventId>(),
+                        It.Is<object>(v => v.ToString() == "Catalog entry http://localhost/b.json for package TestPackage 1.0.0 is missing a package signature file"),
+                        It.IsAny<Exception>(),
+                        It.IsAny<Func<object, Exception, string>>()),
+                    Times.Once);
+            }
+
+            [Fact]
+            public async Task ThrowsIfLatestLeafIsMissingASignatureFile()
+            {
+                // Arrange
+                var malformedUri = new Uri("http://localhost/b.json");
+
+                var target = CreateTarget();
+                var context = CreateValidationContext(
+                    catalogEntries: new[]
+                    {
+                        new CatalogIndexEntry(
+                            uri: new Uri("http://localhost/a.json"),
+                            type: DetailsCatalogEntry,
+                            commitId: string.Empty,
+                            commitTs: DateTime.MinValue,
+                            id: PackageId,
+                            version: PackageNuGetVersion),
+                        new CatalogIndexEntry(
+                            uri: malformedUri,
+                            type: DetailsCatalogEntry,
+                            commitId: string.Empty,
+                            commitTs: DateTime.MinValue.AddDays(1),
+                            id: PackageId,
+                            version: PackageNuGetVersion),
+                    });
+
+                AddCatalogLeaf("/a.json", new CatalogLeaf
+                {
+                    PackageEntries = new[]
+                    {
+                        new PackageEntry { FullName = ".signature.p7s" }
+                    }
+                });
+
+                AddCatalogLeaf("/b.json", new CatalogLeaf
+                {
+                    PackageEntries = new[]
+                    {
+                        new PackageEntry { FullName = "hello.txt" }
+                    }
+                });
+
+                // Act & Assert
+                var e = await Assert.ThrowsAsync<MissingPackageSignatureFileException>(() => target.RunValidatorAsync(context));
 
                 Assert.Same(malformedUri, e.CatalogEntry);
             }
@@ -187,6 +248,7 @@ namespace NgTests
                 // Arrange
                 var malformedUri = new Uri("http://localhost/a.json");
 
+                var target = CreateTarget();
                 var context = CreateValidationContext(
                     catalogEntries: new[]
                     {
@@ -202,7 +264,7 @@ namespace NgTests
                 AddCatalogLeaf("/a.json", "{ 'this': 'is missing the packageEntries field' }");
 
                 // Act & Assert
-                var e = await Assert.ThrowsAsync<InvalidOperationException>(() => _target.RunValidatorAsync(context));
+                var e = await Assert.ThrowsAsync<InvalidOperationException>(() => target.RunValidatorAsync(context));
 
                 Assert.Equal("Catalog leaf is missing the 'packageEntries' property", e.Message);
             }
@@ -213,6 +275,7 @@ namespace NgTests
                 // Arrange
                 var malformedUri = new Uri("http://localhost/a.json");
 
+                var target = CreateTarget();
                 var context = CreateValidationContext(
                     catalogEntries: new[]
                     {
@@ -228,7 +291,7 @@ namespace NgTests
                 AddCatalogLeaf("/a.json", "{ 'packageEntries': 'malformed'}");
 
                 // Act & Assert
-                var e = await Assert.ThrowsAsync<InvalidOperationException>(() => _target.RunValidatorAsync(context));
+                var e = await Assert.ThrowsAsync<InvalidOperationException>(() => target.RunValidatorAsync(context));
 
                 Assert.Equal("Catalog leaf's 'packageEntries' property is malformed", e.Message);
             }
@@ -244,18 +307,13 @@ namespace NgTests
 
             public static readonly NuGetVersion PackageNuGetVersion = NuGetVersion.Parse(PackageVersion);
 
+            protected readonly Mock<ILogger<PackageHasSignatureValidator>> _logger;
             private readonly MockServerHttpClientHandler _mockServer;
-            protected readonly PackageHasSignatureValidator _target;
 
             public FactsBase()
             {
-                var feedToSource = new Mock<IDictionary<FeedType, SourceRepository>>();
-                var logger = Mock.Of<ILogger<PackageHasSignatureValidator>>();
-
-                feedToSource.Setup(x => x[It.IsAny<FeedType>()]).Returns(new Mock<SourceRepository>().Object);
-
+                _logger = new Mock<ILogger<PackageHasSignatureValidator>>();
                 _mockServer = new MockServerHttpClientHandler();
-                _target = new PackageHasSignatureValidator(feedToSource.Object, logger);
             }
 
             protected ValidationContext CreateValidationContext(IEnumerable<CatalogIndexEntry> catalogEntries = null)
@@ -270,6 +328,16 @@ namespace NgTests
                     new DeletionAuditEntry[0],
                     httpClient,
                     CancellationToken.None);
+            }
+
+            protected PackageHasSignatureValidator CreateTarget(bool requireSignature = true)
+            {
+                var feedToSource = new Mock<IDictionary<FeedType, SourceRepository>>();
+                var config = ValidatorTestUtility.CreateValidatorConfig(requireSignature: requireSignature);
+
+                feedToSource.Setup(x => x[It.IsAny<FeedType>()]).Returns(new Mock<SourceRepository>().Object);
+
+                return new PackageHasSignatureValidator(feedToSource.Object, config, _logger.Object);
             }
 
             protected void AddCatalogLeaf(string path, CatalogLeaf leaf)

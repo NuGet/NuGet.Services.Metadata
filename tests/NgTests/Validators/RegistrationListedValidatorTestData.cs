@@ -16,7 +16,9 @@ namespace NgTests
             IDictionary<FeedType, SourceRepository> feedToSource, 
             ILogger<RegistrationListedValidator> logger)
         {
-            return new RegistrationListedValidator(feedToSource, logger);
+            var config = ValidatorTestUtility.CreateValidatorConfig();
+
+            return new RegistrationListedValidator(feedToSource, config, logger);
         }
         
         public override IEnumerable<Func<PackageRegistrationIndexMetadata>> CreateIndexes => new Func<PackageRegistrationIndexMetadata>[]

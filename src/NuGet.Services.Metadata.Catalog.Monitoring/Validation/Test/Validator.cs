@@ -15,6 +15,7 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
     /// </summary>
     public abstract class Validator : IValidator
     {
+        protected readonly ValidatorConfig Config;
         protected readonly ILogger<Validator> Logger;
         protected readonly Common.ILogger CommonLogger;
 
@@ -37,9 +38,11 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
 
         protected Validator(
             IDictionary<FeedType, SourceRepository> feedToSource,
+            ValidatorConfig config,
             ILogger<Validator> logger)
         {
             _timestampMetadataResourceV2 = feedToSource[FeedType.HttpV2].GetResource<IPackageTimestampMetadataResource>();
+            Config = config;
             Logger = logger;
             CommonLogger = logger.AsCommon();
         }
@@ -116,8 +119,9 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
     {
         protected Validator(
             IDictionary<FeedType, SourceRepository> feedToSource,
+            ValidatorConfig config,
             ILogger<Validator> logger)
-            : base(feedToSource, logger)
+            : base(feedToSource, config, logger)
         {
         }
     }

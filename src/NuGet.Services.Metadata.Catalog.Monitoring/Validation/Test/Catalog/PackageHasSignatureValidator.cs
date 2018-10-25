@@ -25,8 +25,9 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring.Validation.Test.Catalog
 
         public PackageHasSignatureValidator(
             IDictionary<FeedType, SourceRepository> feedToSource,
+            ValidatorConfig config,
             ILogger<PackageHasSignatureValidator> logger)
-          : base(feedToSource, logger)
+          : base(feedToSource, config, logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -97,6 +98,11 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring.Validation.Test.Catalog
                     latest.Uri,
                     context.Package.Id,
                     context.Package.Version);
+
+                if (!Config.RequireSignature)
+                {
+                    return;
+                }
 
                 throw new MissingPackageSignatureFileException(
                     latest.Uri,

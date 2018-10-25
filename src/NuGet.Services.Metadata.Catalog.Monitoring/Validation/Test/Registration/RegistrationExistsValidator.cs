@@ -13,8 +13,9 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
     {
         public RegistrationExistsValidator(
             IDictionary<FeedType, SourceRepository> feedToSource,
+            ValidatorConfig config,
             ILogger<RegistrationExistsValidator> logger)
-            : base(feedToSource, logger)
+            : base(feedToSource, config, logger)
         {
         }
 

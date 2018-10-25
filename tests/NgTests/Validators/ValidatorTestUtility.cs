@@ -15,6 +15,13 @@ namespace NgTests
 {
     public static class ValidatorTestUtility
     {
+        public static ValidatorConfig CreateValidatorConfig(
+            string packageBaseAddress = "http://localhost/packages",
+            bool requireSignature = false)
+        {
+            return new ValidatorConfig(packageBaseAddress, requireSignature);
+        }
+
         public static IEnumerable<Tuple<T, T>> GetPairs<T>(IEnumerable<Func<T>> valueFactories)
         {
             var set = valueFactories;

@@ -17,29 +17,16 @@ namespace NgTests.Validators
     public class CatalogAggregateValidatorFacts
     {
         [Fact]
-        public async Task DoesntValidateSignatureIfDisabled()
-        {
-            var mock = Mock.Of<IDictionary<FeedType, SourceRepository>>();
-            var loggerFactory = Mock.Of<ILoggerFactory>();
-            var factory = new ValidatorFactory(mock, loggerFactory);
-
-            var target = new CatalogAggregateValidator(factory, requireSignature: false);
-
-            var result = await target.ValidateAsync(new ValidationContext());
-
-            Assert.Equal(0, result.ValidationResults.Count());
-        }
-
-        [Fact]
         public async Task ValidatesSignature()
         {
             var feedToSource = new Mock<IDictionary<FeedType, SourceRepository>>();
+            var config = ValidatorTestUtility.CreateValidatorConfig();
             var loggerFactory = Mock.Of<ILoggerFactory>();
-            var factory = new ValidatorFactory(feedToSource.Object, loggerFactory);
+            var factory = new ValidatorFactory(feedToSource.Object, config, loggerFactory);
 
             feedToSource.Setup(x => x[It.IsAny<FeedType>()]).Returns(new Mock<SourceRepository>().Object);
 
-            var target = new CatalogAggregateValidator(factory, requireSignature: true);
+            var target = new CatalogAggregateValidator(factory);
 
             var result = await target.ValidateAsync(new ValidationContext());
 
