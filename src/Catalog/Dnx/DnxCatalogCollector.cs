@@ -132,6 +132,7 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
                                 packageId,
                                 normalizedPackageVersion,
                                 sourceUri,
+                                properties,
                                 cancellationToken))
                         {
                             processedCatalogEntries.Add(catalogEntry);
@@ -214,11 +215,13 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
             string packageId,
             string normalizedPackageVersion,
             Uri sourceUri,
+            Dictionary<string, string> telemetryProperties,
             CancellationToken cancellationToken)
         {
             if (await ProcessPackageDetailsViaStorageAsync(
                 packageId,
                 normalizedPackageVersion,
+                telemetryProperties,
                 cancellationToken))
             {
                 return true;
@@ -234,12 +237,14 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
                 packageId,
                 normalizedPackageVersion,
                 sourceUri,
+                telemetryProperties,
                 cancellationToken);
         }
 
         private async Task<bool> ProcessPackageDetailsViaStorageAsync(
             string packageId,
             string normalizedPackageVersion,
+            Dictionary<string, string> telemetryProperties,
             CancellationToken cancellationToken)
         {
             if (_sourceStorage == null)
@@ -259,6 +264,8 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
                 // different times.  To detect the blob changing between reads, we check the ETag again later.
                 // If the ETag's differ, we'll fall back to using a single HTTP GET request.
                 var token1 = await _sourceStorage.GetOptimisticConcurrencyControlTokenAsync(sourceUri, cancellationToken);
+
+                telemetryProperties[TelemetryConstants.SizeInBytes] = sourceBlob.Length.ToString();
 
                 var nuspec = await GetNuspecAsync(sourceBlob, packageId, cancellationToken);
 
@@ -311,6 +318,7 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
             string id,
             string version,
             Uri sourceUri,
+            Dictionary<string, string> telemetryProperties,
             CancellationToken cancellationToken)
         {
             var packageDownloader = new PackageDownloader(client, _logger);
@@ -324,6 +332,8 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
 
                     return false;
                 }
+
+                telemetryProperties[TelemetryConstants.SizeInBytes] = stream.Length.ToString();
 
                 var nuspec = GetNuspec(stream, id);
 
