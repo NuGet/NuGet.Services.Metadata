@@ -32,13 +32,13 @@ namespace NuGet.Services.V3PerPackage
             _queue = queue ?? throw new ArgumentNullException(nameof(queue));
         }
 
-        protected override Task<IEnumerable<CatalogItemBatch>> CreateBatchesAsync(IEnumerable<CatalogItem> catalogItems)
+        protected override Task<IEnumerable<CatalogCommitItemBatch>> CreateBatchesAsync(IEnumerable<CatalogCommitItem> catalogItems)
         {
             var catalogItemList = catalogItems.ToList();
 
             var maxCommitTimestamp = catalogItems.Max(x => x.CommitTimeStamp);
 
-            return Task.FromResult(new[] { new CatalogItemBatch(maxCommitTimestamp, catalogItemList) }.AsEnumerable());
+            return Task.FromResult(new[] { new CatalogCommitItemBatch(maxCommitTimestamp, catalogItemList) }.AsEnumerable());
         }
 
         protected override async Task<bool> OnProcessBatchAsync(

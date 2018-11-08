@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -20,12 +21,16 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
 {
     public class DnxCatalogCollector : CommitCollector
     {
+        // This is simply the arbitrary limit that I tested.  There may be a better value.
+        public const int DefaultMaxConcurrentBatches = 10;
+
         private readonly StorageFactory _storageFactory;
         private readonly IAzureStorage _sourceStorage;
         private readonly DnxMaker _dnxMaker;
         private readonly ILogger _logger;
         private readonly int _maxDegreeOfParallelism;
         private readonly Uri _contentBaseAddress;
+        private readonly int _maxConcurrentBatches;
 
         public DnxCatalogCollector(
             Uri index,
@@ -36,7 +41,8 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
             ILogger logger,
             int maxDegreeOfParallelism,
             Func<HttpMessageHandler> handlerFunc = null,
-            TimeSpan? httpClientTimeout = null)
+            TimeSpan? httpClientTimeout = null,
+            int maxConcurrentBatches = DefaultMaxConcurrentBatches)
             : base(index, telemetryService, handlerFunc, httpClientTimeout)
         {
             _storageFactory = storageFactory ?? throw new ArgumentNullException(nameof(storageFactory));
@@ -53,6 +59,59 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
             }
 
             _maxDegreeOfParallelism = maxDegreeOfParallelism;
+
+            if (maxConcurrentBatches < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(maxConcurrentBatches),
+                    maxConcurrentBatches,
+                    string.Format(Strings.ArgumentOutOfRange, 1, int.MaxValue));
+            }
+
+            _maxConcurrentBatches = maxConcurrentBatches;
+        }
+
+        protected override Task<IEnumerable<CatalogCommitItemBatch>> CreateBatchesAsync(IEnumerable<CatalogCommitItem> catalogItems)
+        {
+            // Grouping batches by commit is slow if it contains
+            // the same package registration id over and over again.
+            // This happens when, for example, a package publish "wave"
+            // occurs.
+            //
+            // If one package registration id is part of 20 batches,
+            // we'll have to process all registration leafs 20 times.
+            // It would be better to process these leafs only once.
+            //
+            // So let's batch by package registration id here,
+            // ensuring we never write a commit timestamp to the cursor
+            // that is higher than the last item currently processed.
+            //
+            // So, group by id, then make sure the batch key is the
+            // *lowest*  timestamp of all commits in that batch.
+            // This ensures that on retries, we will retry
+            // from the correct location (even though we may have
+            // a little rework).
+
+            return CatalogCommitUtilities.CreateCommitBatchesByPackageIdAsync(catalogItems, CatalogCommitUtilities.GetPackageIdKey);
+        }
+
+        protected override Task<bool> FetchAsync(
+            CollectorHttpClient client,
+            ReadWriteCursor front,
+            ReadCursor back,
+            CancellationToken cancellationToken)
+        {
+            return CatalogCommitUtilities.FetchAsync(
+                client,
+                front,
+                back,
+                FetchCatalogItemsAsync,
+                CatalogCommitUtilities.GetPackageIdKey,
+                CreateBatchesAsync,
+                ProcessBatchAsync,
+                _maxConcurrentBatches,
+                nameof(DnxCatalogCollector),
+                cancellationToken);
         }
 
         protected override async Task<bool> OnProcessBatchAsync(
@@ -63,16 +122,17 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
             bool isLastBatch,
             CancellationToken cancellationToken)
         {
-            var catalogEntries = items.Select(
+            var catalogEntries = items
+                .Select(
                     item => new CatalogEntry(
+                        DateTime.Parse(item["commitTimeStamp"].ToString(), DateTimeFormatInfo.InvariantInfo, DateTimeStyles.RoundtripKind),
                         item["nuget:id"].ToString().ToLowerInvariant(),
                         NuGetVersionUtility.NormalizeVersion(item["nuget:version"].ToString()).ToLowerInvariant(),
                         item["@type"].ToString().Replace("nuget:", Schema.Prefixes.NuGet),
                         item))
+                .OrderBy(item => item.CommitTimeStamp)
+                .GroupBy(catalogEntry => catalogEntry.PackageId)
                 .ToList();
-
-            // Sanity check:  a single catalog batch should not contain multiple entries for the same package ID and version.
-            AssertNoMultipleEntriesForSamePackageIdentity(commitTimeStamp, catalogEntries);
 
             // Process .nupkg/.nuspec adds and deletes.
             var processedCatalogEntries = await ProcessCatalogEntriesAsync(client, catalogEntries, cancellationToken);
@@ -85,69 +145,72 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
 
         private async Task<IEnumerable<CatalogEntry>> ProcessCatalogEntriesAsync(
             CollectorHttpClient client,
-            IEnumerable<CatalogEntry> catalogEntries,
+            IEnumerable<IEnumerable<CatalogEntry>> catalogEntryGroups,
             CancellationToken cancellationToken)
         {
             var processedCatalogEntries = new ConcurrentBag<CatalogEntry>();
 
-            await catalogEntries.ForEachAsync(_maxDegreeOfParallelism, async catalogEntry =>
+            await catalogEntryGroups.ForEachAsync(_maxDegreeOfParallelism, async catalogEntryGroup =>
             {
-                var packageId = catalogEntry.PackageId;
-                var normalizedPackageVersion = catalogEntry.NormalizedPackageVersion;
-
-                if (catalogEntry.EntryType == Schema.DataTypes.PackageDetails.ToString())
+                foreach (var catalogEntry in catalogEntryGroup)
                 {
-                    var properties = GetTelemetryProperties(catalogEntry);
+                    var packageId = catalogEntry.PackageId;
+                    var normalizedPackageVersion = catalogEntry.NormalizedPackageVersion;
 
-                    using (_telemetryService.TrackDuration(TelemetryConstants.ProcessPackageDetailsSeconds, properties))
+                    if (catalogEntry.EntryType == Schema.DataTypes.PackageDetails.ToString())
                     {
-                        var packageFileName = PackageUtility.GetPackageFileName(
-                            packageId,
-                            normalizedPackageVersion);
-                        var sourceUri = new Uri(_contentBaseAddress, packageFileName);
-                        var destinationStorage = _storageFactory.Create(packageId);
-                        var destinationRelativeUri = DnxMaker.GetRelativeAddressNupkg(
-                            packageId,
-                            normalizedPackageVersion);
-                        var destinationUri = destinationStorage.GetUri(destinationRelativeUri);
+                        var properties = GetTelemetryProperties(catalogEntry);
 
-                        var isNupkgSynchronized = await destinationStorage.AreSynchronized(sourceUri, destinationUri);
-                        var isPackageInIndex = await _dnxMaker.HasPackageInIndexAsync(
-                            destinationStorage,
-                            packageId,
-                            normalizedPackageVersion,
-                            cancellationToken);
-                        var areRequiredPropertiesPresent = await AreRequiredPropertiesPresentAsync(destinationStorage, destinationUri);
-
-                        if (isNupkgSynchronized && isPackageInIndex && areRequiredPropertiesPresent)
+                        using (_telemetryService.TrackDuration(TelemetryConstants.ProcessPackageDetailsSeconds, properties))
                         {
-                            _logger.LogInformation("No changes detected: {Id}/{Version}", packageId, normalizedPackageVersion);
+                            var packageFileName = PackageUtility.GetPackageFileName(
+                                packageId,
+                                normalizedPackageVersion);
+                            var sourceUri = new Uri(_contentBaseAddress, packageFileName);
+                            var destinationStorage = _storageFactory.Create(packageId);
+                            var destinationRelativeUri = DnxMaker.GetRelativeAddressNupkg(
+                                packageId,
+                                normalizedPackageVersion);
+                            var destinationUri = destinationStorage.GetUri(destinationRelativeUri);
 
-                            return;
-                        }
-
-                        if ((isNupkgSynchronized && areRequiredPropertiesPresent)
-                            || await ProcessPackageDetailsAsync(
-                                client,
+                            var isNupkgSynchronized = await destinationStorage.AreSynchronized(sourceUri, destinationUri);
+                            var isPackageInIndex = await _dnxMaker.HasPackageInIndexAsync(
+                                destinationStorage,
                                 packageId,
                                 normalizedPackageVersion,
-                                sourceUri,
-                                properties,
-                                cancellationToken))
-                        {
-                            processedCatalogEntries.Add(catalogEntry);
+                                cancellationToken);
+                            var areRequiredPropertiesPresent = await AreRequiredPropertiesPresentAsync(destinationStorage, destinationUri);
+
+                            if (isNupkgSynchronized && isPackageInIndex && areRequiredPropertiesPresent)
+                            {
+                                _logger.LogInformation("No changes detected: {Id}/{Version}", packageId, normalizedPackageVersion);
+
+                                return;
+                            }
+
+                            if ((isNupkgSynchronized && areRequiredPropertiesPresent)
+                                || await ProcessPackageDetailsAsync(
+                                    client,
+                                    packageId,
+                                    normalizedPackageVersion,
+                                    sourceUri,
+                                    properties,
+                                    cancellationToken))
+                            {
+                                processedCatalogEntries.Add(catalogEntry);
+                            }
                         }
                     }
-                }
-                else if (catalogEntry.EntryType == Schema.DataTypes.PackageDelete.ToString())
-                {
-                    var properties = GetTelemetryProperties(catalogEntry);
-
-                    using (_telemetryService.TrackDuration(TelemetryConstants.ProcessPackageDeleteSeconds, properties))
+                    else if (catalogEntry.EntryType == Schema.DataTypes.PackageDelete.ToString())
                     {
-                        await ProcessPackageDeleteAsync(packageId, normalizedPackageVersion, cancellationToken);
+                        var properties = GetTelemetryProperties(catalogEntry);
 
-                        processedCatalogEntries.Add(catalogEntry);
+                        using (_telemetryService.TrackDuration(TelemetryConstants.ProcessPackageDeleteSeconds, properties))
+                        {
+                            await ProcessPackageDeleteAsync(packageId, normalizedPackageVersion, cancellationToken);
+
+                            processedCatalogEntries.Add(catalogEntry);
+                        }
                     }
                 }
             });
@@ -174,40 +237,42 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
             IEnumerable<CatalogEntry> catalogEntries,
             CancellationToken cancellationToken)
         {
-            var catalogEntryGroups = catalogEntries.GroupBy(catalogEntry => catalogEntry.PackageId);
+            var count = catalogEntries.Count();
 
-            await catalogEntryGroups.ForEachAsync(_maxDegreeOfParallelism, async catalogEntryGroup =>
+            if (count == 0)
             {
-                var packageId = catalogEntryGroup.Key;
-                var properties = new Dictionary<string, string>()
-                {
-                    { TelemetryConstants.Id, packageId },
-                    { TelemetryConstants.BatchItemCount, catalogEntryGroup.Count().ToString() }
-                };
+                return;
+            }
 
-                using (_telemetryService.TrackDuration(TelemetryConstants.ProcessPackageVersionIndexSeconds, properties))
+            var packageId = catalogEntries.First().PackageId;
+            var properties = new Dictionary<string, string>()
+            {
+                { TelemetryConstants.Id, packageId },
+                { TelemetryConstants.BatchItemCount, count.ToString() }
+            };
+
+            using (_telemetryService.TrackDuration(TelemetryConstants.ProcessPackageVersionIndexSeconds, properties))
+            {
+                await _dnxMaker.UpdatePackageVersionIndexAsync(packageId, versions =>
                 {
-                    await _dnxMaker.UpdatePackageVersionIndexAsync(packageId, versions =>
+                    foreach (var catalogEntry in catalogEntries.OrderBy(item => item.CommitTimeStamp))
                     {
-                        foreach (var catalogEntry in catalogEntryGroup)
+                        if (catalogEntry.EntryType == Schema.DataTypes.PackageDetails.ToString())
                         {
-                            if (catalogEntry.EntryType == Schema.DataTypes.PackageDetails.ToString())
-                            {
-                                versions.Add(NuGetVersion.Parse(catalogEntry.NormalizedPackageVersion));
-                            }
-                            else if (catalogEntry.EntryType == Schema.DataTypes.PackageDelete.ToString())
-                            {
-                                versions.Remove(NuGetVersion.Parse(catalogEntry.NormalizedPackageVersion));
-                            }
+                            versions.Add(NuGetVersion.Parse(catalogEntry.NormalizedPackageVersion));
                         }
-                    }, cancellationToken);
-                }
+                        else if (catalogEntry.EntryType == Schema.DataTypes.PackageDelete.ToString())
+                        {
+                            versions.Remove(NuGetVersion.Parse(catalogEntry.NormalizedPackageVersion));
+                        }
+                    }
+                }, cancellationToken);
+            }
 
-                foreach (var catalogEntry in catalogEntryGroup)
-                {
-                    _logger.LogInformation("Commit: {Id}/{Version}", packageId, catalogEntry.NormalizedPackageVersion);
-                }
-            });
+            foreach (var catalogEntry in catalogEntries)
+            {
+                _logger.LogInformation("Commit: {Id}/{Version}", packageId, catalogEntry.NormalizedPackageVersion);
+            }
         }
 
         private async Task<bool> ProcessPackageDetailsAsync(
@@ -364,34 +429,36 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
             string normalizedPackageVersion,
             CancellationToken cancellationToken)
         {
-            await _dnxMaker.UpdatePackageVersionIndexAsync(
-                packageId,
-                versions => versions.Remove(NuGetVersion.Parse(normalizedPackageVersion)),
-                cancellationToken);
-
             await _dnxMaker.DeletePackageAsync(packageId, normalizedPackageVersion, cancellationToken);
 
             _logger.LogInformation("Commit delete: {Id}/{Version}", packageId, normalizedPackageVersion);
         }
 
-        private static void AssertNoMultipleEntriesForSamePackageIdentity(
-            DateTime commitTimeStamp,
-            IEnumerable<CatalogEntry> catalogEntries)
+        private async Task ProcessBatchAsync(
+            CollectorHttpClient client,
+            JToken context,
+            string packageId,
+            CatalogCommitItemBatch batch,
+            CatalogCommitItemBatch lastBatch,
+            CancellationToken cancellationToken)
         {
-            var catalogEntriesForSamePackageIdentity = catalogEntries.GroupBy(
-                catalogEntry => new
+            await Task.Yield();
+
+            using (_telemetryService.TrackDuration(
+                TelemetryConstants.ProcessBatchSeconds,
+                new Dictionary<string, string>()
                 {
-                    catalogEntry.PackageId,
-                    catalogEntry.NormalizedPackageVersion
-                })
-                .Where(group => group.Count() > 1)
-                .Select(group => $"{group.Key.PackageId} {group.Key.NormalizedPackageVersion}");
-
-            if (catalogEntriesForSamePackageIdentity.Any())
+                    { TelemetryConstants.Id, packageId },
+                    { TelemetryConstants.BatchItemCount, batch.Items.Count.ToString() }
+                }))
             {
-                var packageIdentities = string.Join(", ", catalogEntriesForSamePackageIdentity);
-
-                throw new InvalidOperationException($"The catalog batch {commitTimeStamp} contains multiple entries for the same package identity.  Package(s):  {packageIdentities}");
+                await OnProcessBatchAsync(
+                    client,
+                    batch.Items.OrderBy(item => item.CommitTimeStamp).Select(item => item.Value),
+                    context,
+                    batch.CommitTimeStamp,
+                    batch.CommitTimeStamp == lastBatch.CommitTimeStamp,
+                    cancellationToken);
             }
         }
 
@@ -455,13 +522,15 @@ namespace NuGet.Services.Metadata.Catalog.Dnx
 
         private sealed class CatalogEntry
         {
+            internal DateTime CommitTimeStamp { get; }
             internal string PackageId { get; }
             internal string NormalizedPackageVersion { get; }
             internal string EntryType { get; }
             internal JToken Entry { get; }
 
-            internal CatalogEntry(string packageId, string normalizedPackageVersion, string entryType, JToken entry)
+            internal CatalogEntry(DateTime commitTimeStamp, string packageId, string normalizedPackageVersion, string entryType, JToken entry)
             {
+                CommitTimeStamp = commitTimeStamp;
                 PackageId = packageId;
                 NormalizedPackageVersion = normalizedPackageVersion;
                 EntryType = entryType;

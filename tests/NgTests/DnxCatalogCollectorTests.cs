@@ -634,11 +634,12 @@ namespace NgTests
             var front = new DurableCursor(_cursorJsonUri, _catalogToDnxStorage, MemoryCursor.MinValue);
             ReadCursor back = MemoryCursor.CreateMax();
 
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            var exception = await Assert.ThrowsAsync<BatchProcessingException>(
                 () => _target.RunAsync(front, back, CancellationToken.None));
+            Assert.IsType<InvalidOperationException>(exception.InnerException);
             Assert.Equal(
                 $"Expected status code OK for package download, actual: {statusCode}",
-                exception.Message);
+                exception.InnerException.Message);
             Assert.Equal(0, _catalogToDnxStorage.Content.Count);
         }
 
@@ -721,7 +722,8 @@ namespace NgTests
             ReadCursor back = MemoryCursor.CreateMax();
 
             // Act
-            await Assert.ThrowsAsync<HttpRequestException>(() => _target.RunAsync(front, back, CancellationToken.None));
+            var exception = await Assert.ThrowsAsync<BatchProcessingException>(() => _target.RunAsync(front, back, CancellationToken.None));
+            Assert.IsType<HttpRequestException>(exception.InnerException);
             var cursorBeforeRetry = front.Value;
             await _target.RunAsync(front, back, CancellationToken.None);
             var cursorAfterRetry = front.Value;
@@ -744,32 +746,6 @@ namespace NgTests
 
             Assert.Equal(DateTime.Parse(expectedCursorBeforeRetry).ToUniversalTime(), cursorBeforeRetry);
             Assert.Equal(DateTime.Parse("2015-10-12T10:08:55.3335317Z").ToUniversalTime(), cursorAfterRetry);
-        }
-
-        [Fact]
-        public async Task RunAsync_WhenMultipleEntriesWithSamePackageIdentityInSameBatch_Throws()
-        {
-            var zipWithWrongNameNuspec = CreateZipStreamWithEntry("Newtonsoft.Json.nuspec", _nuspecData);
-            var indexJsonUri = _catalogToDnxStorage.ResolveUri("/listedpackage/index.json");
-            var nupkgUri = _catalogToDnxStorage.ResolveUri("/listedpackage/1.0.0/listedpackage.1.0.0.nupkg");
-            var nuspecUri = _catalogToDnxStorage.ResolveUri("/listedpackage/1.0.0/listedpackage.nuspec");
-            var nupkgStream = File.OpenRead(@"Packages\ListedPackage.1.0.1.zip");
-            var expectedNupkg = GetStreamBytes(nupkgStream);
-            var catalogStorage = Catalogs.CreateTestCatalogWithMultipleEntriesWithSamePackageIdentityInSameBatch();
-
-            await _mockServer.AddStorageAsync(catalogStorage);
-
-            _mockServer.SetAction(
-                "/packages/listedpackage.1.0.0.nupkg",
-                request => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(nupkgStream) }));
-
-            var front = new DurableCursor(_cursorJsonUri, _catalogToDnxStorage, MemoryCursor.MinValue);
-            ReadCursor back = MemoryCursor.CreateMax();
-
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
-                () => _target.RunAsync(front, back, CancellationToken.None));
-
-            Assert.Equal("The catalog batch 10/13/2015 6:40:07 AM contains multiple entries for the same package identity.  Package(s):  listedpackage 1.0.0", exception.Message);
         }
 
         private static byte[] GetStreamBytes(Stream srcStream)
