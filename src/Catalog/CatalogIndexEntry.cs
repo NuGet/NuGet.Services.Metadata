@@ -116,7 +116,7 @@ namespace NuGet.Services.Metadata.Catalog
             }
 
             Types = types;
-            IsDelete = types.Any(type => type == "nuget:PackageDelete");
+            IsDelete = types.Any(type => type == "nuget:PackageDelete" || type == "PackageDelete");
 
             if (string.IsNullOrWhiteSpace(commitId))
             {
