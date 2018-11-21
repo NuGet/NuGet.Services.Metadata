@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using NuGet.Protocol.Core.Types;
 
@@ -53,24 +54,39 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
             };
         }
 
-        public static async Task<PackageTimestampMetadata> FromCatalogEntry(CollectorHttpClient client,
-            CatalogIndexEntry catalogEntry)
+        public static async Task<PackageTimestampMetadata> FromCatalogEntry(
+            CollectorHttpClient client,
+            CatalogIndexEntry catalogEntry,
+            ILogger logger = null)
         {
-            var catalogPage = await client.GetJObjectAsync(catalogEntry.Uri);
+            var catalogLeaf = await client.GetJObjectAsync(catalogEntry.Uri);
+
+            if (logger != null)
+            {
+                logger.LogInformation("FromCatalogEntry: {Uri}, {CommitId}, {CommitTimeStamp}, {Types}, {IsDelete}, {Id}, {Version}, {catalogLeafJson}",
+                    catalogEntry.Uri.AbsoluteUri,
+                    catalogEntry.CommitId,
+                    catalogEntry.CommitTimeStamp.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ"),
+                    string.Join(", ", catalogEntry.Types),
+                    catalogEntry.IsDelete,
+                    catalogEntry.Id,
+                    catalogEntry.Version,
+                    catalogLeaf.ToString());
+            }
 
             try
             {
                 if (catalogEntry.IsDelete)
                 {
                     // On the catalog page for a delete, the published value is the timestamp the package was deleted from the audit records.
-                    var deleted = catalogPage.GetValue("published").Value<DateTimeOffset>();
+                    var deleted = catalogLeaf.GetValue("published").Value<DateTimeOffset>();
 
                     return CreateForPackageMissingFromFeed(deleted.DateTime);
                 }
                 else
                 {
-                    var created = catalogPage.GetValue("created").Value<DateTimeOffset>();
-                    var lastEdited = catalogPage.GetValue("lastEdited").Value<DateTimeOffset>();
+                    var created = catalogLeaf.GetValue("created").Value<DateTimeOffset>();
+                    var lastEdited = catalogLeaf.GetValue("lastEdited").Value<DateTimeOffset>();
 
                     return CreateForPackageExistingOnFeed(created.DateTime, lastEdited.DateTime);
                 }
@@ -81,11 +97,13 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
             }
         }
 
-        public static async Task<PackageTimestampMetadata> FromCatalogEntries(CollectorHttpClient client,
-            IEnumerable<CatalogIndexEntry> catalogEntries)
+        public static async Task<PackageTimestampMetadata> FromCatalogEntries(
+            CollectorHttpClient client,
+            IEnumerable<CatalogIndexEntry> catalogEntries,
+            ILogger logger = null)
         {
             var packageTimestampMetadatas =
-                await Task.WhenAll(catalogEntries.Select(entry => FromCatalogEntry(client, entry)));
+                await Task.WhenAll(catalogEntries.Select(entry => FromCatalogEntry(client, entry, logger)));
             var maxTimestamp = packageTimestampMetadatas.Where(p => p != null).Max(p => p.Last);
             return packageTimestampMetadatas.FirstOrDefault(p => p.Last == maxTimestamp);
         }

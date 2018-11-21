@@ -82,7 +82,7 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
         protected virtual async Task<bool> ShouldRunAsync(ValidationContext context)
         {
             var timestampV2 = await _timestampMetadataResourceV2.GetAsync(context);
-            var timestampCatalog = await PackageTimestampMetadata.FromCatalogEntries(context.Client, context.Entries);
+            var timestampCatalog = await PackageTimestampMetadata.FromCatalogEntries(context.Client, context.Entries, Logger);
 
             if (!timestampV2.Last.HasValue)
             {
