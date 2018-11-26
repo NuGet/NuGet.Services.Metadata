@@ -31,7 +31,6 @@ namespace NuGet.Services.Metadata.Catalog
             }
 
             Types = new[] { type };
-            IsDelete = type == "nuget:PackageDelete";
 
             if (string.IsNullOrWhiteSpace(commitId))
             {
@@ -76,7 +75,7 @@ namespace NuGet.Services.Metadata.Catalog
         public NuGetVersion Version { get; private set; }
 
         [JsonIgnore]
-        public bool IsDelete { get; }
+        public bool IsDelete => Types.SingleOrDefault() == "nuget:PackageDelete";
 
         public int CompareTo(CatalogIndexEntry other)
         {
