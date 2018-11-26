@@ -305,6 +305,24 @@ namespace CatalogTests
             Assert.StartsWith($"Required property '{propertyToRemove}' not found in JSON.", exception.Message);
         }
 
+        [Fact]
+        public void JsonDeserialization_ChoosesLastTypeInList()
+        {
+            var jObject = CreateCatalogIndexJObjectForPackage();
+            
+            jObject.Remove(CatalogConstants.TypeKeyword);
+            jObject.Add(
+                CatalogConstants.TypeKeyword, 
+                new JArray(
+                    "invalidType",
+                    CatalogConstants.NuGetPackageDetails));
+
+            var json = jObject.ToString(Formatting.None, _settings.Converters.ToArray());
+            var entry = JsonConvert.DeserializeObject<CatalogIndexEntry>(json, _settings);
+
+            Assert.Equal(CatalogConstants.NuGetPackageDetails, entry.Types.Single());
+        }
+
         [Theory]
         [InlineData(CatalogConstants.NuGetPackageDetails, false)]
         [InlineData(CatalogConstants.NuGetPackageDelete, true)]
