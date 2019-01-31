@@ -38,7 +38,7 @@ namespace NuGet.Services.BasicSearchTests
             }
         }
 
-        [Fact(Skip = "The old V2 search service always includes prerelease versions, even if the parameter is set to false.")]
+        //[Fact(Skip = "The old V2 search service always includes prerelease versions, even if the parameter is set to false.")]
         public async Task SupportsPrereleaseParameter()
         {
             // Arrange
@@ -96,7 +96,7 @@ namespace NuGet.Services.BasicSearchTests
             }
         }
 
-        [Fact]
+       // [Fact]
         public async Task LatestAndPrereleaseFiltersAreIgnoredTheWayTheOldV2ServiceDidThings()
         {
             // Arrange
