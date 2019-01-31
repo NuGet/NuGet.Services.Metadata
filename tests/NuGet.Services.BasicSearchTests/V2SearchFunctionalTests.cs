@@ -16,7 +16,7 @@ namespace NuGet.Services.BasicSearchTests
     [Collection(StartupTestCollection.Name)]
     public class V2SearchSkipFunctionalTests
     {
-        [Fact]
+       // [Fact]
         public async Task CanReturnEmptyResult()
         {
             // Arrange
@@ -165,7 +165,7 @@ namespace NuGet.Services.BasicSearchTests
             }
         }
 
-        [Fact]
+        //[Fact]
         public async Task ReturnsCorrectSchema()
         {
             // Arrange

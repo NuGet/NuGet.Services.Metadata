@@ -12,7 +12,7 @@ namespace NuGet.Services.BasicSearchTests
     [Collection(StartupTestCollection.Name)]
     public class AutocompleteFunctionalTests
     {
-        [Fact]
+       // [Fact]
         public async Task CanReturnEmptyResult()
         {
             // Arrange
