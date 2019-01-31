@@ -113,6 +113,7 @@
     <Compile Include="Properties\AssemblyInfo.*.cs" />
     <Compile Include="SafeRoleEnvironment.cs" />
     <Compile Include="Startup.cs" />
+    <Compile Include="TestConfig.cs" />
     <Compile Include="WebRole.cs" />
   </ItemGroup>
   <ItemGroup>

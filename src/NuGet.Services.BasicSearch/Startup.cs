@@ -188,6 +188,8 @@ namespace NuGet.Services.BasicSearch
 
             _responseWriter = new ResponseWriter();
 
+            //will set the configuration
+            TestConfig.Init(loggerFactory);
             app.Run(InvokeAsync);
         }
 
