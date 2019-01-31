@@ -23,12 +23,12 @@ namespace NuGet.Services.BasicSearch
             var feed = context.Request.Query["feed"];
             var scheme = context.Request.Uri.Scheme;
 
-            var config = TestConfig.GetInstance();
+            await TestConfig.WaitIfConfigured();
+            TestConfig.ThrowIfConfigured();
 
-            await TestConfig.GetInstance().WaitIfConfigured();
             await responseWriter.WriteResponseAsync(
                 context,
-                TestConfig.GetInstance().Map()?.StatusCode ?? HttpStatusCode.OK,
+                HttpStatusCode.OK,
                 jsonWriter => ServiceImpl.Search(jsonWriter, searcherManager, scheme, q, includePrerelease, semVerLevel, skip, take, feed, includeExplanation));
         }
 
@@ -47,10 +47,12 @@ namespace NuGet.Services.BasicSearch
                 q = string.Empty;
             }
 
-            await TestConfig.GetInstance().WaitIfConfigured();
+            await TestConfig.WaitIfConfigured();
+            TestConfig.ThrowIfConfigured();
+
             await responseWriter.WriteResponseAsync(
                 context,
-                TestConfig.GetInstance().Map()?.StatusCode ?? HttpStatusCode.OK,
+                HttpStatusCode.OK,
                 jsonWriter => ServiceImpl.AutoComplete(jsonWriter, searcherManager, q, id, includePrerelease, semVerLevel, skip, take, explanation));
         }
 
@@ -69,10 +71,12 @@ namespace NuGet.Services.BasicSearch
 
             var luceneQuery = GetLuceneQuery(context);
 
-            await TestConfig.GetInstance().WaitIfConfigured();
+            await TestConfig.WaitIfConfigured();
+            TestConfig.ThrowIfConfigured();
+
             await responseWriter.WriteResponseAsync(
                 context,
-                TestConfig.GetInstance().Map()?.StatusCode ?? HttpStatusCode.OK,
+                HttpStatusCode.OK,
                 jsonWriter => GalleryServiceImpl.Search(jsonWriter, searcherManager, q, countOnly, includePrerelease, semVerLevel, sortBy, skip, take, feed, ignoreFilter, luceneQuery));
         }
 

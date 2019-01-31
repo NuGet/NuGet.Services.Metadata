@@ -10,6 +10,7 @@ using System.Web;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NuGet.Indexing;
 
 
 namespace NuGet.Services.BasicSearch
@@ -41,12 +42,20 @@ namespace NuGet.Services.BasicSearch
             return _instance;
         }
 
-        public async Task WaitIfConfigured()
+        public static async Task WaitIfConfigured()
         {
             int secondsDelay = _instance.DelaySeconds;
             if (secondsDelay > 0)
             {
                 await Task.Delay(secondsDelay * 1000);
+            }
+        }
+
+        public static void ThrowIfConfigured()
+        {
+            if(_instance.Map() != null)
+            {
+                throw new ClientException(_instance.Map().StatusCode, "Bad Search!");
             }
         }
 
