@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Azure.Search;
 using Microsoft.Azure.Search.Models;
@@ -96,6 +97,10 @@ namespace NuGet.Services.AzureSearch
             {
                 Name = _options.Value.SearchIndexName,
                 Fields = FieldBuilder.BuildForType<SearchDocument.Full>(),
+                Analyzers = new List<Analyzer>
+                {
+                    ExactMatchCustomAnalyzer.Instance
+                }
             };
         }
 
@@ -105,6 +110,10 @@ namespace NuGet.Services.AzureSearch
             {
                 Name = _options.Value.HijackIndexName,
                 Fields = FieldBuilder.BuildForType<HijackDocument.Full>(),
+                Analyzers = new List<Analyzer>
+                {
+                    ExactMatchCustomAnalyzer.Instance
+                }
             };
         }
     }

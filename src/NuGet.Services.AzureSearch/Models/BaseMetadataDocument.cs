@@ -36,11 +36,13 @@ namespace NuGet.Services.AzureSearch
         public string MinClientVersion { get; set; }
 
         [IsSearchable]
+        [Analyzer(ExactMatchCustomAnalyzer.Name)]
         public string NormalizedVersion { get; set; }
 
         public string OriginalVersion { get; set; }
 
         [IsSearchable]
+        [Analyzer(ExactMatchCustomAnalyzer.Name)]
         public string PackageId { get; set; }
 
         [IsFilterable]
