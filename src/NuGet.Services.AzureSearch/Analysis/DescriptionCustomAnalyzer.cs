@@ -7,14 +7,13 @@ using Microsoft.Azure.Search.Models;
 namespace NuGet.Services.AzureSearch
 {
     /// <summary>
-    /// Support for NuGet style identifier analysis. Splits tokens
-    /// on non alpha-numeric characters and camel casing, and lower
-    /// cases tokens. This is used by
-    /// <see cref="BaseMetadataDocument.TokenizedPackageId"/>.
+    /// Support for NuGet style description analysis. This splits tokens
+    /// on non alpha-numeric characters, splits tokens on camel casing,
+    /// lower cases tokens, and then removes stopwords from tokens.
     /// </summary>
-    public static class PackageIdCustomAnalyzer
+    public static class DescriptionAnalyzer
     {
-        public const string Name = "nuget_package_id_analyzer";
+        public const string Name = "nuget_description_analyzer";
 
         public static readonly CustomAnalyzer Instance = new CustomAnalyzer(
             Name,
@@ -23,6 +22,7 @@ namespace NuGet.Services.AzureSearch
             {
                 IdentifierCustomTokenFilter.Name,
                 TokenFilterName.Lowercase,
+                TokenFilterName.Stopwords,
             });
     }
 }

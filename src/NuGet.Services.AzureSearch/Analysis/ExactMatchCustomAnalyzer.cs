@@ -12,7 +12,7 @@ namespace NuGet.Services.AzureSearch
     /// </summary>
     public static class ExactMatchCustomAnalyzer
     {
-        public const string Name = "case_insensitive_exact_match";
+        public const string Name = "nuget_exact_match_analyzer";
 
         public static readonly CustomAnalyzer Instance = new CustomAnalyzer(
             Name,

@@ -93,36 +93,31 @@ namespace NuGet.Services.AzureSearch
 
         private Index InitializeSearchIndex()
         {
-            return new Index
-            {
-                Name = _options.Value.SearchIndexName,
-                Fields = FieldBuilder.BuildForType<SearchDocument.Full>(),
-                Analyzers = new List<Analyzer>
-                {
-                    ExactMatchCustomAnalyzer.Instance,
-                    PackageIdCustomAnalyzer.Instance,
-                },
-                TokenFilters = new List<TokenFilter>
-                {
-                    PackageIdCustomTokenFilter.Instance,
-                }
-            };
+            return InitializeIndex<SearchDocument.Full>(
+                _options.Value.SearchIndexName);
         }
 
         private Index InitializeHijackIndex()
         {
+            return InitializeIndex<HijackDocument.Full>(
+                _options.Value.HijackIndexName);
+        }
+
+        private Index InitializeIndex<TDocument>(string name)
+        {
             return new Index
             {
-                Name = _options.Value.HijackIndexName,
-                Fields = FieldBuilder.BuildForType<HijackDocument.Full>(),
+                Name = name,
+                Fields = FieldBuilder.BuildForType<TDocument>(),
                 Analyzers = new List<Analyzer>
                 {
+                    DescriptionAnalyzer.Instance,
                     ExactMatchCustomAnalyzer.Instance,
                     PackageIdCustomAnalyzer.Instance,
                 },
                 TokenFilters = new List<TokenFilter>
                 {
-                    PackageIdCustomTokenFilter.Instance,
+                    IdentifierCustomTokenFilter.Instance,
                 }
             };
         }

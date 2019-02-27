@@ -8,9 +8,9 @@ namespace NuGet.Services.AzureSearch
     /// <summary>
     /// Splits tokens on camel casing and non alpha-numeric characters.
     /// </summary>
-    public static class PackageIdCustomTokenFilter
+    public static class IdentifierCustomTokenFilter
     {
-        public const string Name = "package_id_delimiter";
+        public const string Name = "nuget_id_filter";
 
         public static WordDelimiterTokenFilter Instance = new WordDelimiterTokenFilter(
             Name,

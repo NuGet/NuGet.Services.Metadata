@@ -14,12 +14,14 @@ namespace NuGet.Services.AzureSearch
         public int? SemVerLevel { get; set; }
 
         [IsSearchable]
+        [Analyzer(DescriptionAnalyzer.Name)]
         public string Authors { get; set; }
 
         public string Copyright { get; set; }
         public DateTimeOffset? Created { get; set; }
 
         [IsSearchable]
+        [Analyzer(DescriptionAnalyzer.Name)]
         public string Description { get; set; }
 
         public long? FileSize { get; set; }
@@ -63,12 +65,14 @@ namespace NuGet.Services.AzureSearch
         public string SortableTitle { get; set; }
 
         [IsSearchable]
+        [Analyzer(DescriptionAnalyzer.Name)]
         public string Summary { get; set; }
 
         [IsSearchable]
         public string[] Tags { get; set; }
 
         [IsSearchable]
+        [Analyzer(DescriptionAnalyzer.Name)]
         public string Title { get; set; }
 
         /// <summary>
