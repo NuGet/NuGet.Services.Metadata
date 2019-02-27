@@ -41,6 +41,9 @@ namespace NuGet.Services.AzureSearch
 
         public string OriginalVersion { get; set; }
 
+        /// <summary>
+        /// The package's identifier. Supports case insensitive exact matching.
+        /// </summary>
         [IsSearchable]
         [Analyzer(ExactMatchCustomAnalyzer.Name)]
         public string PackageId { get; set; }
@@ -67,5 +70,12 @@ namespace NuGet.Services.AzureSearch
 
         [IsSearchable]
         public string Title { get; set; }
+
+        /// <summary>
+        /// The package's identifier. Supports tokenized search.
+        /// </summary>
+        [IsSearchable]
+        [Analyzer(PackageIdCustomAnalyzer.Name)]
+        public string TokenizedPackageId { get; set; }
     }
 }

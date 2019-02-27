@@ -7,9 +7,10 @@ using Microsoft.Azure.Search.Models;
 namespace NuGet.Services.AzureSearch
 {
     /// <summary>
-    /// A custom analyzer for case-insensitive exact matching.
+    /// Support for case-insensitive exact matching on a field
+    /// in an Azure Search index.
     /// </summary>
-    public class ExactMatchCustomAnalyzer
+    public static class ExactMatchCustomAnalyzer
     {
         public const string Name = "case_insensitive_exact_match";
 

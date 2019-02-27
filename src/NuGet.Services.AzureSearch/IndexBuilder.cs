@@ -99,7 +99,12 @@ namespace NuGet.Services.AzureSearch
                 Fields = FieldBuilder.BuildForType<SearchDocument.Full>(),
                 Analyzers = new List<Analyzer>
                 {
-                    ExactMatchCustomAnalyzer.Instance
+                    ExactMatchCustomAnalyzer.Instance,
+                    PackageIdCustomAnalyzer.Instance,
+                },
+                TokenFilters = new List<TokenFilter>
+                {
+                    PackageIdCustomTokenFilter.Instance,
                 }
             };
         }
@@ -112,7 +117,12 @@ namespace NuGet.Services.AzureSearch
                 Fields = FieldBuilder.BuildForType<HijackDocument.Full>(),
                 Analyzers = new List<Analyzer>
                 {
-                    ExactMatchCustomAnalyzer.Instance
+                    ExactMatchCustomAnalyzer.Instance,
+                    PackageIdCustomAnalyzer.Instance,
+                },
+                TokenFilters = new List<TokenFilter>
+                {
+                    PackageIdCustomTokenFilter.Instance,
                 }
             };
         }
