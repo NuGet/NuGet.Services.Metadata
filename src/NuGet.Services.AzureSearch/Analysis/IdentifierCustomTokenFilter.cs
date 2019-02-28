@@ -7,6 +7,8 @@ namespace NuGet.Services.AzureSearch
 {
     /// <summary>
     /// Splits tokens on camel casing and non alpha-numeric characters.
+    /// This does not consume the original token. For example, "Foo2Bar.Baz"
+    /// becomes "Foo", "2", "Bar", "Baz", and "Foo2Bar.Baz".
     /// </summary>
     public static class IdentifierCustomTokenFilter
     {
@@ -14,6 +16,7 @@ namespace NuGet.Services.AzureSearch
 
         public static WordDelimiterTokenFilter Instance = new WordDelimiterTokenFilter(
             Name,
-            splitOnCaseChange: true);
+            splitOnCaseChange: true,
+            preserveOriginal: true);
     }
 }

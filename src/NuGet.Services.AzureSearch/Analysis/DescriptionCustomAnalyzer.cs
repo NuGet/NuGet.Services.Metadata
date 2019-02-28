@@ -17,13 +17,12 @@ namespace NuGet.Services.AzureSearch
 
         public static readonly CustomAnalyzer Instance = new CustomAnalyzer(
             Name,
-            TokenizerName.Keyword,
+            PackageIdCustomTokenizer.Name,
             new List<TokenFilterName>
             {
                 IdentifierCustomTokenFilter.Name,
                 TokenFilterName.Stopwords,
                 TokenFilterName.Lowercase,
-                JoinAdjacentCustomTokenFilter.Name,
             });
     }
 }

@@ -115,10 +115,13 @@ namespace NuGet.Services.AzureSearch
                     ExactMatchCustomAnalyzer.Instance,
                     PackageIdCustomAnalyzer.Instance,
                 },
+                Tokenizers = new List<Tokenizer>
+                {
+                    PackageIdCustomTokenizer.Instance,
+                },
                 TokenFilters = new List<TokenFilter>
                 {
                     IdentifierCustomTokenFilter.Instance,
-                    JoinAdjacentCustomTokenFilter.Instance,
                 }
             };
         }
