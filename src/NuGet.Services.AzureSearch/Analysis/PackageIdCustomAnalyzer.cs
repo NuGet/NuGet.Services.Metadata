@@ -9,8 +9,7 @@ namespace NuGet.Services.AzureSearch
     /// <summary>
     /// Support for NuGet style identifier analysis. Splits tokens
     /// on non alpha-numeric characters and camel casing, and lower
-    /// cases tokens. This is used by
-    /// <see cref="BaseMetadataDocument.TokenizedPackageId"/>.
+    /// cases tokens.
     /// </summary>
     public static class PackageIdCustomAnalyzer
     {
