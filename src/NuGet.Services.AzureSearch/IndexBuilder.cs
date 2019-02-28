@@ -118,6 +118,7 @@ namespace NuGet.Services.AzureSearch
                 TokenFilters = new List<TokenFilter>
                 {
                     IdentifierCustomTokenFilter.Instance,
+                    JoinAdjacentCustomTokenFilter.Instance,
                 }
             };
         }

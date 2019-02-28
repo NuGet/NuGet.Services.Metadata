@@ -21,8 +21,9 @@ namespace NuGet.Services.AzureSearch
             new List<TokenFilterName>
             {
                 IdentifierCustomTokenFilter.Name,
-                TokenFilterName.Lowercase,
                 TokenFilterName.Stopwords,
+                TokenFilterName.Lowercase,
+                JoinAdjacentCustomTokenFilter.Name,
             });
     }
 }
