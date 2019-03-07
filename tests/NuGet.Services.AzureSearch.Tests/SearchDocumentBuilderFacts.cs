@@ -397,6 +397,7 @@ namespace NuGet.Services.AzureSearch
     {
       ""@search.action"": ""upload"",
       ""totalDownloadCount"": 1001,
+      ""autocompletePackageId"": ""WindowsAzure.Storage"",
       ""owners"": [
         ""Microsoft"",
         ""azure-sdk""

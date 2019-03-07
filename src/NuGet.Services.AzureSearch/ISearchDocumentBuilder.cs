@@ -37,6 +37,17 @@ namespace NuGet.Services.AzureSearch
             string[] owners,
             long totalDownloadCount);
 
+        // TODO: Add owners
+        // https://github.com/nuget/nugetgallery/issues/6475
+        SearchDocument.AddFirst AddFirstFromCatalog(
+            SearchFilters searchFilters,
+            string[] versions,
+            bool isLatestStable,
+            bool isLatest,
+            string normalizedVersion,
+            string fullVersion,
+            PackageDetailsCatalogLeaf leaf);
+
         SearchDocument.UpdateLatest UpdateLatestFromCatalog(
             SearchFilters searchFilters,
             string[] versions,

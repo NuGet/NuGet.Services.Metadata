@@ -29,6 +29,10 @@ namespace NuGet.Services.AzureSearch
         public class AddFirst : UpdateLatest
         {
             [IsSearchable]
+            [Analyzer(AutocompleteCustomAnalyzer.Name)]
+            public string AutocompletePackageId { get; set; }
+
+            [IsSearchable]
             [Analyzer(ExactMatchCustomAnalyzer.Name)]
             public string[] Owners { get; set; }
         }

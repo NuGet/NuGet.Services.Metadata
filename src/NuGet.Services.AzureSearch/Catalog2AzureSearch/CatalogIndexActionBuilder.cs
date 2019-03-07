@@ -221,18 +221,13 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                 case SearchIndexChangeType.AddFirst:
                 case SearchIndexChangeType.UpdateLatest:
                 case SearchIndexChangeType.DowngradeLatest:
-                    // TODO: look up owners with AddFirst.
-                    // https://github.com/nuget/nugetgallery/issues/6475
                     var leaf = context.GetLeaf(latestFlags.LatestVersionInfo.ParsedVersion);
-                    var normalizedVersion = VerifyConsistencyAndNormalizeVersion(context, leaf);
-                    return IndexAction.MergeOrUpload<KeyedDocument>(_search.UpdateLatestFromCatalog(
+                    return GetSearchIndexActionFromLeaf(
+                        context,
                         searchFilters,
-                        latestFlags.LatestVersionInfo.ListedFullVersions,
-                        latestFlags.IsLatestStable,
-                        latestFlags.IsLatest,
-                        normalizedVersion,
-                        latestFlags.LatestVersionInfo.FullVersion,
-                        leaf));
+                        latestFlags,
+                        leaf,
+                        changeType);
 
                 default:
                     throw new NotImplementedException($"The change type '{changeType}' is not supported.");
@@ -268,6 +263,44 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                 normalizedVersion,
                 changes,
                 leaf));
+        }
+
+        private IndexAction<KeyedDocument> GetSearchIndexActionFromLeaf(
+            Context context,
+            SearchFilters searchFilters,
+            SearchDocument.LatestFlags latestFlags,
+            PackageDetailsCatalogLeaf leaf,
+            SearchIndexChangeType changeType)
+        {
+            KeyedDocument document;
+            var normalizedVersion = VerifyConsistencyAndNormalizeVersion(context, leaf);
+            
+            if (changeType == SearchIndexChangeType.AddFirst)
+            {
+                // TODO: look up owners with AddFirst.
+                // https://github.com/nuget/nugetgallery/issues/6475
+                document = _search.AddFirstFromCatalog(
+                    searchFilters,
+                    latestFlags.LatestVersionInfo.ListedFullVersions,
+                    latestFlags.IsLatestStable,
+                    latestFlags.IsLatest,
+                    normalizedVersion,
+                    latestFlags.LatestVersionInfo.FullVersion,
+                    leaf);
+            }
+            else
+            {
+                document = _search.UpdateLatestFromCatalog(
+                    searchFilters,
+                    latestFlags.LatestVersionInfo.ListedFullVersions,
+                    latestFlags.IsLatestStable,
+                    latestFlags.IsLatest,
+                    normalizedVersion,
+                    latestFlags.LatestVersionInfo.FullVersion,
+                    leaf);
+            }
+
+            return IndexAction.MergeOrUpload(document);
         }
 
         private string VerifyConsistencyAndNormalizeVersion(

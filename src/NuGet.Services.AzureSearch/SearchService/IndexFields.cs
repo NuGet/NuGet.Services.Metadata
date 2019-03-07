@@ -29,6 +29,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 
         public static class Search
         {
+            public static readonly string AutocompletePackageId = Name(nameof(SearchDocument.AddFirst.AutocompletePackageId));
             public static readonly string Owners = Name(nameof(SearchDocument.Full.Owners));
             public static readonly string SearchFilters = Name(nameof(SearchDocument.UpdateLatest.SearchFilters));
             public static readonly string Versions = Name(nameof(SearchDocument.UpdateLatest.Versions));

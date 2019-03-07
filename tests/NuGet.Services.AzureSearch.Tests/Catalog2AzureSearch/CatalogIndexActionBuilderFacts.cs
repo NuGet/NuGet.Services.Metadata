@@ -51,7 +51,7 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                     _entryToLeaf);
 
                 Assert.Equal(4, indexActions.Search.Count);
-                Assert.All(indexActions.Search, x => Assert.IsType<SearchDocument.UpdateLatest>(x.Document));
+                Assert.All(indexActions.Search, x => Assert.IsType<SearchDocument.AddFirst>(x.Document));
                 Assert.All(indexActions.Search, x => Assert.Equal(IndexActionType.MergeOrUpload, x.ActionType));
 
                 Assert.Single(indexActions.Hijack);
@@ -530,7 +530,7 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                 var isSemVer2 = indexActions.Search.ToLookup(x => x.Document.Key.Contains("SemVer2"));
                 Assert.All(isSemVer2[false], x => Assert.IsType<KeyedDocument>(x.Document));
                 Assert.All(isSemVer2[false], x => Assert.Equal(IndexActionType.Delete, x.ActionType));
-                Assert.All(isSemVer2[true], x => Assert.IsType<SearchDocument.UpdateLatest>(x.Document));
+                Assert.All(isSemVer2[true], x => Assert.IsType<SearchDocument.AddFirst>(x.Document));
                 Assert.All(isSemVer2[true], x => Assert.Equal(IndexActionType.MergeOrUpload, x.ActionType));
 
                 Assert.Single(indexActions.Hijack);
@@ -642,6 +642,17 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                         It.IsAny<bool>()))
                     .Returns<string, SearchFilters, DateTimeOffset, string, string[], bool, bool>(
                         (i, ct, ci, sf, v, ls, l) => new SearchDocument.UpdateVersionList { Key = sf.ToString() });
+                _search
+                    .Setup(x => x.AddFirstFromCatalog(
+                        It.IsAny<SearchFilters>(),
+                        It.IsAny<string[]>(),
+                        It.IsAny<bool>(),
+                        It.IsAny<bool>(),
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<PackageDetailsCatalogLeaf>()))
+                    .Returns<SearchFilters, string[], bool, bool, string, string, PackageDetailsCatalogLeaf>(
+                        (sf, v, ls, l, nv, fv, lf) => new SearchDocument.AddFirst { Key = sf.ToString() });
                 _search
                     .Setup(x => x.UpdateLatestFromCatalog(
                         It.IsAny<SearchFilters>(),

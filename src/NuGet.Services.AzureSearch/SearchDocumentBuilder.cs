@@ -116,6 +116,36 @@ namespace NuGet.Services.AzureSearch
             return document;
         }
 
+        // TODO: Add owners
+        // https://github.com/nuget/nugetgallery/issues/6475
+        public SearchDocument.AddFirst AddFirstFromCatalog(
+            SearchFilters searchFilters,
+            string[] versions,
+            bool isLatestStable,
+            bool isLatest,
+            string normalizedVersion,
+            string fullVersion,
+            PackageDetailsCatalogLeaf leaf)
+        {
+            var document = new SearchDocument.AddFirst();
+
+            PopulateUpdateLatest(
+                document,
+                leaf.PackageId,
+                searchFilters,
+                lastUpdatedFromCatalog: true,
+                lastCommitTimestamp: leaf.CommitTimestamp,
+                lastCommitId: leaf.CommitId,
+                versions: versions,
+                isLatestStable: isLatestStable,
+                isLatest: isLatest,
+                fullVersion: fullVersion);
+            DocumentUtilities.PopulateMetadata(document, normalizedVersion, leaf);
+            document.AutocompletePackageId = leaf.PackageId;
+
+            return document;
+        }
+
         public SearchDocument.UpdateLatest UpdateLatestFromCatalog(
             SearchFilters searchFilters,
             string[] versions,
@@ -247,6 +277,7 @@ namespace NuGet.Services.AzureSearch
                 isLatestStable,
                 isLatest,
                 fullVersion);
+            document.AutocompletePackageId = packageId;
             document.Owners = owners;
         }
     }

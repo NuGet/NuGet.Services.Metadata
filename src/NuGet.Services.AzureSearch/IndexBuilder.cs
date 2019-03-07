@@ -8,6 +8,7 @@ using Microsoft.Azure.Search;
 using Microsoft.Azure.Search.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NuGet.Services.AzureSearch.SearchService;
 using NuGet.Services.AzureSearch.Wrappers;
 
 namespace NuGet.Services.AzureSearch
@@ -111,6 +112,7 @@ namespace NuGet.Services.AzureSearch
                 Fields = FieldBuilder.BuildForType<TDocument>(),
                 Analyzers = new List<Analyzer>
                 {
+                    AutocompleteCustomAnalyzer.Instance,
                     DescriptionAnalyzer.Instance,
                     ExactMatchCustomAnalyzer.Instance,
                     PackageIdCustomAnalyzer.Instance,
@@ -121,6 +123,7 @@ namespace NuGet.Services.AzureSearch
                 },
                 TokenFilters = new List<TokenFilter>
                 {
+                    AutocompleteCustomTokenFilter.Instance,
                     IdentifierCustomTokenFilter.Instance,
                 }
             };
