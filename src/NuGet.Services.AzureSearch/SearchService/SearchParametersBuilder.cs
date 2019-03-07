@@ -13,6 +13,9 @@ namespace NuGet.Services.AzureSearch.SearchService
         public const int DefaultTake = 20;
         private const int MaximumTake = 1000;
 
+        private static readonly List<string> PackageIdsAutocompleteSelect = new List<string> { IndexFields.PackageId };
+        private static readonly List<string> PackageVersionsAutocompleteSelect = new List<string> { IndexFields.Search.Versions };
+
         private static readonly string Ascending = " asc";
         private static readonly string Descending = " desc";
         private static readonly List<string> LastEditedDescending = new List<string> { IndexFields.LastEdited + Descending };
@@ -69,16 +72,23 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             ApplySearchIndexFilter(searchParameters, request);
 
-            // Package version autocomplete queries should only match a single document
-            // regardless of the request's parameters.
-            if (request.Type == AutocompleteRequestType.PackageVersions)
+            switch (request.Type)
             {
-                searchParameters.Skip = 0;
-                searchParameters.Top = 1;
-            }
-            else
-            {
-                ApplyPaging(searchParameters, request);
+                case AutocompleteRequestType.PackageIds:
+                    searchParameters.Select = PackageIdsAutocompleteSelect;
+                    ApplyPaging(searchParameters, request);
+                    break;
+                
+                // Package version autocomplete should only match a single document
+                // regardless of the request's parameters.
+                case AutocompleteRequestType.PackageVersions:
+                    searchParameters.Select = PackageVersionsAutocompleteSelect;
+                    searchParameters.Skip = 0;
+                    searchParameters.Top = 1;
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unknown autocomplete request type '{request.Type}'");
             }
 
             return searchParameters;

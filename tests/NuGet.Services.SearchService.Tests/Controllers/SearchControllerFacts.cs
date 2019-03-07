@@ -237,6 +237,136 @@ namespace NuGet.Services.SearchService.Controllers
             }
         }
 
+        public class AutocompleteAsync : BaseFacts
+        {
+            [Fact]
+            public async Task InitializesAuxiliaryDataCache()
+            {
+                await _target.AutocompleteAsync();
+
+                _auxiliaryDataCache.Verify(x => x.EnsureInitializedAsync(), Times.Once);
+            }
+
+            [Fact]
+            public async Task HasDefaultParameters()
+            {
+                AutocompleteRequest lastRequest = null;
+                _searchService
+                    .Setup(x => x.AutocompleteAsync(It.IsAny<AutocompleteRequest>()))
+                    .ReturnsAsync(() => _autocompleteResponse)
+                    .Callback<AutocompleteRequest>(x => lastRequest = x);
+
+                await _target.AutocompleteAsync();
+
+                _searchService.Verify(x => x.AutocompleteAsync(It.IsAny<AutocompleteRequest>()), Times.Once);
+                Assert.NotNull(lastRequest);
+                Assert.Equal(0, lastRequest.Skip);
+                Assert.Equal(20, lastRequest.Take);
+                Assert.False(lastRequest.IncludePrerelease);
+                Assert.False(lastRequest.IncludeSemVer2);
+                Assert.Null(lastRequest.Query);
+                Assert.False(lastRequest.ShowDebug);
+                Assert.Equal(AutocompleteRequestType.PackageIds, lastRequest.Type);
+            }
+
+            [Fact]
+            public async Task UsesProvidedParameters()
+            {
+                AutocompleteRequest lastRequest = null;
+                _searchService
+                    .Setup(x => x.AutocompleteAsync(It.IsAny<AutocompleteRequest>()))
+                    .ReturnsAsync(() => _autocompleteResponse)
+                    .Callback<AutocompleteRequest>(x => lastRequest = x);
+
+                await _target.AutocompleteAsync(
+                    skip: -20,
+                    take: 30000,
+                    prerelease: true,
+                    semVerLevel: "2.0.0",
+                    q: "windows azure storage",
+                    debug: true);
+
+                _searchService.Verify(x => x.AutocompleteAsync(It.IsAny<AutocompleteRequest>()), Times.Once);
+                Assert.NotNull(lastRequest);
+                Assert.Equal(-20, lastRequest.Skip);
+                Assert.Equal(30000, lastRequest.Take);
+                Assert.True(lastRequest.IncludePrerelease);
+                Assert.True(lastRequest.IncludeSemVer2);
+                Assert.Equal("windows azure storage", lastRequest.Query);
+                Assert.True(lastRequest.ShowDebug);
+                Assert.Equal(AutocompleteRequestType.PackageIds, lastRequest.Type);
+            }
+
+            [Fact]
+            public async Task SetsPackageVersionsRequestType()
+            {
+                AutocompleteRequest lastRequest = null;
+                _searchService
+                    .Setup(x => x.AutocompleteAsync(It.IsAny<AutocompleteRequest>()))
+                    .ReturnsAsync(() => _autocompleteResponse)
+                    .Callback<AutocompleteRequest>(x => lastRequest = x);
+
+                await _target.AutocompleteAsync(
+                    skip: -20,
+                    take: 30000,
+                    prerelease: true,
+                    semVerLevel: "2.0.0",
+                    id: "windows azure storage",
+                    debug: true);
+
+                _searchService.Verify(x => x.AutocompleteAsync(It.IsAny<AutocompleteRequest>()), Times.Once);
+                Assert.NotNull(lastRequest);
+                Assert.Equal(-20, lastRequest.Skip);
+                Assert.Equal(30000, lastRequest.Take);
+                Assert.True(lastRequest.IncludePrerelease);
+                Assert.True(lastRequest.IncludeSemVer2);
+                Assert.Equal("windows azure storage", lastRequest.Query);
+                Assert.True(lastRequest.ShowDebug);
+                Assert.Equal(AutocompleteRequestType.PackageVersions, lastRequest.Type);
+            }
+
+            [Fact]
+            public async Task PrefersPackageIdsRequestType()
+            {
+                AutocompleteRequest lastRequest = null;
+                _searchService
+                    .Setup(x => x.AutocompleteAsync(It.IsAny<AutocompleteRequest>()))
+                    .ReturnsAsync(() => _autocompleteResponse)
+                    .Callback<AutocompleteRequest>(x => lastRequest = x);
+
+                await _target.AutocompleteAsync(
+                    skip: -20,
+                    take: 30000,
+                    prerelease: true,
+                    semVerLevel: "2.0.0",
+                    q: "hello world",
+                    id: "windows azure storage",
+                    debug: true);
+
+                _searchService.Verify(x => x.AutocompleteAsync(It.IsAny<AutocompleteRequest>()), Times.Once);
+                Assert.NotNull(lastRequest);
+                Assert.Equal(-20, lastRequest.Skip);
+                Assert.Equal(30000, lastRequest.Take);
+                Assert.True(lastRequest.IncludePrerelease);
+                Assert.True(lastRequest.IncludeSemVer2);
+                Assert.Equal("hello world", lastRequest.Query);
+                Assert.True(lastRequest.ShowDebug);
+                Assert.Equal(AutocompleteRequestType.PackageIds, lastRequest.Type);
+            }
+
+            [Theory]
+            [MemberData(nameof(SemVerLevels))]
+            public async Task ParsesSemVerLevel(string semVerLevel, bool includeSemVer2)
+            {
+                await _target.AutocompleteAsync(semVerLevel: semVerLevel);
+
+                _searchService.Verify(
+                    x => x.AutocompleteAsync(It.Is<AutocompleteRequest>(r => r.IncludeSemVer2 == includeSemVer2)),
+                    Times.Once);
+            }
+        }
+
+
         public abstract class BaseFacts
         {
             protected readonly Mock<IAuxiliaryDataCache> _auxiliaryDataCache;
@@ -244,6 +374,7 @@ namespace NuGet.Services.SearchService.Controllers
             protected readonly Mock<ISearchStatusService> _statusService;
             protected readonly V2SearchResponse _v2SearchResponse;
             protected readonly V3SearchResponse _v3SearchResponse;
+            protected readonly AutocompleteResponse _autocompleteResponse;
             protected readonly SearchController _target;
 
             public static IEnumerable<object[]> SemVerLevels => new[]
@@ -277,6 +408,9 @@ namespace NuGet.Services.SearchService.Controllers
                 _searchService
                     .Setup(x => x.V3SearchAsync(It.IsAny<V3SearchRequest>()))
                     .ReturnsAsync(() => _v3SearchResponse);
+                _searchService
+                    .Setup(x => x.AutocompleteAsync(It.IsAny<AutocompleteRequest>()))
+                    .ReturnsAsync(() => _autocompleteResponse);
 
                 _target = new SearchController(
                     _auxiliaryDataCache.Object,

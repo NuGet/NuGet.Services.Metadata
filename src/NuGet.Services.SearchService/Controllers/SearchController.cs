@@ -130,7 +130,7 @@ namespace NuGet.Services.SearchService.Controllers
                 Take = take,
                 IncludePrerelease = prerelease,
                 IncludeSemVer2 = GetIncludeSemVer2(semVerLevel),
-                Query = q ?? id ?? string.Empty,
+                Query = q ?? id,
                 Type = type,
                 ShowDebug = debug,
             };

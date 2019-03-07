@@ -60,15 +60,17 @@ namespace NuGet.Services.AzureSearch.SearchService
                 return MatchAllDocumentsQuery;
             }
 
+            // TODO: This should use the autocomplete package id field
+            // See https://github.com/NuGet/NuGetGallery/issues/6972
             // Package version autocomplete queries are an exact match on the package id.
-            var grouping = new Dictionary<QueryField, HashSet<string>>();
+            var query = new AzureSearchQueryBuilder();
             var field = (request.Type == AutocompleteRequestType.PackageVersions)
-                ? QueryField.PackageId
-                : QueryField.Id;
+                ? IndexFields.PackageId
+                : IndexFields.TokenizedPackageId;
 
-            grouping.Add(field, new HashSet<string> {  request.Query });
+            query.AddFieldScopedValues(field, new[] { request.Query });
 
-            var result = ToAzureSearchQuery(grouping).ToString();
+            var result = query.ToString();
             if (string.IsNullOrWhiteSpace(result))
             {
                 return MatchAllDocumentsQuery;

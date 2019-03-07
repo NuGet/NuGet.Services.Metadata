@@ -118,15 +118,18 @@ namespace NuGet.Services.AzureSearch.SearchService
             DocumentSearchResult<SearchDocument.Full> result,
             TimeSpan duration)
         {
+            var results = result.Results;
+            result.Results = null;
+
             List<string> data;
             switch (request.Type)
             {
                 case AutocompleteRequestType.PackageIds:
-                    data = result.Results.Select(x => x.Document.PackageId).ToList();
+                    data = results.Select(x => x.Document.PackageId).ToList();
                     break;
 
                 case AutocompleteRequestType.PackageVersions:
-                    data = result.Results.SelectMany(x => x.Document.Versions).ToList();
+                    data = results.SelectMany(x => x.Document.Versions).ToList();
                     break;
 
                 default:

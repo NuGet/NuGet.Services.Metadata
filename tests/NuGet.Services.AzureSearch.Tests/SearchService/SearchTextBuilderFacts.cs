@@ -102,6 +102,43 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
         }
 
+        public class Autocomplete : FactsBase
+        {
+            // TODO: This should use the autocomplete package id field
+            // See https://github.com/NuGet/NuGetGallery/issues/6972
+            [Theory]
+            [InlineData("Test", "tokenizedPackageId:Test")]
+            [InlineData("Hello world", @"tokenizedPackageId:""Hello world""")]
+            public void PackageIdAutocomplete(string input, string expected)
+            {
+                var request = new AutocompleteRequest
+                {
+                    Query = input,
+                    Type = AutocompleteRequestType.PackageIds
+                };
+
+                var result = _target.Autocomplete(request);
+
+                Assert.Equal(expected, result);
+            }
+
+            [Theory]
+            [InlineData("Test", "packageId:Test")]
+            [InlineData("Hello world", @"packageId:""Hello world""")]
+            public void PackageVersionsAutocomplete(string input, string expected)
+            {
+                var request = new AutocompleteRequest
+                {
+                    Query = input,
+                    Type = AutocompleteRequestType.PackageVersions
+                };
+
+                var result = _target.Autocomplete(request);
+
+                Assert.Equal(expected, result);
+            }
+        }
+
         public class FactsBase
         {
             protected readonly SearchTextBuilder _target;

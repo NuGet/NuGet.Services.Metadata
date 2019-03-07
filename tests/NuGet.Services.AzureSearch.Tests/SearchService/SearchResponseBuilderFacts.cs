@@ -629,6 +629,99 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
         }
 
+        public class AutocompleteFromSearch : BaseFacts
+        {
+            [Fact]
+            public void CanIncludeDebugInformation()
+            {
+                _autocompleteRequest.ShowDebug = true;
+
+                var response = _target.AutocompleteFromSearch(
+                    _autocompleteRequest,
+                    _searchParameters,
+                    _text,
+                    _searchResult,
+                    _duration);
+
+                Assert.NotNull(response.Debug);
+                var actualJson = JsonConvert.SerializeObject(response.Debug, _jsonSerializerSettings);
+                Assert.Equal(@"{
+  ""SearchRequest"": {
+    ""Type"": ""PackageIds"",
+    ""Skip"": 0,
+    ""Take"": 0,
+    ""IncludePrerelease"": true,
+    ""IncludeSemVer2"": true,
+    ""ShowDebug"": true
+  },
+  ""IndexName"": ""search-index"",
+  ""SearchParameters"": {
+    ""IncludeTotalResultCount"": false,
+    ""QueryType"": ""simple"",
+    ""SearchMode"": ""any""
+  },
+  ""SearchText"": ""azure storage sdk"",
+  ""DocumentSearchResult"": {
+    ""Count"": 1
+  },
+  ""QueryDuration"": ""00:00:00.2500000"",
+  ""AuxiliaryFilesMetadata"": {
+    ""Downloads"": {
+      ""LastModified"": ""2019-01-01T11:00:00+00:00"",
+      ""Loaded"": ""2019-01-01T12:00:00+00:00"",
+      ""LoadDuration"": ""00:00:15"",
+      ""FileSize"": 1234,
+      ""ETag"": ""\""etag-a\""""
+    },
+    ""VerifiedPackages"": {
+      ""LastModified"": ""2019-01-02T11:00:00+00:00"",
+      ""Loaded"": ""2019-01-02T12:00:00+00:00"",
+      ""LoadDuration"": ""00:00:30"",
+      ""FileSize"": 5678,
+      ""ETag"": ""\""etag-b\""""
+    }
+  }
+}", actualJson);
+            }
+
+            [Fact]
+            public void ReturnsPackageIds()
+            {
+                _autocompleteRequest.Type = AutocompleteRequestType.PackageIds;
+
+                var response = _target.AutocompleteFromSearch(
+                    _autocompleteRequest,
+                    _searchParameters,
+                    _text,
+                    _searchResult,
+                    _duration);
+
+                Assert.NotNull(response);
+                Assert.Single(response.Data);
+                Assert.Equal("WindowsAzure.Storage", response.Data[0]);
+            }
+
+            [Fact]
+            public void ReturnsPackageVersions()
+            {
+                _autocompleteRequest.Type = AutocompleteRequestType.PackageVersions;
+
+                var response = _target.AutocompleteFromSearch(
+                    _autocompleteRequest,
+                    _searchParameters,
+                    _text,
+                    _searchResult,
+                    _duration);
+
+                Assert.NotNull(response);
+                Assert.Equal(4, response.Data.Count);
+                Assert.Equal("1.0.0", response.Data[0]);
+                Assert.Equal("2.0.0+git", response.Data[1]);
+                Assert.Equal("3.0.0-alpha.1", response.Data[2]);
+                Assert.Equal("7.1.2-alpha+git", response.Data[3]);
+            }
+        }
+
         public abstract class BaseFacts
         {
             protected readonly Mock<IAuxiliaryData> _auxiliaryData;
@@ -636,6 +729,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             protected readonly Mock<IOptionsSnapshot<SearchServiceConfiguration>> _options;
             protected readonly V2SearchRequest _v2Request;
             protected readonly V3SearchRequest _v3Request;
+            protected readonly AutocompleteRequest _autocompleteRequest;
             protected readonly SearchParameters _searchParameters;
             protected readonly string _text;
             protected readonly TimeSpan _duration;
@@ -700,6 +794,11 @@ namespace NuGet.Services.AzureSearch.SearchService
                 {
                     IncludePrerelease = true,
                     IncludeSemVer2 = true
+                };
+                _autocompleteRequest = new AutocompleteRequest
+                {
+                    IncludePrerelease = true,
+                    IncludeSemVer2 = true,
                 };
                 _searchParameters = new SearchParameters();
                 _text = "azure storage sdk";
