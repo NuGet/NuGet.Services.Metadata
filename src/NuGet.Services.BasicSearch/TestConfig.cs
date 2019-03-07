@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using Microsoft.Owin;
 
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -21,6 +22,7 @@ namespace NuGet.Services.BasicSearch
         private static readonly object _lockInstance = new object();
         private ILogger _logger;
         private int readConfigDelaySeconds = 60;
+        public const string AlwaysFaultyHeader = "FailingRequest";
 
         public static void Init(ILoggerFactory loggerFactory)
         {
@@ -51,11 +53,31 @@ namespace NuGet.Services.BasicSearch
             }
         }
 
-        public static void ThrowIfConfigured()
+        public static void ThrowIfConfigured(IOwinContext context)
         {
-            if(_instance.Map() != null)
+            ThrowBecauseOfHeader(context);
+            if (_instance.Map() != null)
             {
                 throw new ClientException(_instance.Map().StatusCode, "Bad Search!");
+            }
+        }
+
+        private static void ThrowBecauseOfHeader(IOwinContext context)
+        {
+            string[] failingHeaderValue;
+            if (context.Request.Headers.TryGetValue(TestConfig.AlwaysFaultyHeader, out failingHeaderValue))
+            {
+                if (failingHeaderValue != null && failingHeaderValue.Length > 0)
+                {
+                    try
+                    {
+                        HttpStatusCode statusCode = (HttpStatusCode)Enum.Parse(typeof(HttpStatusCode), failingHeaderValue[0], true);
+                        throw new ClientException(statusCode, "Bad Search Request!");
+                    }
+                    // not fail because of this 
+                    catch(Exception)
+                    {}
+                }
             }
         }
 

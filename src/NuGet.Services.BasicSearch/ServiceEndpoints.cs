@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Owin;
@@ -24,7 +25,7 @@ namespace NuGet.Services.BasicSearch
             var scheme = context.Request.Uri.Scheme;
 
             await TestConfig.WaitIfConfigured();
-            TestConfig.ThrowIfConfigured();
+            TestConfig.ThrowIfConfigured(context);
 
             await responseWriter.WriteResponseAsync(
                 context,
@@ -48,7 +49,7 @@ namespace NuGet.Services.BasicSearch
             }
 
             await TestConfig.WaitIfConfigured();
-            TestConfig.ThrowIfConfigured();
+            TestConfig.ThrowIfConfigured(context);
 
             await responseWriter.WriteResponseAsync(
                 context,
@@ -72,7 +73,7 @@ namespace NuGet.Services.BasicSearch
             var luceneQuery = GetLuceneQuery(context);
 
             await TestConfig.WaitIfConfigured();
-            TestConfig.ThrowIfConfigured();
+            TestConfig.ThrowIfConfigured(context);
 
             await responseWriter.WriteResponseAsync(
                 context,
