@@ -107,6 +107,37 @@ namespace NuGet.Services.SearchService.Controllers
             return await _searchService.V3SearchAsync(request);
         }
 
+        [HttpGet]
+        public async Task<AutocompleteResponse> AutocompleteAsync(
+            int skip = DefaultSkip,
+            int take = DefaultTake,
+            bool prerelease = false,
+            string semVerLevel = null,
+            string q = null,
+            string id = null,
+            bool debug = false)
+        {
+            await EnsureInitializedAsync();
+
+            // If only "id" is provided, find package versions. Otherwise, find package Ids.
+            var type = (q != null || id == null)
+                ? AutocompleteRequestType.PackageIds
+                : AutocompleteRequestType.PackageVersions;
+
+            var request = new AutocompleteRequest
+            {
+                Skip = skip,
+                Take = take,
+                IncludePrerelease = prerelease,
+                IncludeSemVer2 = GetIncludeSemVer2(semVerLevel),
+                Query = q ?? id ?? string.Empty,
+                Type = type,
+                ShowDebug = debug,
+            };
+
+            return await _searchService.AutocompleteAsync(request);
+        }
+
         private async Task EnsureInitializedAsync()
         {
             /// Ensure the auxiliary data is loaded before processing a request. This is necessary because the response

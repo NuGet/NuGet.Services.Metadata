@@ -9,5 +9,6 @@ namespace NuGet.Services.AzureSearch.SearchService
     {
         Task<V2SearchResponse> V2SearchAsync(V2SearchRequest request);
         Task<V3SearchResponse> V3SearchAsync(V3SearchRequest request);
+        Task<AutocompleteResponse> AutocompleteAsync(AutocompleteRequest request);
     }
 }

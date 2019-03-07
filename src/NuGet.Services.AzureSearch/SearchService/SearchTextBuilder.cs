@@ -53,6 +53,30 @@ namespace NuGet.Services.AzureSearch.SearchService
             return GetLuceneQuery(request.Query);
         }
 
+        public string Autocomplete(AutocompleteRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Query))
+            {
+                return MatchAllDocumentsQuery;
+            }
+
+            // Package version autocomplete queries are an exact match on the package id.
+            var grouping = new Dictionary<QueryField, HashSet<string>>();
+            var field = (request.Type == AutocompleteRequestType.PackageVersions)
+                ? QueryField.PackageId
+                : QueryField.Id;
+
+            grouping.Add(field, new HashSet<string> {  request.Query });
+
+            var result = ToAzureSearchQuery(grouping).ToString();
+            if (string.IsNullOrWhiteSpace(result))
+            {
+                return MatchAllDocumentsQuery;
+            }
+
+            return result;
+        }
+
         private string GetLuceneQuery(string query)
         {
             if (string.IsNullOrWhiteSpace(query))

@@ -63,6 +63,27 @@ namespace NuGet.Services.AzureSearch.SearchService
             return searchParameters;
         }
 
+        public SearchParameters Autocomplete(AutocompleteRequest request)
+        {
+            var searchParameters = NewSearchParameters();
+
+            ApplySearchIndexFilter(searchParameters, request);
+
+            // Package version autocomplete queries should only match a single document
+            // regardless of the request's parameters.
+            if (request.Type == AutocompleteRequestType.PackageVersions)
+            {
+                searchParameters.Skip = 0;
+                searchParameters.Top = 1;
+            }
+            else
+            {
+                ApplyPaging(searchParameters, request);
+            }
+
+            return searchParameters;
+        }
+
         private static SearchParameters NewSearchParameters()
         {
             return new SearchParameters

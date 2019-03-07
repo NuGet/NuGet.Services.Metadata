@@ -1,12 +1,13 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using Newtonsoft.Json;
+
 namespace NuGet.Services.AzureSearch.SearchService
 {
-    public interface ISearchTextBuilder
+    public class AutocompleteContext
     {
-        string V2Search(V2SearchRequest request);
-        string V3Search(V3SearchRequest request);
-        string Autocomplete(AutocompleteRequest request);
+        [JsonProperty("@vocab")]
+        public string Vocab { get; set; }
     }
 }
