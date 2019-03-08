@@ -20,7 +20,7 @@ namespace NuGet.Services.BasicSearch
     {
         public static volatile TestConfig _instance = null;
         private static readonly object _lockInstance = new object();
-        private ILogger _logger;
+        private readonly ILogger _logger;
         private int readConfigDelaySeconds = 60;
         public const string AlwaysFaultyHeader = "FailingRequest";
 
@@ -69,14 +69,17 @@ namespace NuGet.Services.BasicSearch
             {
                 if (failingHeaderValue != null && failingHeaderValue.Length > 0)
                 {
+                    HttpStatusCode statusCode = HttpStatusCode.ServiceUnavailable;
                     try
                     {
-                        HttpStatusCode statusCode = (HttpStatusCode)Enum.Parse(typeof(HttpStatusCode), failingHeaderValue[0], true);
-                        throw new ClientException(statusCode, "Bad Search Request!");
+                        statusCode = (HttpStatusCode)Enum.Parse(typeof(HttpStatusCode), failingHeaderValue[0], true);
                     }
                     // not fail because of this 
-                    catch(Exception)
-                    {}
+                    catch(Exception ex)
+                    {
+                        _instance._logger.LogCritical(new EventId(999, "ThrowBecauseOfHeader"), ex, ex.Message);
+                    }
+                    throw new ClientException(statusCode, "Bad Search Request!");
                 }
             }
         }
@@ -122,7 +125,7 @@ namespace NuGet.Services.BasicSearch
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogCritical(new EventId(), ex, ex.Message);
+                            _logger.LogCritical(new EventId(999, "ReadAndUpdateConfig"), ex, ex.Message);
                         }
                         Thread.Sleep(readConfigDelaySeconds * 1000);
                     }
