@@ -1,19 +1,19 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System.Collections.Generic;
+using System.Linq;
 using Lucene.Net.Support;
 using NuGet.Indexing;
 using NuGet.Versioning;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Xunit;
+using TestUtils;
 
 namespace NuGet.IndexingTests
 {
     public class VersionResultTests
     {
-        private readonly Random randomizer = new Random(1000000);
+        private readonly SecureRandomNumberGenerator randomizer = new SecureRandomNumberGenerator();
 
         [Theory]
         [MemberData(nameof(VersionStringSets))]

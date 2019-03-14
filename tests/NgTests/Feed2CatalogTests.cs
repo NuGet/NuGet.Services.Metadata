@@ -22,6 +22,7 @@ using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Persistence;
 using NuGet.Versioning;
 using Xunit;
+using TestUtils;
 
 namespace NgTests
 {
@@ -41,7 +42,7 @@ namespace NgTests
         private bool _hasFirstRunOnceAsyncBeenCalledBefore;
         private int _lastFeedEntriesCount;
         private readonly List<PackageOperation> _packageOperations;
-        private readonly Random _random;
+        private readonly SecureRandomNumberGenerator _random;
         private readonly MemoryStorage _auditingStorage;
         private readonly MemoryStorage _catalogStorage;
         private TestableFeed2CatalogJob _job;
@@ -52,7 +53,7 @@ namespace NgTests
         public Feed2CatalogTests()
         {
             _server = new MockServerHttpClientHandler();
-            _random = new Random();
+            _random = new SecureRandomNumberGenerator();
             _packageOperations = new List<PackageOperation>();
             _baseUri = new Uri(_feedBaseUri);
 

@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using NuGet.Versioning;
+using TestUtils;
 
 namespace NgTests.Infrastructure
 {
@@ -42,7 +43,7 @@ namespace NgTests.Infrastructure
             }
         }
 
-        public static TestPackage Create(Random random)
+        public static TestPackage Create(SecureRandomNumberGenerator random)
         {
             var id = TestUtility.CreateRandomAlphanumericString(random);
             var version = CreateRandomVersion(random);
@@ -71,7 +72,7 @@ namespace NgTests.Infrastructure
 </package>";
         }
 
-        private static MemoryStream CreatePackageStream(string id, string nuspec, RandomNumberGenerator rng, Random random)
+        private static MemoryStream CreatePackageStream(string id, string nuspec, RandomNumberGenerator rng, SecureRandomNumberGenerator random)
         {
             var stream = new MemoryStream();
 
@@ -110,7 +111,7 @@ namespace NgTests.Infrastructure
             return stream;
         }
 
-        private static NuGetVersion CreateRandomVersion(Random random)
+        private static NuGetVersion CreateRandomVersion(SecureRandomNumberGenerator random)
         {
             var major = random.Next(minValue: 1, maxValue: 10);
             var minor = random.Next(minValue: 1, maxValue: 10);

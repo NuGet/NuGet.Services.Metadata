@@ -222,6 +222,10 @@
       <Project>{e97f23b8-ecb0-4afa-b00c-015c39395fef}</Project>
       <Name>NuGet.Services.Metadata.Catalog</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\TestUtils\TestUtils.csproj">
+      <Project>{30336071-f3d0-47e1-b922-3181c15fa523}</Project>
+      <Name>TestUtils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\NgTests\NgTests.csproj">
       <Project>{05c1c78a-9966-4922-9065-a099023e7366}</Project>
       <Name>NgTests</Name>

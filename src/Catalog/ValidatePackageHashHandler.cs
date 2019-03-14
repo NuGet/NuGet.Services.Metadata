@@ -52,7 +52,6 @@ namespace NuGet.Services.Metadata.Catalog
             using (var packageStream = await _httpClient.GetStreamAsync(blob.Uri))
             {
                 var hashBytes = hashAlgorithm.ComputeHash(packageStream);
-
                 hash = Convert.ToBase64String(hashBytes);
             }
 

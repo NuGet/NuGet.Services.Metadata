@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NgTests;
 using NgTests.Infrastructure;
+using TestUtils;
 
 namespace CatalogTests.Helpers
 {
@@ -103,7 +104,8 @@ namespace CatalogTests.Helpers
 
             Id = id ?? TestUtility.CreateRandomAlphanumericString();
 
-            var build = (int)(utc.Ticks & 0xff); // random number
+            var randomNumbergenerator = new SecureRandomNumberGenerator();
+            var build = randomNumbergenerator.Next(0xff);
 
             VerbatimVersion = version ?? $"1.0.{build}";
             Version = version ?? VerbatimVersion;
@@ -121,25 +123,25 @@ namespace CatalogTests.Helpers
             Listed = true;
             PackageHash = CreateFakePackageHash();
             PackageHashAlgorithm = TestUtility.CreateRandomAlphanumericString();
-            PackageSize = (int)(utc.Ticks & 0xffffff);  // random number
+            PackageSize = randomNumbergenerator.Next(0xffffff);
             Published = Created;
-            RequireLicenseAcceptance = utc.Ticks % 2 == 0;
+            RequireLicenseAcceptance = randomNumbergenerator.Next(2) % 2 == 0;
 
             PackageEntries = new[]
             {
                 new CatalogPackageEntry(
                     idKeyword: $"{IdKeyword}#{Id}.nuspec",
                     typeKeyword: CatalogConstants.PackageEntry,
-                    compressedLength: (int)(utc.Ticks & 0xffff) + 1,
+                    compressedLength: randomNumbergenerator.Next(0xffff) + 1,
                     fullName: $"{Id}.nuspec",
-                    length: (int)(utc.Ticks & 0xfff) + 1,
+                    length: randomNumbergenerator.Next(0xfff) + 1,
                     name: $"{Id}.nuspec"),
                 new CatalogPackageEntry(
                     idKeyword: $"{IdKeyword}#.signature.p7s",
                     typeKeyword: CatalogConstants.PackageEntry,
-                    compressedLength: (int)(utc.Ticks & 0xffff),
+                    compressedLength: randomNumbergenerator.Next(0xffff),
                     fullName: ".signature.p7s",
-                    length: (int)(utc.Ticks & 0xfff),
+                    length: randomNumbergenerator.Next(0xfff),
                     name: ".signature.p7s")
             };
 

@@ -83,6 +83,10 @@
       <Project>{ddb34145-870f-42c3-9663-a9390cee1e35}</Project>
       <Name>NuGet.Indexing</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\TestUtils\TestUtils.csproj">
+      <Project>{30336071-f3d0-47e1-b922-3181c15fa523}</Project>
+      <Name>TestUtils</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

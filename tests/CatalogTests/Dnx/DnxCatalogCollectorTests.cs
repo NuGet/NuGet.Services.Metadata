@@ -9,6 +9,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,6 +25,7 @@ using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Dnx;
 using NuGet.Services.Metadata.Catalog.Persistence;
 using Xunit;
+using TestUtils;
 
 namespace CatalogTests.Dnx
 {
@@ -68,7 +70,8 @@ namespace CatalogTests.Dnx
         private MockServerHttpClientHandler _mockServer;
         private ILogger<DnxCatalogCollector> _logger;
         private DnxCatalogCollector _target;
-        private Random _random;
+        // To random generate numbers in a secure maner.
+        private SecureRandomNumberGenerator _random;
         private Uri _cursorJsonUri;
 
         public DnxCatalogCollectorTests()
@@ -92,7 +95,7 @@ namespace CatalogTests.Dnx
                 () => _mockServer);
 
             _cursorJsonUri = _catalogToDnxStorage.ResolveUri("cursor.json");
-            _random = new Random();
+            _random = new SecureRandomNumberGenerator();
         }
 
         [Fact]

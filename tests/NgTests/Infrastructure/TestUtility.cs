@@ -6,19 +6,20 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using NuGet.Packaging.Core;
 using NuGet.Services.Metadata.Catalog;
+using TestUtils;
 
 namespace NgTests.Infrastructure
 {
     public static class TestUtility
     {
-        private static readonly Random _random = new Random();
+        private static readonly SecureRandomNumberGenerator _random = new SecureRandomNumberGenerator();
 
         public static string CreateRandomAlphanumericString()
         {
             return CreateRandomAlphanumericString(_random);
         }
 
-        public static string CreateRandomAlphanumericString(Random random)
+        public static string CreateRandomAlphanumericString(SecureRandomNumberGenerator random)
         {
             const string characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 

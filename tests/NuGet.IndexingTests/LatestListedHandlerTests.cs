@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
 using System.Collections.Generic;
 using Lucene.Net.Documents;
 using Lucene.Net.Search;
@@ -9,6 +8,7 @@ using NuGet.Indexing;
 using NuGet.IndexingTests.TestSupport;
 using NuGet.Versioning;
 using Xunit;
+using TestUtils;
 
 namespace NuGet.IndexingTests
 {
@@ -35,7 +35,7 @@ namespace NuGet.IndexingTests
             handler.Begin(fakeReader);
             // Pick a random subreader for each document
             var docNumber = 0;
-            var rnd = new Random(10000);
+            var rnd = new SecureRandomNumberGenerator();
             for (var i = 0; i < documents.Length; i++)
             {
                 handler.Process(indexReader: fakeReader,
