@@ -71,6 +71,10 @@
       <Project>{d44c2e89-2d98-44bd-8712-8ccbe4e67c9c}</Project>
       <Name>NuGet.Protocol.Catalog</Name>
     </ProjectReference>
+    <ProjectReference Include="..\TestUtils\TestUtils.csproj">
+      <Project>{30336071-f3d0-47e1-b922-3181c15fa523}</Project>
+      <Name>TestUtils</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- 

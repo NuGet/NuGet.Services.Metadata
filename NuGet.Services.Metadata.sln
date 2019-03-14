@@ -44,7 +44,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Protocol.Catalog", "s
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NuGet.Protocol.Catalog.Tests", "tests\NuGet.Protocol.Catalog.Tests\NuGet.Protocol.Catalog.Tests.csproj", "{1F3BC053-796C-4A35-88F4-955A0F142197}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtils", "TestUtils\TestUtils.csproj", "{30336071-F3D0-47E1-B922-3181C15FA523}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtils", "tests\TestUtils\TestUtils.csproj", "{30336071-F3D0-47E1-B922-3181C15FA523}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
