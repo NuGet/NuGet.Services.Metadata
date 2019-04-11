@@ -8,6 +8,7 @@ using Microsoft.Azure.Search;
 using Microsoft.Azure.Search.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NuGet.Services.AzureSearch.ScoringProfiles;
 using NuGet.Services.AzureSearch.Wrappers;
 
 namespace NuGet.Services.AzureSearch
@@ -30,7 +31,14 @@ namespace NuGet.Services.AzureSearch
 
         public async Task CreateSearchIndexAsync()
         {
-            await CreateIndexAsync(InitializeSearchIndex());
+            try
+            {
+                await CreateIndexAsync(InitializeSearchIndex());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
 
         public async Task CreateHijackIndexAsync()
@@ -94,7 +102,7 @@ namespace NuGet.Services.AzureSearch
         private Index InitializeSearchIndex()
         {
             return InitializeIndex<SearchDocument.Full>(
-                _options.Value.SearchIndexName);
+                _options.Value.SearchIndexName, addScoringProfile: true);
         }
 
         private Index InitializeHijackIndex()
@@ -103,9 +111,9 @@ namespace NuGet.Services.AzureSearch
                 _options.Value.HijackIndexName);
         }
 
-        private Index InitializeIndex<TDocument>(string name)
+        private Index InitializeIndex<TDocument>(string name, bool addScoringProfile = false)
         {
-            return new Index
+            var index = new Index
             {
                 Name = name,
                 Fields = FieldBuilder.BuildForType<TDocument>(),
@@ -122,8 +130,16 @@ namespace NuGet.Services.AzureSearch
                 TokenFilters = new List<TokenFilter>
                 {
                     IdentifierCustomTokenFilter.Instance,
-                }
+                },
             };
+
+            if (addScoringProfile)
+            {
+                index.ScoringProfiles = new List<ScoringProfile> { DownloadCountBoosterProfile.Instance };
+                index.DefaultScoringProfile = DownloadCountBoosterProfile.Name;
+            }
+
+            return index;
         }
     }
 }

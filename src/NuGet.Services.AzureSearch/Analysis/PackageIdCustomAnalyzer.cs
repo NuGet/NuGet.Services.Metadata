@@ -22,6 +22,7 @@ namespace NuGet.Services.AzureSearch
             {
                 IdentifierCustomTokenFilter.Name,
                 TokenFilterName.Lowercase,
+                TokenFilterName.Truncate,
             });
     }
 }

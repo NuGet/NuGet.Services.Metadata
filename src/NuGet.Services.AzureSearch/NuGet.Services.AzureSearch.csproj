@@ -47,6 +47,7 @@
     <Compile Include="Analysis\IdentifierCustomTokenFilter.cs" />
     <Compile Include="Analysis\PackageIdCustomAnalyzer.cs" />
     <Compile Include="Analysis\PackageIdCustomTokenizer.cs" />
+    <Compile Include="ScoringProfiles\DownloadCountBoosterProfile.cs" />
     <Compile Include="SearchService\AzureSearchQueryBuilder.cs" />
     <Compile Include="BlobContainerBuilder.cs" />
     <Compile Include="IBlobContainerBuilder.cs" />

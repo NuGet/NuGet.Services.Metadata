@@ -23,6 +23,7 @@ namespace NuGet.Services.AzureSearch
                 IdentifierCustomTokenFilter.Name,
                 TokenFilterName.Stopwords,
                 TokenFilterName.Lowercase,
+                TokenFilterName.Truncate
             });
     }
 }
