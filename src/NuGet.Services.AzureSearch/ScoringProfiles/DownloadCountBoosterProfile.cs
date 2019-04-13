@@ -17,7 +17,8 @@ namespace NuGet.Services.AzureSearch.ScoringProfiles
                 {
                     Weights = new Dictionary<string, double>
                     {
-                        { IndexFields.PackageId, 10 }
+                        { IndexFields.PackageId, 10 },              // Exact match of the package id should be boosted higher.
+                        { IndexFields.TokenizedPackageId, 5 }
                     }
                 },
                 functions: new List<ScoringFunction>()
