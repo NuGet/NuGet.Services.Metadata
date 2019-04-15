@@ -1,0 +1,3 @@
+# NuGet.Jobs.Db2AzureSearch
+
+This job creates a new Azure Search index using a [`NuGetGallery`](https://github.com/nuget/nugetgallery) database. The Azure Search index is served by [`NuGet.Services.SearchService`](../NuGet.Services.SearchService/readme.md). You can update the index after it is created using the [`NuGet.Services.Catalog2AzureSearch`](../NuGet.Jobs.Catalog2AzureSearch/readme.md) job. 

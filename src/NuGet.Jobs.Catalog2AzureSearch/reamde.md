@@ -1,0 +1,3 @@
+# NuGet.Jobs.Catalog2AzureSearch
+
+This job maintains an Azure Search index using the [Catalog](https://docs.microsoft.com/en-us/nuget/api/catalog-resource) resource. This Azure Search index is served by [`NuGet.Services.SearchService`](../NuGet.Services.SearchService/readme.md). If you would like to quickly create an index from scratch, use the [`NuGet.Services.Db2AzureSearch`](../NuGet.Jobs.Db2AzureSearch/readme.md) job instead.
