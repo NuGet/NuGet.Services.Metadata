@@ -31,14 +31,7 @@ namespace NuGet.Services.AzureSearch
 
         public async Task CreateSearchIndexAsync()
         {
-            try
-            {
-                await CreateIndexAsync(InitializeSearchIndex());
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+            await CreateIndexAsync(InitializeSearchIndex());
         }
 
         public async Task CreateHijackIndexAsync()

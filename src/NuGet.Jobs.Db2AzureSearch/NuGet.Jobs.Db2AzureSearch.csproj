@@ -45,7 +45,6 @@
   <ItemGroup>
     <None Include="App.config" />
     <None Include="NuGet.Jobs.Db2AzureSearch.nuspec" />
-    <None Include="Scripts\NuGet.Jobs.Db2AzureSearch.cmd" />
     <None Include="Scripts\PostDeploy.ps1" />
     <None Include="Settings\octopus.json" />
   </ItemGroup>
