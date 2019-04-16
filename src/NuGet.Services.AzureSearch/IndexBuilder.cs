@@ -101,10 +101,10 @@ namespace NuGet.Services.AzureSearch
         private Index InitializeHijackIndex()
         {
             return InitializeIndex<HijackDocument.Full>(
-                _options.Value.HijackIndexName);
+                _options.Value.HijackIndexName, addScoringProfile: false);
         }
 
-        private Index InitializeIndex<TDocument>(string name, bool addScoringProfile = false)
+        private Index InitializeIndex<TDocument>(string name, bool addScoringProfile)
         {
             var index = new Index
             {

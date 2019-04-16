@@ -16,7 +16,6 @@ namespace NuGet.Services.AzureSearch
 
         public static WordDelimiterTokenFilter Instance = new WordDelimiterTokenFilter(
             Name,
-            catenateAll: true,
             splitOnCaseChange: true,
             preserveOriginal: true);
     }
