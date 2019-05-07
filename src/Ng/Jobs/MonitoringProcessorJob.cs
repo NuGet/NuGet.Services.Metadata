@@ -205,6 +205,7 @@ namespace Ng.Jobs
             await _notificationService.OnPackageValidationFinishedAsync(result, token);
 
             var status = new PackageMonitoringStatus(result);
+            status.AccessCondition = PackageMonitoringStatusAccessConditionHelper.FromExisting(existingStatus);
             await _statusService.UpdateAsync(status, token);
         }
 

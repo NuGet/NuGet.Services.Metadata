@@ -243,7 +243,15 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
                     destinationStream.Seek(0, SeekOrigin.Begin);
 
-                    await blob.UploadFromStreamAsync(destinationStream, cancellationToken);
+                    var accessCondition = (content as StringStorageContentWithAccessCondition)?.AccessCondition 
+                        ?? AccessCondition.GenerateEmptyCondition();
+
+                    await blob.UploadFromStreamAsync(
+                        destinationStream, 
+                        accessCondition, 
+                        new BlobRequestOptions(), 
+                        new OperationContext(), 
+                        cancellationToken);
 
                     Trace.WriteLine(string.Format("Saved compressed blob {0} to container {1}", blob.Uri.ToString(), _directory.Container.Name));
                 }
@@ -338,7 +346,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                     }
                 }
 
-                return new StringStorageContent(content);
+                return new StringStorageContentWithETag(content, blob.Properties.ETag);
             }
             catch (StorageException ex) when (ex.RequestInformation?.HttpStatusCode == (int)HttpStatusCode.NotFound)
             {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Linq;
+using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using NuGet.Services.Metadata.Catalog.Helpers;
 
@@ -47,9 +48,13 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
         /// </summary>
         [JsonProperty("validationException")]
         public Exception ValidationException { get; }
-        
+
+        [JsonIgnore]
+        public AccessCondition AccessCondition { get; set; }
+
         [JsonConstructor]
         public PackageMonitoringStatus(FeedPackageIdentity package, PackageValidationResult validationResult, Exception validationException)
+            : this()
         {
             Package = package;
             ValidationResult = validationResult;
@@ -57,15 +62,22 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
         }
 
         public PackageMonitoringStatus(PackageValidationResult result)
+            : this()
         {
             ValidationResult = result ?? throw new ArgumentNullException(nameof(result));
             Package = new FeedPackageIdentity(result.Package);
         }
 
         public PackageMonitoringStatus(FeedPackageIdentity package, Exception exception)
+            : this()
         {
             Package = package ?? throw new ArgumentNullException(nameof(package));
             ValidationException = exception ?? throw new ArgumentNullException(nameof(exception));
+        }
+
+        private PackageMonitoringStatus()
+        {
+            AccessCondition = PackageMonitoringStatusAccessConditionHelper.FromUnknown();
         }
     }
 }

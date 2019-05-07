@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.WindowsAzure.Storage;
 using Newtonsoft.Json;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using NuGet.Services.Metadata.Catalog.Persistence;
@@ -137,7 +138,10 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
             var storage = GetStorage(status.State);
 
             var packageStatusJson = JsonConvert.SerializeObject(status, JsonSerializerUtility.SerializerSettings);
-            var storageContent = new StringStorageContent(packageStatusJson, "application/json");
+            var storageContent = new StringStorageContentWithAccessCondition(
+                packageStatusJson,
+                status.AccessCondition,
+                "application/json");
 
             var packageUri = GetPackageUri(storage, status.Package);
 
@@ -229,7 +233,7 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
                 }
 
                 var status = JsonConvert.DeserializeObject<PackageMonitoringStatus>(statusString, JsonSerializerUtility.SerializerSettings);
-
+                status.AccessCondition = PackageMonitoringStatusAccessConditionHelper.FromContent(content);
                 return status;
             }
             catch (Exception deserializationException)
