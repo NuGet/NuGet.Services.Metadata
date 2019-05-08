@@ -56,7 +56,7 @@ namespace NuGet.Services.Metadata.Catalog
 
         private static bool IsTransientError(Exception e, HttpResponseMessage response)
         {
-            if (!(e is HttpRequestException || e is OperationCanceledException))
+            if (!(e is HttpRequestException || e is OperationCanceledException || e is WebException))
             {
                 return false;
             }
