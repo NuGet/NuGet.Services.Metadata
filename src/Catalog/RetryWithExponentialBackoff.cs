@@ -39,23 +39,28 @@ namespace NuGet.Services.Metadata.Catalog
 
                     return httpResponse;
                 }
-                catch (HttpRequestException) when (IsTransientError(httpResponse))
+                catch (Exception e)
                 {
                     httpResponse?.Dispose();
-
-                    await backoff.Delay();
-                }
-                catch (Exception)
-                {
-                    httpResponse?.Dispose();
-
-                    throw;
+                    if (IsTransientError(e, httpResponse))
+                    {
+                        await backoff.Delay();
+                    }
+                    else
+                    {
+                        throw;
+                    }
                 }
             }
         }
 
-        private static bool IsTransientError(HttpResponseMessage response)
+        private static bool IsTransientError(Exception e, HttpResponseMessage response)
         {
+            if (!(e is HttpRequestException || e is OperationCanceledException))
+            {
+                return false;
+            }
+
             return response == null
                 || ((int)response.StatusCode >= 500 &&
                     response.StatusCode != HttpStatusCode.NotImplemented &&
