@@ -34,6 +34,7 @@ namespace NuGet.Services.AzureSearch
         bool? RequiresLicenseAcceptance { get; set; }
         int? SemVerLevel { get; set; }
         string SortableTitle { get; set; }
+        string StrippedPackageId { get; set; }
         string Summary { get; set; }
         string[] Tags { get; set; }
         string Title { get; set; }

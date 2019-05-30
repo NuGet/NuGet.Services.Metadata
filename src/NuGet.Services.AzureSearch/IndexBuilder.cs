@@ -124,6 +124,10 @@ namespace NuGet.Services.AzureSearch
                 {
                     IdentifierCustomTokenFilter.Instance,
                 },
+                CharFilters = new List<CharFilter>
+                {
+                    AsciiNonAlphanumericCharFilter.Instance
+                },
             };
 
             if (addScoringProfile)

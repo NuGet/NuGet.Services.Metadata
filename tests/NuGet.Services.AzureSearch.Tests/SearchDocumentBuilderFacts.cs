@@ -358,6 +358,7 @@ namespace NuGet.Services.AzureSearch
       ""releaseNotes"": ""Release notes."",
       ""requiresLicenseAcceptance"": true,
       ""sortableTitle"": ""windows azure storage"",
+      ""strippedPackageId"": ""WindowsAzure.Storage"",
       ""summary"": ""Summary."",
       ""tags"": [
         ""Microsoft"",
@@ -531,6 +532,7 @@ namespace NuGet.Services.AzureSearch
       ""releaseNotes"": ""Release notes."",
       ""requiresLicenseAcceptance"": true,
       ""sortableTitle"": ""windows azure storage"",
+      ""strippedPackageId"": ""WindowsAzure.Storage"",
       ""summary"": ""Summary."",
       ""tags"": [
         ""Microsoft"",

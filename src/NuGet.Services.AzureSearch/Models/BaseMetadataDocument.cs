@@ -65,6 +65,13 @@ namespace NuGet.Services.AzureSearch
         [IsSortable]
         public string SortableTitle { get; set; }
 
+        /// <summary>
+        /// The package's identifier, stripped of any non-alphanumeric characters. Supports case insensitive exact matching.
+        /// </summary>
+        [IsSearchable]
+        [Analyzer(StrippedPackageIdCustomAnalyzer.Name)]
+        public string StrippedPackageId { get; set; }
+
         [IsSearchable]
         [Analyzer(DescriptionAnalyzer.Name)]
         public string Summary { get; set; }

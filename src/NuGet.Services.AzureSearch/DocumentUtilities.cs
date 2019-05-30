@@ -100,6 +100,7 @@ namespace NuGet.Services.AzureSearch
             document.RequiresLicenseAcceptance = package.RequiresLicenseAcceptance;
             document.SemVerLevel = package.SemVerLevelKey;
             document.SortableTitle = GetSortableTitle(package.Title, packageId);
+            document.StrippedPackageId = packageId;
             document.Summary = package.Summary;
             document.Tags = package.Tags == null ? null : Utils.SplitTags(package.Tags);
             document.Title = package.Title;
@@ -134,6 +135,7 @@ namespace NuGet.Services.AzureSearch
             document.RequiresLicenseAcceptance = leaf.RequireLicenseAgreement;
             document.SemVerLevel = leaf.IsSemVer2() ? SemVerLevelKey.SemVer2 : SemVerLevelKey.Unknown;
             document.SortableTitle = GetSortableTitle(leaf.Title, leaf.PackageId);
+            document.StrippedPackageId = leaf.PackageId;
             document.Summary = leaf.Summary;
             document.Tags = leaf.Tags == null ? null : leaf.Tags.ToArray();
             document.Title = leaf.Title;
