@@ -27,7 +27,7 @@ namespace NuGet.Services.AzureSearch
             {
                 // The ASCII Folding Token Filter does not remove nonalphanumerical ASCII characters.
                 // Char filters are applied before the tokenizer and token filters.
-                AsciiNonAlphanumericCharFilter.Name
+                NonAlphanumericPackageIdCharFilter.Name
             });
     }
 }

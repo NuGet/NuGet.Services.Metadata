@@ -115,6 +115,7 @@ namespace NuGet.Services.AzureSearch
                     DescriptionAnalyzer.Instance,
                     ExactMatchCustomAnalyzer.Instance,
                     PackageIdCustomAnalyzer.Instance,
+                    StrippedPackageIdCustomAnalyzer.Instance,
                 },
                 Tokenizers = new List<Tokenizer>
                 {
@@ -126,7 +127,7 @@ namespace NuGet.Services.AzureSearch
                 },
                 CharFilters = new List<CharFilter>
                 {
-                    AsciiNonAlphanumericCharFilter.Instance
+                    NonAlphanumericPackageIdCharFilter.Instance
                 },
             };
 

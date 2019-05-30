@@ -43,7 +43,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Analysis\AsciiNonAlphanumericCharFilter.cs" />
+    <Compile Include="Analysis\NonAlphanumericPackageIdCharFilter.cs" />
     <Compile Include="Analysis\DescriptionCustomAnalyzer.cs" />
     <Compile Include="Analysis\IdentifierCustomTokenFilter.cs" />
     <Compile Include="Analysis\PackageIdCustomAnalyzer.cs" />
