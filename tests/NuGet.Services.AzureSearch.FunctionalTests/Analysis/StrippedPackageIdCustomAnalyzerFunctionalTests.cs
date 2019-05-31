@@ -18,7 +18,9 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
         }
 
         [AnalysisTheory]
-        [InlineData("Newtonsoft.Json", new[] { "newtonsoftjson" })]
+        [MemberData(nameof(TokenizationData.TruncatesTokens), MemberType = typeof(TokenizationData))]
+        [MemberData(nameof(TokenizationData.LowercasesTokens), MemberType = typeof(TokenizationData))]
+        [MemberData(nameof(TokenizationData.RemovesNonAlphanumericPackageIdCharacters), MemberType = typeof(TokenizationData))]
         public async Task ProducesExpectedTokens(string input, string[] expectedTokens)
         {
             var actualTokens = new HashSet<string>(await AnalyzeAsync(AnalyzerName, input));

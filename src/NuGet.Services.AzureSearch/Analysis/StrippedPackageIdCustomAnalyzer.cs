@@ -19,9 +19,9 @@ namespace NuGet.Services.AzureSearch
             TokenizerName.Keyword,
             new List<TokenFilterName>
             {
+                TokenFilterName.Limit,
                 TokenFilterName.AsciiFolding,
                 TokenFilterName.Lowercase,
-                TruncateCustomTokenFilter.Name,
             },
             charFilters: new List<CharFilterName>
             {

@@ -19,7 +19,8 @@ namespace NuGet.Services.AzureSearch
             TokenizerName.Keyword,
             new List<TokenFilterName>
             {
-                TokenFilterName.Lowercase
+                TokenFilterName.Limit,
+                TokenFilterName.Lowercase,
             });
     }
 }

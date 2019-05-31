@@ -8,6 +8,11 @@ namespace NuGet.Services.AzureSearch.FunctionalTests.Support
 {
     public static class TokenizationData
     {
+        public static readonly IEnumerable<object[]> TruncatesTokens = ToMemberData(new Dictionary<string, string[]>
+        {
+            { new string('a', 400), new[] { new string('a', 300) } }
+        });
+
         public static readonly IEnumerable<object[]> LowercasesTokens = ToMemberData(new Dictionary<string, string[]>
         {
             { "hello", new[] { "hello"} },
@@ -45,7 +50,7 @@ namespace NuGet.Services.AzureSearch.FunctionalTests.Support
             { "HTML", new[] { "html"} },
             { "HTMLThing", new[] { "htmlthing" } },
             { "HTMLThingA", new[] { "htmlthinga", "htmlthing", "a" } },
-            { "HelloWorld𠈓Foo", new[] { "helloworld", "hello", "world𠈓foo" } },
+            { "HelloWorld𠈓Foo", new[] { "helloworld𠈓foo", "hello", "world𠈓foo" } },
         });
 
         public static readonly IEnumerable<object[]> AddsTokensOnNonAlphaNumericAndRemovesStopWords = ToMemberData(new Dictionary<string, string[]>
@@ -66,6 +71,13 @@ namespace NuGet.Services.AzureSearch.FunctionalTests.Support
                     "once", "upon", "time", "little", "test", "case"
                 }
             }
+        });
+
+        public static readonly IEnumerable<object[]> RemovesNonAlphanumericPackageIdCharacters = ToMemberData(new Dictionary<string, string[]>
+        {
+            { "newtonsoft.json", new[] { "newtonsoftjson" } },
+            { "hello-world", new[] { "helloworld" }  },
+            { "foo_bar", new[] { "foobar"} }
         });
 
         private static List<object[]> ToMemberData(Dictionary<string, string[]> data)
