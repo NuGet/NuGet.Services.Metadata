@@ -17,9 +17,9 @@ namespace NuGet.Services.AzureSearch
             Name,
             new List<string>
             {
-                "_=>",
-                ".=>",
-                "-=>",
+                "_ => ",
+                ". => ",
+                "- => ",
             });
     }
 }

@@ -8,11 +8,11 @@ using Xunit;
 
 namespace NuGet.Services.AzureSearch.FunctionalTests
 {
-    public class PackageIdCustomAnalyzerFacts : AzureIndexFunctionalTests
+    public class PackageIdCustomAnalyzerFunctionalTests : AzureIndexFunctionalTests
     {
         private const string AnalyzerName = "nuget_package_id_analyzer";
 
-        public PackageIdCustomAnalyzerFacts(CommonFixture fixture)
+        public PackageIdCustomAnalyzerFunctionalTests(CommonFixture fixture)
             : base(fixture)
         {
         }

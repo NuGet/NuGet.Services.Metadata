@@ -8,20 +8,17 @@ using Xunit;
 
 namespace NuGet.Services.AzureSearch.FunctionalTests
 {
-    public class DescriptionCustomAnalyzerFacts : AzureIndexFunctionalTests
+    public class StrippedPackageIdCustomerAnalyzerFunctionalTests : AzureIndexFunctionalTests
     {
-        private const string AnalyzerName = "nuget_description_analyzer";
+        private const string AnalyzerName = "nuget_stripped_package_id_analyzer";
 
-        public DescriptionCustomAnalyzerFacts(CommonFixture fixture)
+        public StrippedPackageIdCustomerAnalyzerFunctionalTests(CommonFixture fixture)
             : base(fixture)
         {
         }
 
         [AnalysisTheory]
-        [MemberData(nameof(TokenizationData.LowercasesTokens), MemberType = typeof(TokenizationData))]
-        [MemberData(nameof(TokenizationData.SplitsTokensOnSpecialCharactersAndLowercases), MemberType = typeof(TokenizationData))]
-        [MemberData(nameof(TokenizationData.LowercasesAndAddsTokensOnCasingAndNonAlphaNumeric), MemberType = typeof(TokenizationData))]
-        [MemberData(nameof(TokenizationData.AddsTokensOnNonAlphaNumericAndRemovesStopWords), MemberType = typeof(TokenizationData))]
+        [InlineData("Newtonsoft.Json", new[] { "newtonsoftjson" })]
         public async Task ProducesExpectedTokens(string input, string[] expectedTokens)
         {
             var actualTokens = new HashSet<string>(await AnalyzeAsync(AnalyzerName, input));

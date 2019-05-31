@@ -124,6 +124,7 @@ namespace NuGet.Services.AzureSearch
                 TokenFilters = new List<TokenFilter>
                 {
                     IdentifierCustomTokenFilter.Instance,
+                    TruncateCustomTokenFilter.Instance,
                 },
                 CharFilters = new List<CharFilter>
                 {

@@ -21,9 +21,9 @@ namespace NuGet.Services.AzureSearch
             {
                 TokenFilterName.AsciiFolding,
                 TokenFilterName.Lowercase,
-                TokenFilterName.Truncate,
+                TruncateCustomTokenFilter.Name,
             },
-            new List<CharFilterName>
+            charFilters: new List<CharFilterName>
             {
                 // The ASCII Folding Token Filter does not remove nonalphanumerical ASCII characters.
                 // Char filters are applied before the tokenizer and token filters.
