@@ -112,7 +112,9 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             if (unscopedTerms != null)
             {
-                builder.AppendTerms(unscopedTerms.ToList());
+                var unscopedTermsList = unscopedTerms.ToList();
+                builder.AppendTerms(unscopedTermsList);
+                builder.AppendScopedTerms(IndexFields.StrippedPackageId, unscopedTermsList, prefixSearch: true);
             }
 
             var result = builder.ToString();
