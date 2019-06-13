@@ -13,6 +13,7 @@ namespace BasicSearchTests.FunctionalTests.Core
         private static string _searchServiceBaseurl;
         private static string _indexBaseUrl;
         private static string _configurationName;
+        private static string _slot;
 
         /// <summary>
         /// The environment against which the (search service) test has to be run. The value would be picked from env variable.
@@ -58,6 +59,19 @@ namespace BasicSearchTests.FunctionalTests.Core
                 }
 
                 return _configurationName;
+            }
+        }
+
+        public static string Slot
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_slot))
+                {
+                    _slot = GetEnvironmentVariable("Slot", defaultValue: "Production");
+                }
+
+                return _slot;
             }
         }
 
