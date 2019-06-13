@@ -1,12 +1,13 @@
 ﻿{
   "TestSettings": {
     "RunAzureSearchAnalysisTests": false,
+    "RunAzureSearchRelevancyTests": false,
 
     "AzureSearchIndexName": "",
     "AzureSearchIndexUrl": "",
     "AzureSearchIndexAdminApiKey": "",
 
-    "AzureSearchAppServiceUrl":  ""
+    "AzureSearchAppServiceUrl": ""
   },
 
   "KeyVault_VaultName": "",

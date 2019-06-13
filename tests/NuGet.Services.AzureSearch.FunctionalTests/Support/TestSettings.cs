@@ -22,6 +22,8 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
 
         public bool RunAzureSearchAnalysisTests { get; set; }
 
+        public bool RunAzureSearchRelevancyTests { get; set; }
+
         public string AzureSearchIndexName { get; set; }
         public string AzureSearchIndexUrl { get; set; }
         public string AzureSearchIndexAdminApiKey { get; set; }

@@ -1,6 +1,7 @@
 ﻿{
   "TestSettings": {
     "RunAzureSearchAnalysisTests": false,
+    "RunAzureSearchRelevancyTests": false,
 
     "AzureSearchIndexName": "",
     "AzureSearchIndexUrl": "",

@@ -8,7 +8,6 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
 {
     public class V3RelevancyFunctionalTests : NuGetSearchFunctionalTestBase
     {
-        // TODO: Enable Relevancy tests after complete fix.
         public V3RelevancyFunctionalTests(CommonFixture fixture)
             : base(fixture)
         {

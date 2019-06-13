@@ -9,7 +9,10 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
     {
         public RelevancyFactAttribute()
         {
-            Skip = "Azure Search Analyzer tests are disabled";
+            if (!TestSettings.Create().RunAzureSearchRelevancyTests)
+            {
+                Skip = "Azure Search Analyzer tests are disabled";
+            }
         }
     }
 }
