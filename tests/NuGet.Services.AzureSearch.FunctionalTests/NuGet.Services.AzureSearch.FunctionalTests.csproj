@@ -53,6 +53,8 @@
     <Compile Include="Analysis\DescriptionCustomAnalyzerFunctionTests.cs" />
     <Compile Include="Analysis\ExactMatchCustomAnalyzerFunctionalTests.cs" />
     <Compile Include="Analysis\PackageIdCustomAnalyzer.cs" />
+    <Compile Include="Relevancy\SearchAvailabilityTests.cs" />
+    <Compile Include="Support\RelevancyFactAttribute.cs" />
     <Compile Include="Support\AzureSearchIndexFunctionalTestBase.cs" />
     <Compile Include="Support\NuGetSearchFunctionalTestBase.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
