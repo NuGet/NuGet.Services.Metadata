@@ -28,7 +28,7 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
         public string AzureSearchIndexUrl { get; set; }
         public string AzureSearchIndexAdminApiKey { get; set; }
 
-        public string AzureSearchAppServiceUrl { get; set; }
+        public string AzureSearchAppServiceUrl => EnvironmentSettings.SearchServiceBaseUrl;
 
         public static async Task<TestSettings> CreateAsync()
         {
