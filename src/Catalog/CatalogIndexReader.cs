@@ -2,14 +2,13 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using JsonLD.Util;
 using Newtonsoft.Json.Linq;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
@@ -35,19 +34,17 @@ namespace NuGet.Services.Metadata.Catalog
             return await GetEntriesAsync(pages.Select(p => p.Value));
         }
 
-        private object _cachedIndexPagesLock = new object();
-        private Task<SortedList<DateTime, Uri>> _cachedIndexPages = null;
         protected async Task<SortedList<DateTime, Uri>> GetIndexPagesAsync()
         {
             return new SortedList<DateTime, Uri>(await GetCachedIndexPagesAsync());
         }
 
+        private Task<SortedList<DateTime, Uri>> _cachedIndexPages = null;
+
+        [MethodImpl(MethodImplOptions.Synchronized)]
         private Task<SortedList<DateTime, Uri>> GetCachedIndexPagesAsync()
         {
-            lock (_cachedIndexPagesLock)
-            {
-                return _cachedIndexPages = _cachedIndexPages ?? GetIndexPagesInternalAsync();
-            }
+            return _cachedIndexPages = _cachedIndexPages ?? GetIndexPagesInternalAsync();
         }
 
         private async Task<SortedList<DateTime, Uri>> GetIndexPagesInternalAsync()
@@ -96,21 +93,17 @@ namespace NuGet.Services.Metadata.Catalog
                 }
             }
         }
-
-        private IDictionary<Uri, Task<SortedList<DateTime, List<CatalogIndexEntry>>>> _cachedEntries = new Dictionary<Uri, Task<SortedList<DateTime, List<CatalogIndexEntry>>>>();
         protected async Task<SortedList<DateTime, List<CatalogIndexEntry>>> GetEntriesAsync(Uri pageUri, StringInterner interner)
         {
             return new SortedList<DateTime, List<CatalogIndexEntry>>(await GetCachedEntriesAsync(pageUri, interner));
         }
 
+        private SimpleTaskCache<Uri, Task<SortedList<DateTime, List<CatalogIndexEntry>>>> _cachedEntries
+            = new SimpleTaskCache<Uri, Task<SortedList<DateTime, List<CatalogIndexEntry>>>>();
+
         protected Task<SortedList<DateTime, List<CatalogIndexEntry>>> GetCachedEntriesAsync(Uri pageUri, StringInterner interner)
         {
-            lock (_cachedEntries)
-            {
-                return _cachedEntries.TryGetValue(pageUri, out var cachedEntries) 
-                    ? cachedEntries 
-                    : _cachedEntries[pageUri] = GetEntriesInternalAsync(pageUri, interner);
-            }
+            return _cachedEntries.Get(pageUri, () => GetEntriesInternalAsync(pageUri, interner));
         }
 
         private async Task<SortedList<DateTime, List<CatalogIndexEntry>>> GetEntriesInternalAsync(Uri pageUri, StringInterner interner)

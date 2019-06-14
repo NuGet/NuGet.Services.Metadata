@@ -6,7 +6,6 @@ using NuGet.Packaging.Core;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using NuGet.Services.Metadata.Catalog.Persistence;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -42,6 +41,9 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring.Utility
             var package = await _databaseService.GetPackageOrNull(identity.Id, identity.Version.ToNormalizedString());
             if (package == null)
             {
+                _logger.LogInformation("Cannot find PackageDetails catalog entry for {PackageId} {PackageVersion} because it does not exist in the database.",
+                    identity.Id, identity.Version);
+
                 return null;
             }
 
@@ -60,6 +62,9 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring.Utility
             var auditEntries = await DeletionAuditEntry.GetAsync(_auditingStorageFactory, cancellationToken, identity, logger: _logger);
             if (auditEntries == null || !auditEntries.Any() || auditEntries.All(e => !e.TimestampUtc.HasValue))
             {
+                _logger.LogInformation("Cannot find PackageDetails catalog entry for {PackageId} {PackageVersion} because it does not have any deletion audit records.",
+                    identity.Id, identity.Version);
+
                 return null;
             }
 
@@ -83,6 +88,9 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring.Utility
             {
                 var halfPagesCount = pageUris.Keys.Count() / 2;
                 var page = pageUris.ElementAt(halfPagesCount);
+                _logger.LogInformation("Searching page {PageUri} for catalog entry for {PackageId} {PackageVersion}",
+                    page.Value, identity.Id, identity.Version);
+
                 var entries = (await GetEntriesAsync(page.Value, interner))
                     .Select(g => new KeyValuePair<DateTime, IEnumerable<CatalogIndexEntry>>(g.Key, g.Value.Where(isType)))
                     .Where(g => g.Value.Any());
@@ -91,6 +99,9 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring.Utility
 
                 if (!entries.Any())
                 {
+                    _logger.LogInformation("Page {PageUri} does not have any entries of the desired type of {PackageId} {PackageVersion}!",
+                        page.Value, identity.Id, identity.Version);
+
                     continue;
                 }
 
@@ -101,11 +112,25 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring.Utility
 
                 if (findResult.Item1 != null)
                 {
+                    _logger.LogInformation("Found catalog entry for {PackageId} {PackageVersion} on page {PageUri}.",
+                        identity.Id, identity.Version, page.Value);
+
                     return findResult.Item1;
                 }
 
                 if (findResult.Item2.HasValue)
                 {
+                    if (findResult.Item2.Value)
+                    {
+                        _logger.LogInformation("Catalog entry for {PackageId} {PackageVersion} is on a later page than {PageUri}",
+                            identity.Id, identity.Version, page.Value);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Catalog entry for {PackageId} {PackageVersion} is on an earlier page than {PageUri}",
+                            identity.Id, identity.Version, page.Value);
+                    }
+
                     RemoveFromSortedList(pageUris, halfPagesCount, findResult.Item2.Value);
                 }
             }

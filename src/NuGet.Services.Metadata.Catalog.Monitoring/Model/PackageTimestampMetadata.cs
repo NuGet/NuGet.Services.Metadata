@@ -54,17 +54,14 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
             };
         }
 
-        private static IDictionary<Uri, Task<PackageTimestampMetadata>> _cachedFromCatalogEntries = new Dictionary<Uri, Task<PackageTimestampMetadata>>();
+        private static SimpleTaskCache<Uri, Task<PackageTimestampMetadata>> _cachedFromCatalogEntries = 
+            new SimpleTaskCache<Uri, Task<PackageTimestampMetadata>>();
+
         public static Task<PackageTimestampMetadata> FromCatalogEntry(
             CollectorHttpClient client,
             CatalogIndexEntry catalogEntry)
         {
-            lock (_cachedFromCatalogEntries)
-            {
-                return _cachedFromCatalogEntries.TryGetValue(catalogEntry.Uri, out var timestampMetadata)
-                    ? timestampMetadata
-                    : _cachedFromCatalogEntries[catalogEntry.Uri] = FromCatalogEntryInternal(client, catalogEntry);
-            }
+            return _cachedFromCatalogEntries.Get(catalogEntry.Uri, () => FromCatalogEntryInternal(client, catalogEntry));
         }
 
         private static async Task<PackageTimestampMetadata> FromCatalogEntryInternal(

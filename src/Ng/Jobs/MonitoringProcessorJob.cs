@@ -251,30 +251,6 @@ namespace Ng.Jobs
                     cancellationToken);
             }
 
-            /*
-            // Try to fetch the entry from the package's registration first, which links to the catalog commit.
-            var catalogIndexEntry = await FetchCatalogIndexEntryFromRegistrationAsync(
-                feedPackage, cancellationToken);
-
-            if (catalogIndexEntry != null)
-            {
-                return new[] { catalogIndexEntry };
-            }
-
-            IEnumerable<CatalogIndexEntry> catalogIndexEntries = null;
-            // If the package is missing from registration, it was probably deleted.
-            catalogIndexEntries = await _catalogIndexReader.FindPackageDeleteEntry(
-                new PackageIdentity(feedPackage.Id, NuGetVersion.Parse(feedPackage.Version)),
-                cancellationToken);
-
-            if (catalogIndexEntries == null)
-            {
-                // If the package is missing from registration and was not deleted, it may have just been skipped by registration.
-                catalogIndexEntries = await _catalogIndexReader.FindPackageDetailsEntry(
-                    new PackageIdentity(feedPackage.Id, NuGetVersion.Parse(feedPackage.Version)),
-                    cancellationToken);
-            }
-            */
             if (catalogIndexEntries == null)
             {
                 throw new Exception("Package is missing from the catalog!");
