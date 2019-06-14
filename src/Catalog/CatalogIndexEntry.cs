@@ -69,6 +69,15 @@ namespace NuGet.Services.Metadata.Catalog
         public NuGetVersion Version { get; private set; }
 
         [JsonIgnore]
+        public bool IsDetails
+        {
+            get
+            {
+                return Types.Any(type => type == "nuget:PackageDetails");
+            }
+        }
+
+        [JsonIgnore]
         public bool IsDelete
         {
             get

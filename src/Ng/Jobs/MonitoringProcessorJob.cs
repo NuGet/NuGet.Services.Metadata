@@ -102,7 +102,7 @@ namespace Ng.Jobs
             _client = new CollectorHttpClient(messageHandlerFactory());
 
             _catalogIndexReader = new MonitoringCatalogIndexReader(
-                new Uri(index), 
+                new Uri(source), 
                 _client, 
                 galleryDatabase, 
                 auditingStorageFactory, 
@@ -210,7 +210,7 @@ namespace Ng.Jobs
                 Logger.LogInformation("PackageValidatorContext for {PackageId} {PackageVersion} is missing catalog entries!",
                     feedPackage.Id, feedPackage.Version);
 
-                catalogEntries = new[] { await FetchCatalogIndexEntryForPackage(feedPackage, token) };
+                catalogEntries = await FetchCatalogIndexEntriesForPackage(feedPackage, token);
             }
 
             var existingStatus = await _statusService.GetAsync(feedPackage, token);
@@ -236,42 +236,51 @@ namespace Ng.Jobs
             await _statusService.UpdateAsync(status, token);
         }
 
-        private async Task<CatalogIndexEntry> FetchCatalogIndexEntryForPackage(
+        private async Task<IEnumerable<CatalogIndexEntry>> FetchCatalogIndexEntriesForPackage(
             FeedPackageIdentity feedPackage,
             CancellationToken cancellationToken)
         {
-            // Try to fetch the entry from the package's registration first, which links to the catalog commit.
-            var catalogIndexEntry = await FetchCatalogIndexEntryFromRegistrationAsync(
-                feedPackage, cancellationToken);
+            var catalogIndexEntries = await _catalogIndexReader.FindPackageDetailsEntry(
+                new PackageIdentity(feedPackage.Id, NuGetVersion.Parse(feedPackage.Version)),
+                cancellationToken);
 
-            if (catalogIndexEntry == null)
+            if (catalogIndexEntries == null)
             {
-                // If the package is missing from registration, it was probably deleted.
-                Logger.LogInformation("Attempting to fetch PackageDelete catalog entry of {PackageId} {PackageVersion}.",
-                    feedPackage.Id, feedPackage.Version);
-
-                catalogIndexEntry = await _catalogIndexReader.FindPackageDeleteEntry(
-                    new PackageIdentity(feedPackage.Id, NuGetVersion.Parse(feedPackage.Version)), 
-                    cancellationToken);
-            }
-
-            if (catalogIndexEntry == null)
-            {
-                // If the package is missing from registration and was not deleted, it may have just been skipped by registration.
-                Logger.LogInformation("Attempting to fetch PackageDetails catalog entry of {PackageId} {PackageVersion}.",
-                    feedPackage.Id, feedPackage.Version);
-
-                catalogIndexEntry = await _catalogIndexReader.FindPackageDetailsEntry(
+                catalogIndexEntries = await _catalogIndexReader.FindPackageDeleteEntry(
                     new PackageIdentity(feedPackage.Id, NuGetVersion.Parse(feedPackage.Version)),
                     cancellationToken);
             }
 
-            if (catalogIndexEntry == null)
+            /*
+            // Try to fetch the entry from the package's registration first, which links to the catalog commit.
+            var catalogIndexEntry = await FetchCatalogIndexEntryFromRegistrationAsync(
+                feedPackage, cancellationToken);
+
+            if (catalogIndexEntry != null)
+            {
+                return new[] { catalogIndexEntry };
+            }
+
+            IEnumerable<CatalogIndexEntry> catalogIndexEntries = null;
+            // If the package is missing from registration, it was probably deleted.
+            catalogIndexEntries = await _catalogIndexReader.FindPackageDeleteEntry(
+                new PackageIdentity(feedPackage.Id, NuGetVersion.Parse(feedPackage.Version)),
+                cancellationToken);
+
+            if (catalogIndexEntries == null)
+            {
+                // If the package is missing from registration and was not deleted, it may have just been skipped by registration.
+                catalogIndexEntries = await _catalogIndexReader.FindPackageDetailsEntry(
+                    new PackageIdentity(feedPackage.Id, NuGetVersion.Parse(feedPackage.Version)),
+                    cancellationToken);
+            }
+            */
+            if (catalogIndexEntries == null)
             {
                 throw new Exception("Package is missing from the catalog!");
             }
 
-            return catalogIndexEntry;
+            return catalogIndexEntries;
         }
 
         private async Task<CatalogIndexEntry> FetchCatalogIndexEntryFromRegistrationAsync(

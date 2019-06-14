@@ -6,6 +6,7 @@ using NuGet.Packaging.Core;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using NuGet.Services.Metadata.Catalog.Persistence;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -33,132 +34,148 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring.Utility
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<CatalogIndexEntry> FindPackageDetailsEntry(PackageIdentity identity, CancellationToken cancellationToken)
+        public async Task<IEnumerable<CatalogIndexEntry>> FindPackageDetailsEntry(PackageIdentity identity, CancellationToken cancellationToken)
         {
+            _logger.LogInformation("Attempting to fetch PackageDetails catalog entry of {PackageId} {PackageVersion}.",
+                identity.Id, identity.Version);
+
             var package = await _databaseService.GetPackageOrNull(identity.Id, identity.Version.ToNormalizedString());
-            return await FindEntryAsync(
-                identity, 
-                "PackageDetails", 
-                package.LastEditedDate, 
-                cancellationToken);
-        }
-
-        public async Task<CatalogIndexEntry> FindPackageDeleteEntry(PackageIdentity identity, CancellationToken cancellationToken)
-        {
-            var auditEntries = await DeletionAuditEntry.GetAsync(_auditingStorageFactory, cancellationToken, identity, logger: _logger);
-            return await FindEntryAsync(
-                identity, 
-                "PackageDelete", 
-                auditEntries.Max(e => e.TimestampUtc).Value, 
-                cancellationToken);
-        }
-
-        private async Task<CatalogIndexEntry> FindEntryAsync(PackageIdentity identity, string type, DateTime timestamp, CancellationToken cancellationToken)
-        {
-            var pages = await GetIndexPagesAsync();
-            var interner = new StringInterner();
-            return await FindEntryAsync(pages, interner, identity, type, timestamp, cancellationToken);
-        }
-
-        private async Task<CatalogIndexEntry> FindEntryAsync(SortedList<DateTime, Uri> pageUris, StringInterner interner, PackageIdentity identity, string type, DateTime timestamp, CancellationToken cancellationToken)
-        {
-            if (!pageUris.Any())
+            if (package == null)
             {
                 return null;
             }
 
-            var halfPagesCount = pageUris.Keys.Count() / 2;
-            var page = pageUris.ElementAt(halfPagesCount);
-            var json = await _httpClient.GetJObjectAsync(page.Value, cancellationToken);
-            var items = json["items"];
-            var entries = items
-                .Select(i => ParseItem(i, interner))
-                .Where(i => i.Types.Any(t => t == type));
-
-            if (!entries.Any())
-            {
-                pageUris.Remove(page.Key);
-                return await FindEntryAsync(pageUris, interner, identity, type, timestamp, cancellationToken);
-            }
-
-            var findResult = await FindEntryAsync(
-                entries.ToDictionary(e => e.CommitTimeStamp, e => e), 
-                interner, 
+            return await FindEntryFromPagesAsync(
                 identity, 
-                type, 
-                timestamp, 
-                cancellationToken);
-
-            if (findResult.Item1 != null || !findResult.Item2.HasValue)
-            {
-                return findResult.Item1;
-            }
-
-            var nextPageUris = findResult.Item2.Value 
-                ? pageUris.Skip(halfPagesCount) 
-                : pageUris.Take(halfPagesCount);
-
-            var sortedNextPageUris = new SortedList<DateTime, Uri>();
-            foreach (var nextPageUri in nextPageUris)
-            {
-                sortedNextPageUris.Add(nextPageUri.Key, nextPageUri.Value);
-            }
-
-            return await FindEntryAsync(
-                sortedNextPageUris, 
-                interner, 
-                identity, 
-                type, 
-                timestamp, 
+                e => e.IsDetails, 
+                package.LastEditedDate, 
                 cancellationToken);
         }
 
-        private async Task<Tuple<CatalogIndexEntry, bool?>> FindEntryAsync(IEnumerable<KeyValuePair<DateTime, CatalogIndexEntry>> entries, StringInterner interner, PackageIdentity identity, string type, DateTime timestamp, CancellationToken cancellationToken)
+        public async Task<IEnumerable<CatalogIndexEntry>> FindPackageDeleteEntry(PackageIdentity identity, CancellationToken cancellationToken)
         {
-            var sortedEntries = new SortedList<DateTime, CatalogIndexEntry>();
-            foreach (var unsortedEntry in entries)
+            _logger.LogInformation("Attempting to fetch PackageDelete catalog entry of {PackageId} {PackageVersion}.",
+                identity.Id, identity.Version);
+
+            var auditEntries = await DeletionAuditEntry.GetAsync(_auditingStorageFactory, cancellationToken, identity, logger: _logger);
+            if (auditEntries == null || !auditEntries.Any() || auditEntries.All(e => !e.TimestampUtc.HasValue))
             {
-                sortedEntries.Add(unsortedEntry.Key, unsortedEntry.Value);
+                return null;
             }
 
-            var halfEntriesCount = sortedEntries.Count / 2;
-            var entry = sortedEntries.ElementAt(halfEntriesCount).Value;
-            var entryTimestamp = await PackageTimestampMetadata.FromCatalogEntry(_httpClient, entry);
-            if (entryTimestamp.Last > timestamp)
+            return await FindEntryFromPagesAsync(
+                identity,
+                e => e.IsDelete, 
+                auditEntries.Max(e => e.TimestampUtc).Value, 
+                cancellationToken);
+        }
+
+        private async Task<IEnumerable<CatalogIndexEntry>> FindEntryFromPagesAsync(PackageIdentity identity, Func<CatalogIndexEntry, bool> isType, DateTime timestamp, CancellationToken cancellationToken)
+        {
+            var pages = await GetIndexPagesAsync();
+            var interner = new StringInterner();
+            return await FindEntryFromPagesAsync(pages, interner, identity, isType, timestamp, cancellationToken);
+        }
+
+        private async Task<IEnumerable<CatalogIndexEntry>> FindEntryFromPagesAsync(SortedList<DateTime, Uri> pageUris, StringInterner interner, PackageIdentity identity, Func<CatalogIndexEntry, bool> isType, DateTime timestamp, CancellationToken cancellationToken)
+        {
+            while (pageUris.Any())
             {
-                var nextEntries = sortedEntries.Skip(halfEntriesCount);
-                if (!nextEntries.Any())
+                var halfPagesCount = pageUris.Keys.Count() / 2;
+                var page = pageUris.ElementAt(halfPagesCount);
+                var entries = (await GetEntriesAsync(page.Value, interner))
+                    .Select(g => new KeyValuePair<DateTime, IEnumerable<CatalogIndexEntry>>(g.Key, g.Value.Where(isType)))
+                    .Where(g => g.Value.Any());
+
+                pageUris.Remove(page.Key);
+
+                if (!entries.Any())
                 {
-                    return Tuple.Create<CatalogIndexEntry, bool?>(null, true);
+                    continue;
                 }
 
-                return await FindEntryAsync(
-                    nextEntries, 
-                    interner, 
-                    identity, 
-                    type, 
-                    timestamp, 
-                    cancellationToken);
+                var findResult = await FindEntryFromEntriesEnumerableAsync(
+                    entries,
+                    identity,
+                    timestamp);
+
+                if (findResult.Item1 != null)
+                {
+                    return findResult.Item1;
+                }
+
+                if (findResult.Item2.HasValue)
+                {
+                    RemoveFromSortedList(pageUris, halfPagesCount, findResult.Item2.Value);
+                }
             }
-            else if (entryTimestamp.Last == timestamp)
+
+            return null;
+        }
+
+        private Task<Tuple<IEnumerable<CatalogIndexEntry>, bool?>> FindEntryFromEntriesEnumerableAsync(
+            IEnumerable<KeyValuePair<DateTime, IEnumerable<CatalogIndexEntry>>> entries, 
+            PackageIdentity identity,
+            DateTime timestamp)
+        {
+            return FindEntryFromEntriesAsync(
+                new SortedList<DateTime, IEnumerable<CatalogIndexEntry>>(entries.ToDictionary(e => e.Key, e => e.Value)),
+                identity,
+                timestamp);
+        }
+
+        private async Task<Tuple<IEnumerable<CatalogIndexEntry>, bool?>> FindEntryFromEntriesAsync(
+            SortedList<DateTime, IEnumerable<CatalogIndexEntry>> entries, 
+            PackageIdentity identity,
+            DateTime timestamp)
+        {
+            bool? isTimestampHigher = null;
+            while (entries.Any())
             {
-                return Tuple.Create<CatalogIndexEntry, bool?>(entry, null);
+                var halfEntriesCount = entries.Count / 2;
+                var middleEntries = entries.ElementAt(halfEntriesCount);
+                entries.Remove(middleEntries.Key);
+                var timestamps = await Task.WhenAll(middleEntries.Value.Select(e => PackageTimestampMetadata.FromCatalogEntry(_httpClient, e)));
+                if (timestamps.Any(t => t.Last == timestamp))
+                {
+                    // This is the right timestamp--but it might not be the right package.
+                    var middleEntriesForPackage = middleEntries.Value.Where(e => e.Id == identity.Id && e.Version == identity.Version);
+                    var middleEntriesForPackageTimestamp = await PackageTimestampMetadata.FromCatalogEntries(_httpClient, middleEntriesForPackage);
+                    if (middleEntriesForPackageTimestamp.Last == timestamp)
+                    {
+                        return Tuple.Create<IEnumerable<CatalogIndexEntry>, bool?>(middleEntriesForPackage, null);
+                    }
+
+                    isTimestampHigher = null;
+                    continue;
+                }
+
+                isTimestampHigher = timestamps.Max(t => t.Last) < timestamp;
+                RemoveFromSortedList(entries, halfEntriesCount, isTimestampHigher.Value);
+            }
+
+            return Tuple.Create<IEnumerable<CatalogIndexEntry>, bool?>(null, isTimestampHigher);
+        }
+
+        private void RemoveFromSortedList<TKey, TValue>(
+            SortedList<TKey, TValue> list,
+            int count,
+            bool fromFirst)
+        {
+            Func<SortedList<TKey, TValue>, KeyValuePair<TKey, TValue>> getNextToRemove;
+            if (fromFirst)
+            {
+                getNextToRemove = l => l.First();
             }
             else
             {
-                var nextEntries = sortedEntries.Take(halfEntriesCount);
-                if (!nextEntries.Any())
-                {
-                    return Tuple.Create<CatalogIndexEntry, bool?>(null, false);
-                }
+                getNextToRemove = l => l.Last();
+            }
 
-                return await FindEntryAsync(
-                    nextEntries, 
-                    interner, 
-                    identity, 
-                    type, 
-                    timestamp, 
-                    cancellationToken);
+            var numRemoved = 0;
+            while (numRemoved++ < count && list.Any())
+            {
+                list.Remove(getNextToRemove(list).Key);
             }
         }
     }

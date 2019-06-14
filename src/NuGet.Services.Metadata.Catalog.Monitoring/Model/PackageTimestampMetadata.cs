@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -53,7 +54,20 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
             };
         }
 
-        public static async Task<PackageTimestampMetadata> FromCatalogEntry(
+        private static IDictionary<Uri, Task<PackageTimestampMetadata>> _cachedFromCatalogEntries = new Dictionary<Uri, Task<PackageTimestampMetadata>>();
+        public static Task<PackageTimestampMetadata> FromCatalogEntry(
+            CollectorHttpClient client,
+            CatalogIndexEntry catalogEntry)
+        {
+            lock (_cachedFromCatalogEntries)
+            {
+                return _cachedFromCatalogEntries.TryGetValue(catalogEntry.Uri, out var timestampMetadata)
+                    ? timestampMetadata
+                    : _cachedFromCatalogEntries[catalogEntry.Uri] = FromCatalogEntryInternal(client, catalogEntry);
+            }
+        }
+
+        private static async Task<PackageTimestampMetadata> FromCatalogEntryInternal(
             CollectorHttpClient client,
             CatalogIndexEntry catalogEntry)
         {
