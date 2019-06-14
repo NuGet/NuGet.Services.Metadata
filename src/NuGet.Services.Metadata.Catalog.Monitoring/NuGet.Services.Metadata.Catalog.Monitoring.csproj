@@ -85,6 +85,7 @@
     <Compile Include="Utility\ContainerBuilderExtensions.cs" />
     <Compile Include="Utility\ILoggerExtensions.cs" />
     <Compile Include="Utility\JsonSerializerUtility.cs" />
+    <Compile Include="Utility\MonitoringCatalogIndexReader.cs" />
     <Compile Include="Utility\NullableNuGetVersionConverter.cs" />
     <Compile Include="Utility\LogEvents.cs" />
     <Compile Include="Utility\ILoggerFactoryExtensions.cs" />

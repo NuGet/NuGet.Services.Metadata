@@ -16,10 +16,9 @@ namespace NuGet.Services.Metadata.Catalog
 {
     public class CatalogIndexReader
     {
-        private readonly Uri _indexUri;
-        private readonly CollectorHttpClient _httpClient;
-        private readonly ITelemetryService _telemetryService;
-        private JObject _context;
+        protected readonly Uri _indexUri;
+        protected readonly CollectorHttpClient _httpClient;
+        protected readonly ITelemetryService _telemetryService;
 
         public CatalogIndexReader(Uri indexUri, CollectorHttpClient httpClient, ITelemetryService telemetryService)
         {
@@ -30,25 +29,26 @@ namespace NuGet.Services.Metadata.Catalog
 
         public async Task<IEnumerable<CatalogIndexEntry>> GetEntries()
         {
+            var pages = await GetIndexPagesAsync();
+            return await GetEntriesAsync(pages.Select(p => p.Value));
+        }
+
+        protected async Task<SortedList<DateTime, Uri>> GetIndexPagesAsync()
+        {
             var stopwatch = Stopwatch.StartNew();
             JObject index = await _httpClient.GetJObjectAsync(_indexUri);
             _telemetryService.TrackCatalogIndexReadDuration(stopwatch.Elapsed, _indexUri);
 
-            // save the context used on the index
-            JToken context = null;
-            if (index.TryGetValue("@context", out context))
-            {
-                _context = context as JObject;
-            }
-
-            List<Tuple<DateTime, Uri>> pages = new List<Tuple<DateTime, Uri>>();
+            var pages = new SortedList<DateTime, Uri>();
 
             foreach (var item in index["items"])
             {
-                pages.Add(new Tuple<DateTime, Uri>(DateTime.Parse(item["commitTimeStamp"].ToString()), new Uri(item["@id"].ToString())));
+                pages.Add(
+                    DateTime.Parse(item["commitTimeStamp"].ToString()),
+                    new Uri(item["@id"].ToString()));
             }
 
-            return await GetEntriesAsync(pages.Select(p => p.Item2));
+            return pages;
         }
 
         private async Task<ConcurrentBag<CatalogIndexEntry>> GetEntriesAsync(IEnumerable<Uri> pageUris)
@@ -77,29 +77,32 @@ namespace NuGet.Services.Metadata.Catalog
 
                 foreach (var item in json["items"])
                 {
-                    // This string is unique.
-                    var id = item["@id"].ToString();
-                    
-                    // These strings should be shared.
-                    var type = interner.Intern(item["@type"].ToString());
-                    var commitId = interner.Intern(item["commitId"].ToString());
-                    var nugetId = interner.Intern(item["nuget:id"].ToString());
-                    var nugetVersion = interner.Intern(item["nuget:version"].ToString());
-                    var packageIdentity = new PackageIdentity(nugetId, NuGetVersion.Parse(nugetVersion));
-
-                    // No string is directly operated on here.
-                    var commitTimeStamp = item["commitTimeStamp"].ToObject<DateTime>();
-
-                    var entry = new CatalogIndexEntry(
-                        new Uri(id),
-                        type,
-                        commitId,
-                        commitTimeStamp,
-                        packageIdentity);
-
-                    entries.Add(entry);
+                    entries.Add(ParseItem(item, interner));
                 }
             }
+        }
+
+        protected CatalogIndexEntry ParseItem(JToken item, StringInterner interner)
+        {
+            // This string is unique.
+            var id = item["@id"].ToString();
+
+            // These strings should be shared.
+            var type = interner.Intern(item["@type"].ToString());
+            var commitId = interner.Intern(item["commitId"].ToString());
+            var nugetId = interner.Intern(item["nuget:id"].ToString());
+            var nugetVersion = interner.Intern(item["nuget:version"].ToString());
+            var packageIdentity = new PackageIdentity(nugetId, NuGetVersion.Parse(nugetVersion));
+
+            // No string is directly operated on here.
+            var commitTimeStamp = item["commitTimeStamp"].ToObject<DateTime>();
+
+            return new CatalogIndexEntry(
+                new Uri(id),
+                type,
+                commitId,
+                commitTimeStamp,
+                packageIdentity);
         }
     }
 }

@@ -15,6 +15,7 @@ using NuGet.Services.Configuration;
 using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using NuGet.Services.Metadata.Catalog.Monitoring;
+using NuGet.Services.Metadata.Catalog.Monitoring.Utility;
 using NuGet.Services.Sql;
 using NuGet.Services.Storage;
 using NuGet.Versioning;
@@ -30,6 +31,7 @@ namespace Ng.Jobs
         private IStorageQueue<PackageValidatorContext> _queue;
         private IPackageMonitoringStatusService _statusService;
         private IMonitoringNotificationService _notificationService;
+        private MonitoringCatalogIndexReader _catalogIndexReader;
         private RegistrationResourceV3 _regResource;
         private CollectorHttpClient _client;
 
@@ -98,6 +100,14 @@ namespace Ng.Jobs
             _regResource = Repository.Factory.GetCoreV3(index).GetResource<RegistrationResourceV3>(cancellationToken);
 
             _client = new CollectorHttpClient(messageHandlerFactory());
+
+            _catalogIndexReader = new MonitoringCatalogIndexReader(
+                new Uri(index), 
+                _client, 
+                galleryDatabase, 
+                auditingStorageFactory, 
+                TelemetryService, 
+                LoggerFactory.CreateLogger<MonitoringCatalogIndexReader>());
 
             SetUserAgentString();
         }
@@ -197,11 +207,10 @@ namespace Ng.Jobs
             }
             else
             {
-                Logger.LogInformation("PackageValidatorContext for {PackageId} {PackageVersion} is missing catalog entries! " +
-                    "Attempting to fetch most recent catalog entry from registration.",
+                Logger.LogInformation("PackageValidatorContext for {PackageId} {PackageVersion} is missing catalog entries!",
                     feedPackage.Id, feedPackage.Version);
 
-                catalogEntries = await FetchCatalogIndexEntriesFromRegistrationAsync(feedPackage, token);
+                catalogEntries = new[] { await FetchCatalogIndexEntryForPackage(feedPackage, token) };
             }
 
             var existingStatus = await _statusService.GetAsync(feedPackage, token);
@@ -227,12 +236,53 @@ namespace Ng.Jobs
             await _statusService.UpdateAsync(status, token);
         }
 
-        private async Task<IEnumerable<CatalogIndexEntry>> FetchCatalogIndexEntriesFromRegistrationAsync(
+        private async Task<CatalogIndexEntry> FetchCatalogIndexEntryForPackage(
+            FeedPackageIdentity feedPackage,
+            CancellationToken cancellationToken)
+        {
+            // Try to fetch the entry from the package's registration first, which links to the catalog commit.
+            var catalogIndexEntry = await FetchCatalogIndexEntryFromRegistrationAsync(
+                feedPackage, cancellationToken);
+
+            if (catalogIndexEntry == null)
+            {
+                // If the package is missing from registration, it was probably deleted.
+                Logger.LogInformation("Attempting to fetch PackageDelete catalog entry of {PackageId} {PackageVersion}.",
+                    feedPackage.Id, feedPackage.Version);
+
+                catalogIndexEntry = await _catalogIndexReader.FindPackageDeleteEntry(
+                    new PackageIdentity(feedPackage.Id, NuGetVersion.Parse(feedPackage.Version)), 
+                    cancellationToken);
+            }
+
+            if (catalogIndexEntry == null)
+            {
+                // If the package is missing from registration and was not deleted, it may have just been skipped by registration.
+                Logger.LogInformation("Attempting to fetch PackageDetails catalog entry of {PackageId} {PackageVersion}.",
+                    feedPackage.Id, feedPackage.Version);
+
+                catalogIndexEntry = await _catalogIndexReader.FindPackageDetailsEntry(
+                    new PackageIdentity(feedPackage.Id, NuGetVersion.Parse(feedPackage.Version)),
+                    cancellationToken);
+            }
+
+            if (catalogIndexEntry == null)
+            {
+                throw new Exception("Package is missing from the catalog!");
+            }
+
+            return catalogIndexEntry;
+        }
+
+        private async Task<CatalogIndexEntry> FetchCatalogIndexEntryFromRegistrationAsync(
             FeedPackageIdentity feedPackage,
             CancellationToken token)
         {
             var id = feedPackage.Id;
             var version = NuGetVersion.Parse(feedPackage.Version);
+            Logger.LogInformation("Attempting to fetch catalog entry of {PackageId} {PackageVersion} from registration.",
+                id, version);
+
             var leafBlob = await _regResource.GetPackageMetadata(
                 new PackageIdentity(id, version),
                 NullSourceCacheContext.Instance,
@@ -241,21 +291,18 @@ namespace Ng.Jobs
 
             if (leafBlob == null)
             {
-                throw new Exception("Package is missing from registration!");
+                return null;
             }
 
             var catalogPageUri = new Uri(leafBlob["@id"].ToString());
             var catalogPage = await _client.GetJObjectAsync(catalogPageUri, token);
 
-            return new CatalogIndexEntry[]
-            {
-                new CatalogIndexEntry(
-                    catalogPageUri,
-                    Schema.DataTypes.PackageDetails.ToString(),
-                    catalogPage["catalog:commitId"].ToString(),
-                    DateTime.Parse(catalogPage["catalog:commitTimeStamp"].ToString()),
-                    new PackageIdentity(id, version))
-            };
+            return new CatalogIndexEntry(
+                catalogPageUri,
+                Schema.DataTypes.PackageDetails.ToString(),
+                catalogPage["catalog:commitId"].ToString(),
+                DateTime.Parse(catalogPage["catalog:commitTimeStamp"].ToString()),
+                new PackageIdentity(id, version));
         }
 
         private async Task SaveFailedPackageMonitoringStatusAsync(
