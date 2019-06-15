@@ -99,7 +99,6 @@
     <Compile Include="Validation\Result\PackageValidationResult.cs" />
     <Compile Include="Validation\Result\TestResult.cs" />
     <Compile Include="Validation\Result\ValidationResult.cs" />
-    <Compile Include="Validation\Test\Endpoint\CatalogEndpoint.cs" />
     <Compile Include="Validation\Test\Endpoint\Endpoint.cs" />
     <Compile Include="Validation\Test\Endpoint\EndpointConfiguration.cs" />
     <Compile Include="Validation\Test\Endpoint\EndpointValidator.cs" />
@@ -121,7 +120,6 @@
     <Compile Include="Validation\Test\Endpoint\RegistrationEndpoint.cs" />
     <Compile Include="Validation\Test\PackageValidatorContext.cs" />
     <Compile Include="Validation\Test\PackageValidatorContextEnqueuer.cs" />
-    <Compile Include="Validation\Test\Catalog\PackageHasSignatureValidator.cs" />
     <Compile Include="Validation\Test\Registration\RegistrationExistsValidator.cs" />
     <Compile Include="Validation\Test\Registration\RegistrationIndexValidator.cs" />
     <Compile Include="Validation\Test\Registration\RegistrationValidator.cs" />

@@ -61,7 +61,6 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
         {
             builder.RegisterEndpoint<RegistrationEndpoint>();
             builder.RegisterEndpoint<FlatContainerEndpoint>();
-            builder.RegisterEndpoint<CatalogEndpoint>();
         }
 
         private static void RegisterEndpoint<T>(this ContainerBuilder builder)
@@ -80,9 +79,6 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
 
         public static void RegisterValidators(this ContainerBuilder builder)
         {
-            // Catalog validators
-            builder.RegisterValidator<CatalogEndpoint, PackageHasSignatureValidator>();
-
             // Registration validators
             builder.RegisterValidator<RegistrationEndpoint, RegistrationExistsValidator>();
             builder.RegisterValidator<RegistrationEndpoint, RegistrationIdValidator>();
