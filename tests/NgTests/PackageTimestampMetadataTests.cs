@@ -100,7 +100,7 @@ namespace NgTests.Validation
 
             var tasks = new Task<PackageTimestampMetadata>[]
             {
-                PackageTimestampMetadata.FromCatalogEntry(
+                PackageTimestampMetadata.FromCatalogEntryAsync(
                     client,
                     new CatalogIndexEntry(
                         new Uri(catalogStorage.BaseAddress, "data/2015.10.12.10.08.54/listedpackage.1.0.0.json"),
@@ -108,7 +108,7 @@ namespace NgTests.Validation
                         "9a37734f-1960-4c07-8934-c8bc797e35c1",
                         commitTimeStamp1,
                         new PackageIdentity("ListedPackage", new NuGetVersion("1.0.0")))),
-                PackageTimestampMetadata.FromCatalogEntry(
+                PackageTimestampMetadata.FromCatalogEntryAsync(
                     client,
                     new CatalogIndexEntry(
                         new Uri(catalogStorage.BaseAddress, "data/2015.10.12.10.08.54/unlistedpackage.1.0.0.json"),
@@ -116,7 +116,7 @@ namespace NgTests.Validation
                         "9a37734f-1960-4c07-8934-c8bc797e35c1",
                         commitTimeStamp1,
                         new PackageIdentity("UnlistedPackage", new NuGetVersion("1.0.0")))),
-                PackageTimestampMetadata.FromCatalogEntry(
+                PackageTimestampMetadata.FromCatalogEntryAsync(
                     client,
                     new CatalogIndexEntry(
                         new Uri(catalogStorage.BaseAddress, "data/2015.10.12.10.08.55/listedpackage.1.0.1.json"),
@@ -162,7 +162,7 @@ namespace NgTests.Validation
                 new PackageIdentity("OtherPackage", new NuGetVersion("1.0.0")));
 
             // Act
-            var entry = await PackageTimestampMetadata.FromCatalogEntry(client, catalogIndexEntry);
+            var entry = await PackageTimestampMetadata.FromCatalogEntryAsync(client, catalogIndexEntry);
 
             // Assert
             Assert.False(entry.Exists);

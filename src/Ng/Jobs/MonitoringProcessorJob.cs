@@ -259,37 +259,6 @@ namespace Ng.Jobs
             return catalogIndexEntries;
         }
 
-        private async Task<CatalogIndexEntry> FetchCatalogIndexEntryFromRegistrationAsync(
-            FeedPackageIdentity feedPackage,
-            CancellationToken token)
-        {
-            var id = feedPackage.Id;
-            var version = NuGetVersion.Parse(feedPackage.Version);
-            Logger.LogInformation("Attempting to fetch catalog entry of {PackageId} {PackageVersion} from registration.",
-                id, version);
-
-            var leafBlob = await _regResource.GetPackageMetadata(
-                new PackageIdentity(id, version),
-                NullSourceCacheContext.Instance,
-                Logger.AsCommon(),
-                token);
-
-            if (leafBlob == null)
-            {
-                return null;
-            }
-
-            var catalogPageUri = new Uri(leafBlob["@id"].ToString());
-            var catalogPage = await _client.GetJObjectAsync(catalogPageUri, token);
-
-            return new CatalogIndexEntry(
-                catalogPageUri,
-                Schema.DataTypes.PackageDetails.ToString(),
-                catalogPage["catalog:commitId"].ToString(),
-                DateTime.Parse(catalogPage["catalog:commitTimeStamp"].ToString()),
-                new PackageIdentity(id, version));
-        }
-
         private async Task SaveFailedPackageMonitoringStatusAsync(
             PackageValidatorContext queuedContext,
             Exception exception,

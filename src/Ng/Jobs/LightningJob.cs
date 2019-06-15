@@ -249,7 +249,7 @@ namespace Ng.Jobs
                 var collectorHttpClient = new CollectorHttpClient(httpMessageHandlerFactory());
                 var catalogIndexReader = new CatalogIndexReader(new Uri(_catalogIndex), collectorHttpClient, TelemetryService);
 
-                var catalogIndexEntries = await catalogIndexReader.GetEntries();
+                var catalogIndexEntries = await catalogIndexReader.GetEntriesAsync();
 
                 foreach (var packageRegistrationGroup in catalogIndexEntries
                     .OrderBy(x => x.CommitTimeStamp)

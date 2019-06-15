@@ -28,7 +28,7 @@ namespace NuGet.Services.Metadata.Catalog
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
         }
 
-        public async Task<IEnumerable<CatalogIndexEntry>> GetEntries()
+        public async Task<IEnumerable<CatalogIndexEntry>> GetEntriesAsync()
         {
             var pages = await GetIndexPagesAsync();
             return await GetEntriesAsync(pages.Select(p => p.Value));
@@ -93,6 +93,7 @@ namespace NuGet.Services.Metadata.Catalog
                 }
             }
         }
+
         protected async Task<SortedList<DateTime, List<CatalogIndexEntry>>> GetEntriesAsync(Uri pageUri, StringInterner interner)
         {
             return new SortedList<DateTime, List<CatalogIndexEntry>>(await GetCachedEntriesAsync(pageUri, interner));

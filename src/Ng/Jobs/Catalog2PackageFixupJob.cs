@@ -125,7 +125,7 @@ namespace Ng.Jobs
             Logger.LogInformation("Parsing catalog for all entries.");
 
             var catalogReader = _serviceProvider.GetRequiredService<CatalogIndexReader>();
-            var entries = await catalogReader.GetEntries();
+            var entries = await catalogReader.GetEntriesAsync();
 
             var latestEntries = entries
                 .GroupBy(c => new PackageIdentity(c.Id, c.Version))

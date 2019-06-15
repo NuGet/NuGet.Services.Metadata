@@ -160,12 +160,12 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring.Utility
                 var halfEntriesCount = entries.Count / 2;
                 var middleEntries = entries.ElementAt(halfEntriesCount);
                 entries.Remove(middleEntries.Key);
-                var timestamps = await Task.WhenAll(middleEntries.Value.Select(e => PackageTimestampMetadata.FromCatalogEntry(_httpClient, e)));
+                var timestamps = await Task.WhenAll(middleEntries.Value.Select(e => PackageTimestampMetadata.FromCatalogEntryAsync(_httpClient, e)));
                 if (timestamps.Any(t => t.Last == timestamp))
                 {
                     // This is the right timestamp--but it might not be the right package.
                     var middleEntriesForPackage = middleEntries.Value.Where(e => e.Id == identity.Id && e.Version == identity.Version);
-                    var middleEntriesForPackageTimestamp = await PackageTimestampMetadata.FromCatalogEntries(_httpClient, middleEntriesForPackage);
+                    var middleEntriesForPackageTimestamp = await PackageTimestampMetadata.FromCatalogEntriesAsync(_httpClient, middleEntriesForPackage);
                     if (middleEntriesForPackageTimestamp.Last == timestamp)
                     {
                         return Tuple.Create<IEnumerable<CatalogIndexEntry>, bool?>(middleEntriesForPackage, null);

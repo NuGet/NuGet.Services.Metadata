@@ -35,7 +35,7 @@ namespace CatalogTests
                 new Mock<ITelemetryService>().Object);
 
             // Act
-            var entries = await reader.GetEntries();
+            var entries = await reader.GetEntriesAsync();
 
             // Assert
             var entryList = entries.ToList();

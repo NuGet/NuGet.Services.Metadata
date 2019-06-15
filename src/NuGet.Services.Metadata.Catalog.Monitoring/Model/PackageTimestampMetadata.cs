@@ -57,14 +57,14 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
         private static SimpleTaskCache<Uri, Task<PackageTimestampMetadata>> _cachedFromCatalogEntries = 
             new SimpleTaskCache<Uri, Task<PackageTimestampMetadata>>();
 
-        public static Task<PackageTimestampMetadata> FromCatalogEntry(
+        public static Task<PackageTimestampMetadata> FromCatalogEntryAsync(
             CollectorHttpClient client,
             CatalogIndexEntry catalogEntry)
         {
-            return _cachedFromCatalogEntries.Get(catalogEntry.Uri, () => FromCatalogEntryInternal(client, catalogEntry));
+            return _cachedFromCatalogEntries.Get(catalogEntry.Uri, () => FromCatalogEntryInternalAsync(client, catalogEntry));
         }
 
-        private static async Task<PackageTimestampMetadata> FromCatalogEntryInternal(
+        private static async Task<PackageTimestampMetadata> FromCatalogEntryInternalAsync(
             CollectorHttpClient client,
             CatalogIndexEntry catalogEntry)
         {
@@ -93,12 +93,12 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
             }
         }
 
-        public static async Task<PackageTimestampMetadata> FromCatalogEntries(
+        public static async Task<PackageTimestampMetadata> FromCatalogEntriesAsync(
             CollectorHttpClient client,
             IEnumerable<CatalogIndexEntry> catalogEntries)
         {
             var packageTimestampMetadatas =
-                await Task.WhenAll(catalogEntries.Select(entry => FromCatalogEntry(client, entry)));
+                await Task.WhenAll(catalogEntries.Select(entry => FromCatalogEntryAsync(client, entry)));
             var maxTimestamp = packageTimestampMetadatas.Where(p => p != null).Max(p => p.Last);
             return packageTimestampMetadatas.FirstOrDefault(p => p.Last == maxTimestamp);
         }
