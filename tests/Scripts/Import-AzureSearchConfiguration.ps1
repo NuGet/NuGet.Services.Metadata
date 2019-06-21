@@ -36,6 +36,7 @@ Remove-Item -Path $tempDestinationPath
 $configObject | Add-Member -MemberType NoteProperty -Name "Slot" -Value $Slot
 
 # Save the file and set an environment variable to be used by the functional tests
+Write-Host "Writing configuration file with updated values: $destinationPath"
 ConvertTo-Json $configObject | Out-File $destinationPath
 [Environment]::SetEnvironmentVariable("ConfigurationFilePath", $destinationPath)
 Write-Host "##vso[task.setvariable variable=ConfigurationFilePath;]$destinationPath"
