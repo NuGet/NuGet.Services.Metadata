@@ -12,8 +12,6 @@ namespace BasicSearchTests.FunctionalTests.Core
     {
         private static string _searchServiceBaseurl;
         private static string _indexBaseUrl;
-        private static string _configurationName;
-        private static string _slot;
 
         /// <summary>
         /// The environment against which the (search service) test has to be run. The value would be picked from env variable.
@@ -49,31 +47,9 @@ namespace BasicSearchTests.FunctionalTests.Core
             }
         }
 
-        public static string ConfigurationName
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(_configurationName))
-                {
-                    _configurationName = GetEnvironmentVariable("ConfigurationName", defaultValue: "Dev");
-                }
+        public const string ConfigurationFilePathVariableName = "ConfigurationFilePath";
 
-                return _configurationName;
-            }
-        }
-
-        public static string Slot
-        {
-            get
-            {
-                if (string.IsNullOrEmpty(_slot))
-                {
-                    _slot = GetEnvironmentVariable("Slot", defaultValue: "Production");
-                }
-
-                return _slot;
-            }
-        }
+        public static string ConfigurationFilePath => GetEnvironmentVariable(ConfigurationFilePathVariableName, required: true);
 
         private static string GetEnvironmentVariable(string key, string defaultValue = null, bool required = false)
         {

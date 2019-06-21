@@ -5,9 +5,9 @@ using Xunit;
 
 namespace NuGet.Services.AzureSearch.FunctionalTests
 {
-    public class RelevancyFactAttribute : FactAttribute
+    public class RelevancyTheoryAttribute : TheoryAttribute
     {
-        public RelevancyFactAttribute()
+        public RelevancyTheoryAttribute()
         {
             if (!AzureSearchConfiguration.Create().RunAzureSearchRelevancyTests)
             {

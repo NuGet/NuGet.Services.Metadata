@@ -8,11 +8,11 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
 {
     public class CommonFixture : IAsyncLifetime
     {
-        public TestSettings TestSettings { get; private set; }
+        public AzureSearchConfiguration TestSettings { get; private set; }
 
         public async Task InitializeAsync()
         {
-            TestSettings = await TestSettings.CreateAsync();
+            TestSettings = await AzureSearchConfiguration.CreateAsync();
         }
 
         public Task DisposeAsync() => Task.CompletedTask;
