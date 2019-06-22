@@ -18,7 +18,7 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
     public class NuGetSearchFunctionalTestBase : BaseFunctionalTests, IClassFixture<CommonFixture>
     {
         public NuGetSearchFunctionalTestBase(CommonFixture fixture)
-            : base(fixture.TestSettings.AzureSearchAppServiceUrl)
+            : base(fixture.AzureSearchConfiguration.AzureSearchAppServiceUrl)
         {
             Fixture = fixture ?? throw new ArgumentNullException(nameof(fixture));
         }

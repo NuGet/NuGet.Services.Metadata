@@ -9,7 +9,7 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
     {
         public RelevancyFactAttribute()
         {
-            if (!AzureSearchConfiguration.Create().RunAzureSearchRelevancyTests)
+            if (!AzureSearchConfiguration.Create().TestSettings.RunAzureSearchRelevancyTests)
             {
                 Skip = "Azure search Relevancy tests are disabled";
             }

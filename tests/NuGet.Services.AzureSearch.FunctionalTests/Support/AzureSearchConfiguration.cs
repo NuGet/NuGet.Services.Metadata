@@ -2,13 +2,12 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using BasicSearchTests.FunctionalTests.Core;
-using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using NuGet.Services.Configuration;
 
 namespace NuGet.Services.AzureSearch.FunctionalTests
 {
@@ -17,30 +16,14 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
         private static AzureSearchConfiguration _configuration = null;
         private static SemaphoreSlim _semaphore = new SemaphoreSlim(1);
 
-        [JsonProperty]
-        public bool RunAzureSearchAnalysisTests { get; set; }
-
-        [JsonProperty]
-        public bool RunAzureSearchRelevancyTests { get; set; }
-
-        [JsonProperty]
-        public string AzureSearchIndexName { get; set; }
-        [JsonProperty]
-        public string AzureSearchIndexUrl { get; set; }
-        [JsonProperty]
-        public string AzureSearchIndexAdminApiKey { get; set; }
-
-        [JsonProperty]
-        public string AzureSearchAppServiceProductionUrl { get; set; }
-        [JsonProperty]
-        public string AzureSearchAppServiceStagingUrl { get; set; }
+        public TestSettingsConfiguration TestSettings { get; set; }
 
         [JsonProperty]
         public string Slot { get; set; }
 
-        internal string AzureSearchAppServiceUrl => string.Equals(Slot, "staging", StringComparison.OrdinalIgnoreCase) 
-            ? AzureSearchAppServiceStagingUrl
-            : AzureSearchAppServiceProductionUrl;
+        public string AzureSearchAppServiceUrl => "staging".Equals(Slot ?? "", StringComparison.OrdinalIgnoreCase) 
+            ? TestSettings.AzureSearchAppServiceStagingUrl
+            : TestSettings.AzureSearchAppServiceProductionUrl;
 
         public static async Task<AzureSearchConfiguration> CreateAsync()
         {
@@ -96,6 +79,30 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
                     $"and that it is a valid JSON file containing all required configuration.",
                     e);
             }
+        }
+
+        public class TestSettingsConfiguration
+        {
+            [JsonProperty]
+            public bool RunAzureSearchAnalysisTests { get; set; }
+
+            [JsonProperty]
+            public bool RunAzureSearchRelevancyTests { get; set; }
+
+            [JsonProperty]
+            public string AzureSearchIndexName { get; set; }
+
+            [JsonProperty]
+            public string AzureSearchIndexUrl { get; set; }
+
+            [JsonProperty]
+            public string AzureSearchIndexAdminApiKey { get; set; }
+
+            [JsonProperty]
+            public string AzureSearchAppServiceProductionUrl { get; set; }
+
+            [JsonProperty]
+            public string AzureSearchAppServiceStagingUrl { get; set; }
         }
     }
 }
