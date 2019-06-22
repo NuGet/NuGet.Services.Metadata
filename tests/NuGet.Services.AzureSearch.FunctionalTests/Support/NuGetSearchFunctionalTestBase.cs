@@ -20,7 +20,6 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
         public NuGetSearchFunctionalTestBase(CommonFixture fixture)
             : base(fixture.AzureSearchConfiguration.AzureSearchAppServiceUrl)
         {
-            Console.WriteLine($"Running tests against: {fixture.AzureSearchConfiguration.AzureSearchAppServiceUrl}");
             Fixture = fixture ?? throw new ArgumentNullException(nameof(fixture));
         }
 
