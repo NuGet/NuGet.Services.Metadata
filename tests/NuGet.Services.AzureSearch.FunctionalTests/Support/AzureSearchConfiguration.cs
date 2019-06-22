@@ -63,7 +63,7 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
                 var configurationFilePath = EnvironmentSettings.ConfigurationFilePath;
                 var configurationString = File.ReadAllText(configurationFilePath);
                 var result = JsonConvert.DeserializeObject<AzureSearchConfiguration>(configurationString);
-                Console.WriteLine($"Running tests from config {configurationFilePath} and Slot: {result.Slot}");
+                Console.WriteLine($"Config {configurationFilePath} and Slot: {result.Slot}");
                 return result;
             }
             catch (ArgumentException ae)
