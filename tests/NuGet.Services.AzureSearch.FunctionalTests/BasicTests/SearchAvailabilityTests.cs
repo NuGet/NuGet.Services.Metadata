@@ -3,13 +3,14 @@
 
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace NuGet.Services.AzureSearch.FunctionalTests
 {
     public class SearchAvailabilityTests : NuGetSearchFunctionalTestBase
     {
-        public SearchAvailabilityTests(CommonFixture fixture)
-            : base(fixture)
+        public SearchAvailabilityTests(CommonFixture fixture, ITestOutputHelper testOutputHelper)
+            : base(fixture, testOutputHelper)
         {
         }
 

@@ -21,7 +21,6 @@ namespace BasicSearchTests.FunctionalTests.Core
         public BaseFunctionalTests(string baseUrl)
         {
             // Arrange
-            Console.WriteLine($"Running tests against: {baseUrl}");
             IgnoreCertificateValidationErrors();
             RetryHandler = new RetryHandler(new HttpClientHandler());
             Client = new HttpClient(RetryHandler) { BaseAddress = new Uri(baseUrl) };

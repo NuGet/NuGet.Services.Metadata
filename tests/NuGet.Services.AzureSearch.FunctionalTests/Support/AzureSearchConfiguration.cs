@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,7 +13,7 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
     public class AzureSearchConfiguration
     {
         private static AzureSearchConfiguration _configuration = null;
-        private static SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
 
         public TestSettingsConfiguration TestSettings { get; set; }
 
@@ -63,7 +62,6 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
                 var configurationFilePath = EnvironmentSettings.ConfigurationFilePath;
                 var configurationString = File.ReadAllText(configurationFilePath);
                 var result = JsonConvert.DeserializeObject<AzureSearchConfiguration>(configurationString);
-                Console.WriteLine($"Config {configurationFilePath} and Slot: {result.Slot}");
                 return result;
             }
             catch (ArgumentException ae)
