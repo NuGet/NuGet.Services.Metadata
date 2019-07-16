@@ -168,8 +168,38 @@ namespace NuGet.Services.AzureSearch
       ""lastUpdatedDocument"": ""2018-12-14T09:30:00+00:00"",
       ""lastDocumentType"": ""NuGet.Services.AzureSearch.SearchDocument+UpdateOwners"",
       ""lastUpdatedFromCatalog"": false,
-      ""lastCommitTimestamp"": null,
-      ""lastCommitId"": null,
+      ""key"": ""windowsazure_storage-d2luZG93c2F6dXJlLnN0b3JhZ2U1-IncludePrereleaseAndSemVer2""
+    }
+  ]
+}", json);
+            }
+        }
+
+        public class UpdateDownloadCount : BaseFacts
+        {
+            public UpdateDownloadCount(ITestOutputHelper output) : base(output)
+            {
+            }
+
+            [Fact]
+            public async Task SetsExpectedProperties()
+            {
+                var document = _target.UpdateDownloadCount(
+                    Data.PackageId,
+                    Data.SearchFilters,
+                    Data.TotalDownloadCount);
+
+                SetDocumentLastUpdated(document);
+                var json = await SerializationUtilities.SerializeToJsonAsync(document);
+                Assert.Equal(@"{
+  ""value"": [
+    {
+      ""@search.action"": ""upload"",
+      ""totalDownloadCount"": 1001,
+      ""downloadScore"": 0.14381174563233068,
+      ""lastUpdatedDocument"": ""2018-12-14T09:30:00+00:00"",
+      ""lastDocumentType"": ""NuGet.Services.AzureSearch.SearchDocument+UpdateDownloadCount"",
+      ""lastUpdatedFromCatalog"": false,
       ""key"": ""windowsazure_storage-d2luZG93c2F6dXJlLnN0b3JhZ2U1-IncludePrereleaseAndSemVer2""
     }
   ]
@@ -213,11 +243,11 @@ namespace NuGet.Services.AzureSearch
       ],
       ""isLatestStable"": " + isLatestStable.ToString().ToLowerInvariant() + @",
       ""isLatest"": " + isLatest.ToString().ToLowerInvariant() + @",
+      ""lastCommitTimestamp"": ""2018-12-13T12:30:00+00:00"",
+      ""lastCommitId"": ""6b9b24dd-7aec-48ae-afc1-2a117e3d50d1"",
       ""lastUpdatedDocument"": ""2018-12-14T09:30:00+00:00"",
       ""lastDocumentType"": ""NuGet.Services.AzureSearch.SearchDocument+UpdateVersionList"",
       ""lastUpdatedFromCatalog"": true,
-      ""lastCommitTimestamp"": ""2018-12-13T12:30:00+00:00"",
-      ""lastCommitId"": ""6b9b24dd-7aec-48ae-afc1-2a117e3d50d1"",
       ""key"": ""windowsazure_storage-d2luZG93c2F6dXJlLnN0b3JhZ2U1-IncludePrereleaseAndSemVer2""
     }
   ]
@@ -266,11 +296,11 @@ namespace NuGet.Services.AzureSearch
       ],
       ""isLatestStable"": " + isLatestStable.ToString().ToLowerInvariant() + @",
       ""isLatest"": " + isLatest.ToString().ToLowerInvariant() + @",
+      ""lastCommitTimestamp"": ""2018-12-13T12:30:00+00:00"",
+      ""lastCommitId"": ""6b9b24dd-7aec-48ae-afc1-2a117e3d50d1"",
       ""lastUpdatedDocument"": ""2018-12-14T09:30:00+00:00"",
       ""lastDocumentType"": ""NuGet.Services.AzureSearch.SearchDocument+UpdateVersionListAndOwners"",
       ""lastUpdatedFromCatalog"": true,
-      ""lastCommitTimestamp"": ""2018-12-13T12:30:00+00:00"",
-      ""lastCommitId"": ""6b9b24dd-7aec-48ae-afc1-2a117e3d50d1"",
       ""key"": ""windowsazure_storage-d2luZG93c2F6dXJlLnN0b3JhZ2U1-IncludePrereleaseAndSemVer2""
     }
   ]
@@ -375,11 +405,11 @@ namespace NuGet.Services.AzureSearch
       ],
       ""title"": ""Windows Azure Storage"",
       ""tokenizedPackageId"": ""WindowsAzure.Storage"",
+      ""lastCommitTimestamp"": ""2018-12-13T12:30:00+00:00"",
+      ""lastCommitId"": ""6b9b24dd-7aec-48ae-afc1-2a117e3d50d1"",
       ""lastUpdatedDocument"": ""2018-12-14T09:30:00+00:00"",
       ""lastDocumentType"": ""NuGet.Services.AzureSearch.SearchDocument+UpdateLatest"",
       ""lastUpdatedFromCatalog"": true,
-      ""lastCommitTimestamp"": ""2018-12-13T12:30:00+00:00"",
-      ""lastCommitId"": ""6b9b24dd-7aec-48ae-afc1-2a117e3d50d1"",
       ""key"": ""windowsazure_storage-d2luZG93c2F6dXJlLnN0b3JhZ2U1-" + expected + @"""
     }
   ]
@@ -626,11 +656,11 @@ namespace NuGet.Services.AzureSearch
       ],
       ""title"": ""Windows Azure Storage"",
       ""tokenizedPackageId"": ""WindowsAzure.Storage"",
+      ""lastCommitTimestamp"": null,
+      ""lastCommitId"": null,
       ""lastUpdatedDocument"": ""2018-12-14T09:30:00+00:00"",
       ""lastDocumentType"": ""NuGet.Services.AzureSearch.SearchDocument+Full"",
       ""lastUpdatedFromCatalog"": false,
-      ""lastCommitTimestamp"": null,
-      ""lastCommitId"": null,
       ""key"": ""windowsazure_storage-d2luZG93c2F6dXJlLnN0b3JhZ2U1-" + expected + @"""
     }
   ]
@@ -734,7 +764,7 @@ namespace NuGet.Services.AzureSearch
                 Assert.Empty(allSearchFilters.Except(testedSearchFilters));
             }
 
-            public void SetDocumentLastUpdated(ICommittedDocument document)
+            public void SetDocumentLastUpdated(IUpdatedDocument document)
             {
                 Data.SetDocumentLastUpdated(document, _output);
             }

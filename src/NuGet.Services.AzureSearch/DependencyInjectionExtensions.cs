@@ -14,6 +14,8 @@ using NuGet.Jobs.Validation;
 using NuGet.Protocol;
 using NuGet.Protocol.Catalog;
 using NuGet.Protocol.Registration;
+using NuGet.Services.AzureSearch.Auxiliary2AzureSearch;
+using NuGet.Services.AzureSearch.AuxiliaryFiles;
 using NuGet.Services.AzureSearch.Catalog2AzureSearch;
 using NuGet.Services.AzureSearch.Db2AzureSearch;
 using NuGet.Services.AzureSearch.Owners2AzureSearch;
@@ -171,19 +173,9 @@ namespace NuGet.Services.AzureSearch
                     c.Resolve<ICatalogClient>(),
                     c.ResolveKeyed<IStorageFactory>(key),
                     c.Resolve<IOwnerDataClient>(),
+                    c.Resolve<IDownloadDataClient>(),
                     c.Resolve<IOptionsSnapshot<Db2AzureSearchConfiguration>>(),
                     c.Resolve<ILogger<Db2AzureSearchCommand>>()));
-
-            containerBuilder
-                .Register(c => new Owners2AzureSearchCommand(
-                    c.Resolve<IDatabaseOwnerFetcher>(),
-                    c.Resolve<IOwnerDataClient>(),
-                    c.Resolve<IOwnerSetComparer>(),
-                    c.Resolve<IOwnerIndexActionBuilder>(),
-                    c.Resolve<Func<IBatchPusher>>(),
-                    c.Resolve<IOptionsSnapshot<AzureSearchJobConfiguration>>(),
-                    c.Resolve<IAzureSearchTelemetryService>(),
-                    c.Resolve<ILogger<Owners2AzureSearchCommand>>()));
         }
 
         private static void RegisterAuxiliaryDataStorageServices(ContainerBuilder containerBuilder, string key)
@@ -191,7 +183,7 @@ namespace NuGet.Services.AzureSearch
             containerBuilder
                 .Register<ICloudBlobClient>(c =>
                 {
-                    var options = c.Resolve<IOptionsSnapshot<SearchServiceConfiguration>>();
+                    var options = c.Resolve<IOptionsSnapshot<IAuxiliaryDataStorageConfiguration>>();
                     return new CloudBlobClientWrapper(
                         options.Value.AuxiliaryDataStorageConnectionString,
                         readAccessGeoRedundant: true);
@@ -201,7 +193,7 @@ namespace NuGet.Services.AzureSearch
             containerBuilder
                 .Register<IAuxiliaryFileClient>(c => new AuxiliaryFileClient(
                     c.ResolveKeyed<ICloudBlobClient>(key),
-                    c.Resolve<IOptionsSnapshot<SearchServiceConfiguration>>(),
+                    c.Resolve<IOptionsSnapshot<IAuxiliaryDataStorageConfiguration>>(),
                     c.Resolve<IAzureSearchTelemetryService>(),
                     c.Resolve<ILogger<AuxiliaryFileClient>>()));
         }
@@ -239,6 +231,9 @@ namespace NuGet.Services.AzureSearch
             services.AddScoped(p => p.GetRequiredService<IAuxiliaryDataCache>().Get());
             services.AddSingleton<IAuxiliaryFileReloader, AuxiliaryFileReloader>();
 
+            services.AddTransient<Auxiliary2AzureSearchCommand>();
+            services.AddTransient<Owners2AzureSearchCommand>();
+
             services.AddTransient<IAzureSearchTelemetryService, AzureSearchTelemetryService>();
             services.AddTransient<IBaseDocumentBuilder, BaseDocumentBuilder>();
             services.AddTransient<ICatalogIndexActionBuilder, CatalogIndexActionBuilder>();
@@ -251,11 +246,11 @@ namespace NuGet.Services.AzureSearch
             services.AddTransient<IHijackDocumentBuilder, HijackDocumentBuilder>();
             services.AddTransient<IIndexBuilder, IndexBuilder>();
             services.AddTransient<INewPackageRegistrationProducer, NewPackageRegistrationProducer>();
-            services.AddTransient<IOwnerIndexActionBuilder, OwnerIndexActionBuilder>();
             services.AddTransient<IOwnerSetComparer, OwnerSetComparer>();
             services.AddTransient<IPackageEntityIndexActionBuilder, PackageEntityIndexActionBuilder>();
             services.AddTransient<IRegistrationClient, RegistrationClient>();
             services.AddTransient<ISearchDocumentBuilder, SearchDocumentBuilder>();
+            services.AddTransient<ISearchIndexActionBuilder, SearchIndexActionBuilder>();
             services.AddTransient<ISearchParametersBuilder, SearchParametersBuilder>();
             services.AddTransient<ISearchResponseBuilder, SearchResponseBuilder>();
             services.AddTransient<ISearchServiceClientWrapper, SearchServiceClientWrapper>();

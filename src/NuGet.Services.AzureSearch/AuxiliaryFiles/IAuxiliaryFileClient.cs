@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using NuGet.Indexing;
 
-namespace NuGet.Services.AzureSearch.SearchService
+namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 {
     public interface IAuxiliaryFileClient
     {
+        Task<DownloadData> LoadDownloadDataAsync();
         Task<AuxiliaryFileResult<Downloads>> LoadDownloadsAsync(string etag);
         Task<AuxiliaryFileResult<HashSet<string>>> LoadVerifiedPackagesAsync(string etag);
     }

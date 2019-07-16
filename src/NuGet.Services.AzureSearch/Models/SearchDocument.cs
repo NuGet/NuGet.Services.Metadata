@@ -17,7 +17,7 @@ namespace NuGet.Services.AzureSearch
         /// download count).
         /// </summary>
         [SerializePropertyNamesAsCamelCase]
-        public class Full : UpdateLatest
+        public class Full : UpdateLatest, IDownloadCount
         {
             [IsFilterable]
             public long? TotalDownloadCount { get; set; }
@@ -75,9 +75,21 @@ namespace NuGet.Services.AzureSearch
         /// parent classes handle this.
         /// </summary>
         [SerializePropertyNamesAsCamelCase]
-        public class UpdateOwners : CommittedDocument, IOwners
+        public class UpdateOwners : UpdatedDocument, IOwners
         {
             public string[] Owners { get; set; }
+        }
+
+        /// <summary>
+        /// Used when updating just the fields related to the download count of a document. Note that this model does
+        /// not need any analyzer or other Azure Search attributes since it is not used for index creation. The
+        /// <see cref="Full"/> and its parent classes handle this.
+        /// </summary>
+        [SerializePropertyNamesAsCamelCase]
+        public class UpdateDownloadCount : UpdatedDocument, IDownloadCount
+        {
+            public long? TotalDownloadCount { get; set; }
+            public double? DownloadScore { get; set; }
         }
 
         /// <summary>
@@ -93,9 +105,18 @@ namespace NuGet.Services.AzureSearch
         /// <summary>
         /// Allows index updating code to apply a new list of owners to a document.
         /// </summary>
-        public interface IOwners : ICommittedDocument
+        public interface IOwners : IUpdatedDocument
         {
             string[] Owners { get; set; }
+        }
+
+        /// <summary>
+        /// Allows index updating code to apply new download count information to a document.
+        /// </summary>
+        public interface IDownloadCount : IUpdatedDocument
+        {
+            long? TotalDownloadCount { get; set; }
+            double? DownloadScore { get; set; }
         }
 
         /// <summary>
