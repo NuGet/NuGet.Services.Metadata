@@ -54,7 +54,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         fullVersion,
                         input.Packages[0],
                         input.Owners,
-                        input.TotalDownloadCount),
+                        input.TotalDownloadCount,
+                        It.IsAny<bool>()),
                     Times.Once);
             }
 
@@ -71,9 +72,10 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         It.IsAny<string>(),
                         It.IsAny<Package>(),
                         It.IsAny<string[]>(),
-                        It.IsAny<long>()))
-                    .Returns<string, SearchFilters, string[], bool, bool, string, Package, string[], long>(
-                        (i, sf, v, ls, l, fv, p, o, d) => new SearchDocument.Full { OriginalVersion = p.Version });
+                        It.IsAny<long>(),
+                        It.IsAny<bool>()))
+                    .Returns<string, SearchFilters, string[], bool, bool, string, Package, string[], long, bool>(
+                        (i, sf, v, ls, l, fv, p, o, d, ie) => new SearchDocument.Full { OriginalVersion = p.Version });
                 var package1 = new TestPackage("1.0.0") { Description = "This is version 1.0.0." };
                 var package2 = new TestPackage("2.0.0-alpha") { Description = "This is version 2.0.0." };
                 var input = new NewPackageRegistration(
@@ -130,7 +132,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         It.IsAny<string>(),
                         It.IsAny<Package>(),
                         It.IsAny<string[]>(),
-                        It.IsAny<long>()))
+                        It.IsAny<long>(),
+                        It.IsAny<bool>()))
                     .Returns(() => new SearchDocument.Full());
                 var input = new NewPackageRegistration(
                     "NuGet.Versioning",

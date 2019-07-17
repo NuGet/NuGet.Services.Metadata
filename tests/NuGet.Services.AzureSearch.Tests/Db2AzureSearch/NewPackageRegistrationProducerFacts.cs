@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
 using System.Threading;
@@ -28,6 +29,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             private readonly DbSet<PackageRegistration> _packageRegistrations;
             private readonly DbSet<Package> _packages;
             private readonly ConcurrentBag<NewPackageRegistration> _work;
+            private readonly HashSet<string> _excludeIdList;
             private readonly CancellationToken _token;
             private readonly NewPackageRegistrationProducer _target;
 
@@ -44,6 +46,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 _packageRegistrations = DbSetMockFactory.Create<PackageRegistration>();
                 _packages = DbSetMockFactory.Create<Package>();
                 _work = new ConcurrentBag<NewPackageRegistration>();
+                _excludeIdList = new HashSet<string>();
                 _token = CancellationToken.None;
 
                 _entitiesContextFactory
@@ -68,7 +71,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             [Fact]
             public async Task AllowsNoWork()
             {
-                await _target.ProduceWorkAsync(_work, _token);
+                await _target.ProduceWorkAsync(_work, _excludeIdList, _token);
 
                 Assert.Empty(_work);
                 _entitiesContextFactory.Verify(x => x.CreateAsync(true), Times.Once);
@@ -109,7 +112,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 });
                 InitializePackagesFromPackageRegistrations();
 
-                await _target.ProduceWorkAsync(_work, _token);
+                await _target.ProduceWorkAsync(_work, _excludeIdList, _token);
 
                 Assert.Equal(3, _work.Count);
                 Assert.Contains(
@@ -152,7 +155,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 });
                 InitializePackagesFromPackageRegistrations();
 
-                await _target.ProduceWorkAsync(_work, _token);
+                await _target.ProduceWorkAsync(_work, _excludeIdList, _token);
 
                 Assert.Equal(3, _work.Count);
                 Assert.Contains(
@@ -211,7 +214,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 });
                 InitializePackagesFromPackageRegistrations();
 
-                await _target.ProduceWorkAsync(_work, _token);
+                await _target.ProduceWorkAsync(_work, _excludeIdList, _token);
 
                 var work = _work.Reverse().ToList();
                 Assert.Equal(4, work.Count);

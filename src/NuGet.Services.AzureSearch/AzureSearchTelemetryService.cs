@@ -345,5 +345,26 @@ namespace NuGet.Services.AzureSearch
                     { "NewDownloads", newDownloads.ToString() },
                 });
         }
+
+        public void TrackReadLatestIndexedExcludeIdList(int packageIdCount, TimeSpan elapsed)
+        {
+            _telemetryClient.TrackMetric(
+                Prefix + "ReadLatestIndexedExcludeIdListSeconds",
+                elapsed.TotalSeconds,
+                new Dictionary<string, string>
+                {
+                    { "PackageIdCount", packageIdCount.ToString() },
+                });
+        }
+
+        public IDisposable TrackReplaceLatestExcludeIdList(int packageIdCount)
+        {
+            return _telemetryClient.TrackDuration(
+                Prefix + "ReplaceLatestIndexedExcludeIdListSeconds",
+                new Dictionary<string, string>
+                {
+                    { "PackageIdCount", packageIdCount.ToString() },
+                });
+        }
     }
 }

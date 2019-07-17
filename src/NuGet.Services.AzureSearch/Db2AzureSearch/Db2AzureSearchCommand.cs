@@ -142,7 +142,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             await _indexBuilder.CreateHijackIndexAsync();
 
             var storageResult = await _excludeIdDataClient.ReadLatestIndexedAsync();
-            _excludeIdData = new HashSet<string>(storageResult.Result.Ids, StringComparer.OrdinalIgnoreCase);
+            _excludeIdData = new HashSet<string>(storageResult.Result?.Ids ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
         }
 
         private async Task PushAllPackageRegistrationsAsync(

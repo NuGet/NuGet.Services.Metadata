@@ -32,6 +32,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         private readonly Mock<IStorageFactory> _storageFactory;
         private readonly Mock<IOwnerDataClient> _ownerDataClient;
         private readonly Mock<IDownloadDataClient> _downloadDataClient;
+        private readonly Mock<IExcludeIdDataClient> _excludeDataClient;
         private readonly Mock<IOptionsSnapshot<Db2AzureSearchConfiguration>> _options;
         private readonly Db2AzureSearchConfiguration _config;
         private readonly TestCursorStorage _storage;
@@ -49,6 +50,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             _storageFactory = new Mock<IStorageFactory>();
             _ownerDataClient = new Mock<IOwnerDataClient>();
             _downloadDataClient = new Mock<IDownloadDataClient>();
+            _excludeDataClient = new Mock<IExcludeIdDataClient>();
             _options = new Mock<IOptionsSnapshot<Db2AzureSearchConfiguration>>();
             _logger = output.GetLogger<Db2AzureSearchCommand>();
 
@@ -79,6 +81,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             _blobContainerBuilder
                 .Setup(x => x.DeleteIfExistsAsync())
                 .ReturnsAsync(true);
+            _excludeDataClient
+                .Setup(x => x.ReadLatestIndexedAsync())
+                .ReturnsAsync(new ResultAndAccessCondition<ExcludeIdData>(null, null));
 
             _target = new Db2AzureSearchCommand(
                 _producer.Object,
@@ -90,6 +95,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 _storageFactory.Object,
                 _ownerDataClient.Object,
                 _downloadDataClient.Object,
+                _excludeDataClient.Object,
                 _options.Object,
                 _logger);
         }
@@ -131,9 +137,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         {
             _config.AzureSearchBatchSize = 2;
             _producer
-                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<CancellationToken>()))
+                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask)
-                .Callback<ConcurrentBag<NewPackageRegistration>, CancellationToken>((w, _) =>
+                .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
                 {
                     w.Add(new NewPackageRegistration("A", 0, new string[0], new Package[0]));
                     w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0]));
@@ -178,9 +184,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         {
             _config.AzureSearchBatchSize = 2;
             _producer
-                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<CancellationToken>()))
+                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask)
-                .Callback<ConcurrentBag<NewPackageRegistration>, CancellationToken>((w, _) =>
+                .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
                 {
                     w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0]));
                     w.Add(new NewPackageRegistration("B", 0, new[] { "nuget" }, new Package[0]));
@@ -241,9 +247,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         public async Task PushesOwnerData()
         {
             _producer
-                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<CancellationToken>()))
+                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask)
-                .Callback<ConcurrentBag<NewPackageRegistration>, CancellationToken>((w, _) =>
+                .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
                 {
                     w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0]));
                     w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0]));
@@ -279,9 +285,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         public async Task PushesDownloadData()
         {
             _producer
-                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<CancellationToken>()))
+                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask)
-                .Callback<ConcurrentBag<NewPackageRegistration>, CancellationToken>((w, _) =>
+                .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
                 {
                     w.Add(new NewPackageRegistration(
                         "A",

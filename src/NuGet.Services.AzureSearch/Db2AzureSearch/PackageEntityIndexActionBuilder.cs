@@ -150,7 +150,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 latestFlags.LatestVersionInfo.FullVersion,
                 package,
                 owners,
-                packageRegistration.TotalDownloadCount));
+                packageRegistration.TotalDownloadCount,
+                isExcluded: packageRegistration.IsExcludedByDefault));
         }
 
         private IndexAction<KeyedDocument> GetHijackIndexAction(

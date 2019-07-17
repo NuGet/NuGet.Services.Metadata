@@ -195,7 +195,8 @@ namespace NuGet.Services.AzureSearch
             string fullVersion,
             Package package,
             string[] owners,
-            long totalDownloadCount)
+            long totalDownloadCount,
+            bool? isExcluded = null)
         {
             var document = new SearchDocument.Full();
 
@@ -210,7 +211,8 @@ namespace NuGet.Services.AzureSearch
                 isLatestStable: isLatestStable,
                 isLatest: isLatest,
                 fullVersion: fullVersion,
-                owners: owners);
+                owners: owners,
+                isExcluded: isExcluded);
             _baseDocumentBuilder.PopulateMetadata(document, packageId, package);
             PopulateDownloadCount(document, totalDownloadCount);
 
@@ -255,7 +257,8 @@ namespace NuGet.Services.AzureSearch
             bool isLatestStable,
             bool isLatest,
             string fullVersion,
-            string[] owners)
+            string[] owners,
+            bool? isExcluded = null)
         {
             PopulateVersions(
                 document,
@@ -272,6 +275,11 @@ namespace NuGet.Services.AzureSearch
             PopulateOwners(
                 document,
                 owners);
+
+            if (isExcluded.HasValue)
+            {
+                document.IsHiddenByDefault = isExcluded.Value;
+            }
         }
 
         private static void PopulateOwners<T>(
