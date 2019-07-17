@@ -10,7 +10,7 @@ using FrameworkLogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace NuGet.Indexing
 {
-    public static class JsonStringArrayFile
+    public static class JsonStringArrayFileParser
     {
         /// <summary>
         /// Load the auxiliary data in simple json string array format.
