@@ -83,7 +83,18 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             return await LoadAuxiliaryFileAsync(
                 _options.Value.AuxiliaryDataStorageVerifiedPackagesPath,
                 etag,
-                loader => VerifiedPackages.Load(
+                loader => JsonStringArrayFile.Load(
+                    fileName: null,
+                    loader: loader,
+                    logger: _logger));
+        }
+
+        public async Task<AuxiliaryFileResult<HashSet<string>>> LoadExcludedIdListAsync(string etag)
+        {
+            return await LoadAuxiliaryFileAsync(
+                _options.Value.AuxiliaryDataStorageExcludedIdListPath,
+                etag,
+                loader => JsonStringArrayFile.Load(
                     fileName: null,
                     loader: loader,
                     logger: _logger));

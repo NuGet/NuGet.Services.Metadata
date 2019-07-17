@@ -174,7 +174,7 @@ namespace NuGet.Services.AzureSearch
                     c.ResolveKeyed<IStorageFactory>(key),
                     c.Resolve<IOwnerDataClient>(),
                     c.Resolve<IDownloadDataClient>(),
-                    c.Resolve<IExcludeIdDataClient>(),
+                    c.Resolve<IAuxiliaryFileClient>(),
                     c.Resolve<IOptionsSnapshot<Db2AzureSearchConfiguration>>(),
                     c.Resolve<ILogger<Db2AzureSearchCommand>>()));
         }

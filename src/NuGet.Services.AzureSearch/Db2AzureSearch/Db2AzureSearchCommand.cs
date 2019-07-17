@@ -31,7 +31,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         private readonly IStorageFactory _storageFactory;
         private readonly IOwnerDataClient _ownerDataClient;
         private readonly IDownloadDataClient _downloadDataClient;
-        private readonly IExcludeIdDataClient _excludeIdDataClient;
+        private readonly IAuxiliaryFileClient _auxiliaryFileClient;
         private readonly IOptionsSnapshot<Db2AzureSearchConfiguration> _options;
         private readonly ILogger<Db2AzureSearchCommand> _logger;
 
@@ -47,7 +47,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             IStorageFactory storageFactory,
             IOwnerDataClient ownerDataClient,
             IDownloadDataClient downloadDataClient,
-            IExcludeIdDataClient excludeIdDataClient,
+            IAuxiliaryFileClient auxiliaryFileClient,
             IOptionsSnapshot<Db2AzureSearchConfiguration> options,
             ILogger<Db2AzureSearchCommand> logger)
         {
@@ -60,7 +60,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             _storageFactory = storageFactory ?? throw new ArgumentNullException(nameof(storageFactory));
             _ownerDataClient = ownerDataClient ?? throw new ArgumentNullException(nameof(ownerDataClient));
             _downloadDataClient = downloadDataClient ?? throw new ArgumentNullException(nameof(downloadDataClient));
-            _excludeIdDataClient = excludeIdDataClient ?? throw new ArgumentNullException(nameof(excludeIdDataClient));
+            _auxiliaryFileClient = auxiliaryFileClient ?? throw new ArgumentNullException(nameof(auxiliaryFileClient));
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -141,8 +141,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             await _indexBuilder.CreateSearchIndexAsync();
             await _indexBuilder.CreateHijackIndexAsync();
 
-            var storageResult = await _excludeIdDataClient.ReadLatestIndexedAsync();
-            _excludeIdData = new HashSet<string>(storageResult.Result?.Ids ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
+            var storageResult = await _auxiliaryFileClient.LoadExcludedIdListAsync(etag: null);
+            _excludeIdData = storageResult.Data ?? new HashSet<string>();
         }
 
         private async Task PushAllPackageRegistrationsAsync(

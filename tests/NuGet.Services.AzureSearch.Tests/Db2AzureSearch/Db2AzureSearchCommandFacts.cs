@@ -32,7 +32,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         private readonly Mock<IStorageFactory> _storageFactory;
         private readonly Mock<IOwnerDataClient> _ownerDataClient;
         private readonly Mock<IDownloadDataClient> _downloadDataClient;
-        private readonly Mock<IExcludeIdDataClient> _excludeDataClient;
+        private readonly Mock<IAuxiliaryFileClient> _auxiliaryFileClient;
         private readonly Mock<IOptionsSnapshot<Db2AzureSearchConfiguration>> _options;
         private readonly Db2AzureSearchConfiguration _config;
         private readonly TestCursorStorage _storage;
@@ -50,7 +50,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             _storageFactory = new Mock<IStorageFactory>();
             _ownerDataClient = new Mock<IOwnerDataClient>();
             _downloadDataClient = new Mock<IDownloadDataClient>();
-            _excludeDataClient = new Mock<IExcludeIdDataClient>();
+            _auxiliaryFileClient = new Mock<IAuxiliaryFileClient>();
             _options = new Mock<IOptionsSnapshot<Db2AzureSearchConfiguration>>();
             _logger = output.GetLogger<Db2AzureSearchCommand>();
 
@@ -81,9 +81,16 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             _blobContainerBuilder
                 .Setup(x => x.DeleteIfExistsAsync())
                 .ReturnsAsync(true);
-            _excludeDataClient
-                .Setup(x => x.ReadLatestIndexedAsync())
-                .ReturnsAsync(new ResultAndAccessCondition<ExcludeIdData>(null, null));
+
+            var excludedIdListMetadata = new AuxiliaryFileMetadata(
+                DateTimeOffset.MinValue,
+                DateTimeOffset.MinValue,
+                TimeSpan.Zero,
+                fileSize: 0,
+                etag: string.Empty);
+            _auxiliaryFileClient
+                .Setup(x => x.LoadExcludedIdListAsync(It.IsAny<string>()))
+                .ReturnsAsync(new AuxiliaryFileResult<HashSet<string>>(false, new HashSet<string>(), excludedIdListMetadata));
 
             _target = new Db2AzureSearchCommand(
                 _producer.Object,
@@ -95,7 +102,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 _storageFactory.Object,
                 _ownerDataClient.Object,
                 _downloadDataClient.Object,
-                _excludeDataClient.Object,
+                _auxiliaryFileClient.Object,
                 _options.Object,
                 _logger);
         }

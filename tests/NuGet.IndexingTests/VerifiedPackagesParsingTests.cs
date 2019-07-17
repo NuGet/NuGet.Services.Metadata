@@ -38,7 +38,7 @@ namespace NuGet.IndexingTests
 
         private HashSet<string> Parse(string input)
         {
-            return VerifiedPackages.Parse(new JsonTextReader(new StringReader(input)));
+            return JsonStringArrayFile.Parse(new JsonTextReader(new StringReader(input)));
         }
     }
 }
