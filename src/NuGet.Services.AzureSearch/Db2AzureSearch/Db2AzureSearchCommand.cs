@@ -2,9 +2,11 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Policy;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -29,8 +31,11 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         private readonly IStorageFactory _storageFactory;
         private readonly IOwnerDataClient _ownerDataClient;
         private readonly IDownloadDataClient _downloadDataClient;
+        private readonly IExcludeIdDataClient _excludeIdDataClient;
         private readonly IOptionsSnapshot<Db2AzureSearchConfiguration> _options;
         private readonly ILogger<Db2AzureSearchCommand> _logger;
+
+        private HashSet<string> _excludeIdData;
 
         public Db2AzureSearchCommand(
             INewPackageRegistrationProducer producer,
@@ -42,6 +47,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             IStorageFactory storageFactory,
             IOwnerDataClient ownerDataClient,
             IDownloadDataClient downloadDataClient,
+            IExcludeIdDataClient excludeIdDataClient,
             IOptionsSnapshot<Db2AzureSearchConfiguration> options,
             ILogger<Db2AzureSearchCommand> logger)
         {
@@ -54,6 +60,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             _storageFactory = storageFactory ?? throw new ArgumentNullException(nameof(storageFactory));
             _ownerDataClient = ownerDataClient ?? throw new ArgumentNullException(nameof(ownerDataClient));
             _downloadDataClient = downloadDataClient ?? throw new ArgumentNullException(nameof(downloadDataClient));
+            _excludeIdDataClient = excludeIdDataClient ?? throw new ArgumentNullException(nameof(excludeIdDataClient));
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -75,7 +82,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             using (var cancelledCts = new CancellationTokenSource())
             using (var produceWorkCts = new CancellationTokenSource())
             {
-                // Initialize the indexes and container.
+                // Initialize the indexes, container and exclude list data.
                 await InitializeAsync();
 
                 // Here, we fetch the current catalog timestamp to use as the initial cursor value for
@@ -100,7 +107,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 // Push all package package data to the Azure Search indexes and write the version list blobs.
                 var allOwners = new ConcurrentBag<IdAndValue<IReadOnlyList<string>>>();
                 var allDownloads = new ConcurrentBag<DownloadRecord>();
-                await PushAllPackageRegistrationsAsync(cancelledCts, produceWorkCts, allOwners, allDownloads);
+                await PushAllPackageRegistrationsAsync(cancelledCts, produceWorkCts, allOwners, allDownloads, _excludeIdData);
 
                 // Write the owner data file.
                 await WriteOwnerDataAsync(allOwners);
@@ -133,17 +140,21 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             await _blobContainerBuilder.CreateAsync(containerDeleted);
             await _indexBuilder.CreateSearchIndexAsync();
             await _indexBuilder.CreateHijackIndexAsync();
+
+            var storageResult = await _excludeIdDataClient.ReadLatestIndexedAsync();
+            _excludeIdData = new HashSet<string>(storageResult.Result.Ids, StringComparer.OrdinalIgnoreCase);
         }
 
         private async Task PushAllPackageRegistrationsAsync(
             CancellationTokenSource cancelledCts,
             CancellationTokenSource produceWorkCts,
             ConcurrentBag<IdAndValue<IReadOnlyList<string>>> allOwners,
-            ConcurrentBag<DownloadRecord> allDownloads)
+            ConcurrentBag<DownloadRecord> allDownloads,
+            HashSet<string> excludeIdData)
         {
             _logger.LogInformation("Pushing all packages to Azure Search and initializing version lists.");
             var allWork = new ConcurrentBag<NewPackageRegistration>();
-            var producerTask = ProduceWorkAsync(allWork, produceWorkCts, cancelledCts.Token);
+            var producerTask = ProduceWorkAsync(allWork, excludeIdData, produceWorkCts, cancelledCts.Token);
             var consumerTasks = Enumerable
                 .Range(0, _options.Value.MaxConcurrentBatches)
                 .Select(i => ConsumeWorkAsync(allWork, allOwners, allDownloads, produceWorkCts.Token, cancelledCts.Token))
@@ -194,11 +205,12 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
         private async Task ProduceWorkAsync(
             ConcurrentBag<NewPackageRegistration> allWork,
+            HashSet<string> excludeIdData,
             CancellationTokenSource produceWorkCts,
             CancellationToken cancellationToken)
         {
             await Task.Yield();
-            await _producer.ProduceWorkAsync(allWork, cancellationToken);
+            await _producer.ProduceWorkAsync(allWork, excludeIdData, cancellationToken);
             produceWorkCts.Cancel();
         }
 

@@ -52,10 +52,13 @@
     <Compile Include="Auxiliary2AzureSearch\DownloadSetComparer.cs" />
     <Compile Include="Auxiliary2AzureSearch\IDownloadSetComparer.cs" />
     <Compile Include="AuxiliaryFiles\DownloadByVersionData.cs" />
+    <Compile Include="AuxiliaryFiles\ExcludeIdData.cs" />
     <Compile Include="AuxiliaryFiles\DownloadData.cs" />
     <Compile Include="AuxiliaryFiles\DownloadDataClient.cs" />
     <Compile Include="AuxiliaryFiles\IAuxiliaryDataStorageConfiguration.cs" />
+    <Compile Include="AuxiliaryFiles\IExcludeIdDataClient.cs" />
     <Compile Include="AuxiliaryFiles\IDownloadDataClient.cs" />
+    <Compile Include="AuxiliaryFiles\ExcludeIdDataClient.cs" />
     <Compile Include="AzureSearchScoringConfiguration.cs" />
     <Compile Include="BaseDocumentBuilder.cs" />
     <Compile Include="DatabaseOwnerFetcher.cs" />

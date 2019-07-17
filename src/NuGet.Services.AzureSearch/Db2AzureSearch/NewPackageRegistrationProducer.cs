@@ -34,6 +34,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
         public async Task ProduceWorkAsync(
             ConcurrentBag<NewPackageRegistration> allWork,
+            HashSet<string> excludeIdData,
             CancellationToken cancellationToken)
         {
             var ranges = await GetPackageRegistrationRangesAsync();
@@ -66,11 +67,14 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         packages = new List<Package>();
                     }
 
+                    var isExcludedByDefault = excludeIdData.Contains(pr.Id);
+
                     allWork.Add(new NewPackageRegistration(
                         pr.Id,
                         pr.DownloadCount,
                         pr.Owners,
-                        packages));
+                        packages,
+                        isExcludedByDefault));
                 }
 
                 _logger.LogInformation("Done initializing batch {Number}/{Count}.", i + 1, ranges.Count);

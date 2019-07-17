@@ -44,6 +44,10 @@ namespace NuGet.Services.AzureSearch
             public string[] Versions { get; set; }
             public bool? IsLatestStable { get; set; }
             public bool? IsLatest { get; set; }
+
+            [IsFilterable]
+            public bool IsHiddenByDefault { get; set; }
+
         }
 
         /// <summary>
