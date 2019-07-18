@@ -145,7 +145,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
             try
             {
-                var storageResult = await _auxiliaryFileClient.LoadExcludedIdListAsync(etag: null);
+                var storageResult = await _auxiliaryFileClient.LoadBlacklistedPackagesListAsync(etag: null);
                 _excludeIdData = storageResult.Data ?? new HashSet<string>();
             }
             catch (StorageException ex) when(ex.RequestInformation?.HttpStatusCode == (int)HttpStatusCode.NotFound)

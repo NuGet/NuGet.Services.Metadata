@@ -12,6 +12,6 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
         Task<DownloadData> LoadDownloadDataAsync();
         Task<AuxiliaryFileResult<Downloads>> LoadDownloadsAsync(string etag);
         Task<AuxiliaryFileResult<HashSet<string>>> LoadVerifiedPackagesAsync(string etag);
-        Task<AuxiliaryFileResult<HashSet<string>>> LoadExcludedIdListAsync(string etag);
+        Task<AuxiliaryFileResult<HashSet<string>>> LoadBlacklistedPackagesListAsync(string etag);
     }
 }

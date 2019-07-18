@@ -82,15 +82,15 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 .Setup(x => x.DeleteIfExistsAsync())
                 .ReturnsAsync(true);
 
-            var excludedIdListMetadata = new AuxiliaryFileMetadata(
+            var blacklistedPackagesListMetadata = new AuxiliaryFileMetadata(
                 DateTimeOffset.MinValue,
                 DateTimeOffset.MinValue,
                 TimeSpan.Zero,
                 fileSize: 0,
                 etag: string.Empty);
             _auxiliaryFileClient
-                .Setup(x => x.LoadExcludedIdListAsync(It.IsAny<string>()))
-                .ReturnsAsync(new AuxiliaryFileResult<HashSet<string>>(false, new HashSet<string>(), excludedIdListMetadata));
+                .Setup(x => x.LoadBlacklistedPackagesListAsync(It.IsAny<string>()))
+                .ReturnsAsync(new AuxiliaryFileResult<HashSet<string>>(false, new HashSet<string>(), blacklistedPackagesListMetadata));
 
             _target = new Db2AzureSearchCommand(
                 _producer.Object,

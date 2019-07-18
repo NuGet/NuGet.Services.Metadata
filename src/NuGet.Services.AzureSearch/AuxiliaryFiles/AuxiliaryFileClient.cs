@@ -89,10 +89,10 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     logger: _logger));
         }
 
-        public async Task<AuxiliaryFileResult<HashSet<string>>> LoadExcludedIdListAsync(string etag)
+        public async Task<AuxiliaryFileResult<HashSet<string>>> LoadBlacklistedPackagesListAsync(string etag)
         {
             return await LoadAuxiliaryFileAsync(
-                _options.Value.AuxiliaryDataStorageExcludedIdListPath,
+                _options.Value.AuxiliaryDataStorageBlacklistedPackagesListPath,
                 etag,
                 loader => JsonStringArrayFileParser.Load(
                     fileName: null,
