@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using NuGet.Services.AzureSearch.AuxiliaryFiles;
 
 namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
@@ -12,5 +13,6 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
         public string AuxiliaryDataStorageDownloadsPath { get; set; }
         public string AuxiliaryDataStorageVerifiedPackagesPath { get; set; }
         public string AuxiliaryDataStorageExcludedIdListPath { get; }
+        public TimeSpan MinPushPeriod { get; set; }
     }
 }
