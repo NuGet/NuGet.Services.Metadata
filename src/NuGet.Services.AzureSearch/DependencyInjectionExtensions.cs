@@ -161,13 +161,6 @@ namespace NuGet.Services.AzureSearch
                     c.Resolve<ILogger<OwnerDataClient>>()));
 
             containerBuilder
-                .Register<IDownloadDataClient>(c => new DownloadDataClient(
-                    c.ResolveKeyed<ICloudBlobClient>(key),
-                    c.Resolve<IOptionsSnapshot<AzureSearchJobConfiguration>>(),
-                    c.Resolve<IAzureSearchTelemetryService>(),
-                    c.Resolve<ILogger<DownloadDataClient>>()));
-
-            containerBuilder
                 .Register(c => new Catalog2AzureSearchCommand(
                     c.Resolve<ICollector>(),
                     c.ResolveKeyed<IStorageFactory>(key),
