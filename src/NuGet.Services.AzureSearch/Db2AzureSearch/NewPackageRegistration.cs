@@ -18,19 +18,19 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             long totalDownloadCount,
             string[] owners,
             IReadOnlyList<Package> packages,
-            bool isExcludedByDefault = false)
+            bool isHiddenByDefault = false)
         {
             PackageId = packageId ?? throw new ArgumentNullException(packageId);
             TotalDownloadCount = totalDownloadCount;
             Owners = owners ?? throw new ArgumentNullException(nameof(owners));
             Packages = packages ?? throw new ArgumentNullException(nameof(packages));
-            IsExcludedByDefault = isExcludedByDefault;
+            IsHiddenByDefault = isHiddenByDefault;
         }
 
         public string PackageId { get; }
         public long TotalDownloadCount { get; }
         public string[] Owners { get; }
         public IReadOnlyList<Package> Packages { get; }
-        public bool IsExcludedByDefault { get; }
+        public bool IsHiddenByDefault { get; }
     }
 }

@@ -41,7 +41,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 Assert.Null(output.OrderBy);
                 Assert.Equal(0, output.Skip);
                 Assert.Equal(0, output.Top);
-                Assert.Equal("searchFilters eq 'Default'", output.Filter);
+                Assert.Equal("searchFilters eq 'Default' and isHiddenByDefault eq false", output.Filter);
             }
 
             [Fact]
@@ -167,6 +167,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 {
                     IncludePrerelease = includePrerelease,
                     IncludeSemVer2 = includeSemVer2,
+                    Query = "js"
                 };
 
                 var output = _target.V2Search(request);
@@ -189,7 +190,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 Assert.Null(output.OrderBy);
                 Assert.Equal(0, output.Skip);
                 Assert.Equal(0, output.Top);
-                Assert.Equal("searchFilters eq 'Default'", output.Filter);
+                Assert.Equal("searchFilters eq 'Default' and isHiddenByDefault eq false", output.Filter);
             }
 
             [Fact]
@@ -254,6 +255,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 {
                     IncludePrerelease = includePrerelease,
                     IncludeSemVer2 = includeSemVer2,
+                    Query = "js"
                 };
 
                 var output = _target.V3Search(request);
@@ -277,7 +279,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 Assert.Null(output.OrderBy);
                 Assert.Equal(0, output.Skip);
                 Assert.Equal(0, output.Top);
-                Assert.Equal("searchFilters eq 'Default'", output.Filter);
+                Assert.Equal("searchFilters eq 'Default' and isHiddenByDefault eq false", output.Filter);
                 Assert.Single(output.Select);
                 Assert.Equal(IndexFields.PackageId, output.Select[0]);
             }
@@ -295,7 +297,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 Assert.Null(output.OrderBy);
                 Assert.Equal(0, output.Skip);
                 Assert.Equal(1, output.Top);
-                Assert.Equal("searchFilters eq 'Default'", output.Filter);
+                Assert.Equal("searchFilters eq 'Default' and isHiddenByDefault eq false", output.Filter);
                 Assert.Single(output.Select);
                 Assert.Equal(IndexFields.Search.Versions, output.Select[0]);
             }
@@ -382,6 +384,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 {
                     IncludePrerelease = includePrerelease,
                     IncludeSemVer2 = includeSemVer2,
+                    Query = "js"
                 };
 
                 var output = _target.Autocomplete(request);

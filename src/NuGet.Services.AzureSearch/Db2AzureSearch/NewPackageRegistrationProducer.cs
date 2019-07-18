@@ -67,14 +67,14 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         packages = new List<Package>();
                     }
 
-                    var isExcludedByDefault = excludeIdData.Contains(pr.Id);
+                    var isHiddenByDefault = excludeIdData.Contains(pr.Id);
 
                     allWork.Add(new NewPackageRegistration(
                         pr.Id,
                         pr.DownloadCount,
                         pr.Owners,
                         packages,
-                        isExcludedByDefault));
+                        isHiddenByDefault));
                 }
 
                 _logger.LogInformation("Done initializing batch {Number}/{Count}.", i + 1, ranges.Count);
