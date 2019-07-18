@@ -6,11 +6,13 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Security.Policy;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.WindowsAzure.Storage;
 using NuGet.Protocol.Catalog;
 using NuGet.Services.AzureSearch.AuxiliaryFiles;
 using NuGet.Services.AzureSearch.Catalog2AzureSearch;
@@ -141,8 +143,16 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             await _indexBuilder.CreateSearchIndexAsync();
             await _indexBuilder.CreateHijackIndexAsync();
 
-            var storageResult = await _auxiliaryFileClient.LoadExcludedIdListAsync(etag: null);
-            _excludeIdData = storageResult.Data ?? new HashSet<string>();
+            try
+            {
+                var storageResult = await _auxiliaryFileClient.LoadExcludedIdListAsync(etag: null);
+                _excludeIdData = storageResult.Data ?? new HashSet<string>();
+            }
+            catch (StorageException ex) when(ex.RequestInformation?.HttpStatusCode == (int)HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning($"Excluded Id list not found in the storage. No packages will be blacklisted.");
+                _excludeIdData = new HashSet<string>();
+            }
         }
 
         private async Task PushAllPackageRegistrationsAsync(

@@ -137,7 +137,17 @@ namespace NuGet.Services.AzureSearch.SearchService
                 searchFilters |= SearchFilters.IncludeSemVer2;
             }
 
-            searchParameters.Filter = $"{IndexFields.Search.SearchFilters} eq '{DocumentUtilities.GetSearchFilterString(searchFilters)}'";
+            searchParameters.Filter = GetFilterString(searchFilters, string.IsNullOrWhiteSpace(request.Query));
+        }
+
+        private static string GetFilterString(SearchFilters searchFilters, bool isEmptySearchQuery)
+        {
+            var filterString = $"{IndexFields.Search.SearchFilters} eq '{DocumentUtilities.GetSearchFilterString(searchFilters)}'";
+
+            // For empty search queries filter out the results of the packages that have been hidden by default.
+            filterString += isEmptySearchQuery ? $"& {nameof(IndexFields.Search.IsHiddenByDefault)} eq 'false'" : "";
+
+            return filterString;
         }
 
         private static IList<string> GetOrderBy(V2SortBy sortBy)
