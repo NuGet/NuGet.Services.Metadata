@@ -37,7 +37,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         private readonly IOptionsSnapshot<Db2AzureSearchConfiguration> _options;
         private readonly ILogger<Db2AzureSearchCommand> _logger;
 
-        private HashSet<string> _excludeIdData;
+        private HashSet<string> _blacklistePackagesList;
 
         public Db2AzureSearchCommand(
             INewPackageRegistrationProducer producer,
@@ -84,7 +84,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             using (var cancelledCts = new CancellationTokenSource())
             using (var produceWorkCts = new CancellationTokenSource())
             {
-                // Initialize the indexes, container and exclude list data.
+                // Initialize the indexes, container and blacklisted packages data.
                 await InitializeAsync();
 
                 // Here, we fetch the current catalog timestamp to use as the initial cursor value for
@@ -109,7 +109,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 // Push all package package data to the Azure Search indexes and write the version list blobs.
                 var allOwners = new ConcurrentBag<IdAndValue<IReadOnlyList<string>>>();
                 var allDownloads = new ConcurrentBag<DownloadRecord>();
-                await PushAllPackageRegistrationsAsync(cancelledCts, produceWorkCts, allOwners, allDownloads, _excludeIdData);
+                await PushAllPackageRegistrationsAsync(cancelledCts, produceWorkCts, allOwners, allDownloads, _blacklistePackagesList);
 
                 // Write the owner data file.
                 await WriteOwnerDataAsync(allOwners);
@@ -146,12 +146,12 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             try
             {
                 var storageResult = await _auxiliaryFileClient.LoadBlacklistedPackagesListAsync(etag: null);
-                _excludeIdData = storageResult.Data ?? new HashSet<string>();
+                _blacklistePackagesList = storageResult.Data ?? new HashSet<string>();
             }
             catch (StorageException ex) when(ex.RequestInformation?.HttpStatusCode == (int)HttpStatusCode.NotFound)
             {
-                _logger.LogWarning($"Excluded Id list not found in the storage. No packages will be blacklisted.");
-                _excludeIdData = new HashSet<string>();
+                _logger.LogWarning($"Blacklisted packages list not found in the storage. No packages will be blacklisted.");
+                _blacklistePackagesList = new HashSet<string>();
             }
         }
 
@@ -160,11 +160,11 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             CancellationTokenSource produceWorkCts,
             ConcurrentBag<IdAndValue<IReadOnlyList<string>>> allOwners,
             ConcurrentBag<DownloadRecord> allDownloads,
-            HashSet<string> excludeIdData)
+            HashSet<string> blacklistedPackagesList)
         {
             _logger.LogInformation("Pushing all packages to Azure Search and initializing version lists.");
             var allWork = new ConcurrentBag<NewPackageRegistration>();
-            var producerTask = ProduceWorkAsync(allWork, excludeIdData, produceWorkCts, cancelledCts.Token);
+            var producerTask = ProduceWorkAsync(allWork, blacklistedPackagesList, produceWorkCts, cancelledCts.Token);
             var consumerTasks = Enumerable
                 .Range(0, _options.Value.MaxConcurrentBatches)
                 .Select(i => ConsumeWorkAsync(allWork, allOwners, allDownloads, produceWorkCts.Token, cancelledCts.Token))
@@ -215,12 +215,12 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
         private async Task ProduceWorkAsync(
             ConcurrentBag<NewPackageRegistration> allWork,
-            HashSet<string> excludeIdData,
+            HashSet<string> blacklistedPackagesList,
             CancellationTokenSource produceWorkCts,
             CancellationToken cancellationToken)
         {
             await Task.Yield();
-            await _producer.ProduceWorkAsync(allWork, excludeIdData, cancellationToken);
+            await _producer.ProduceWorkAsync(allWork, blacklistedPackagesList, cancellationToken);
             produceWorkCts.Cancel();
         }
 

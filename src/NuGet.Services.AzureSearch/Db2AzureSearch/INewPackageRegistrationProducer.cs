@@ -12,7 +12,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
     {
         Task ProduceWorkAsync(
             ConcurrentBag<NewPackageRegistration> allWork,
-            HashSet<string> excludeIdData,
+            HashSet<string> blacklistedPackagesList,
             CancellationToken cancellationToken);
     }
 }
