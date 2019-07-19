@@ -8,8 +8,8 @@ namespace NuGet.Services.AzureSearch.SearchService
     public interface ISearchParametersBuilder
     {
         SearchParameters LastCommitTimestamp();
-        SearchParameters V2Search(V2SearchRequest request);
-        SearchParameters V3Search(V3SearchRequest request);
-        SearchParameters Autocomplete(AutocompleteRequest request);
+        SearchParameters V2Search(V2SearchRequest request, string text);
+        SearchParameters V3Search(V3SearchRequest request, string text);
+        SearchParameters Autocomplete(AutocompleteRequest request, string text);
     }
 }

@@ -47,7 +47,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         public async Task<V3SearchResponse> V3SearchAsync(V3SearchRequest request)
         {
             var text = _textBuilder.V3Search(request);
-            var parameters = _parametersBuilder.V3Search(request);
+            var parameters = _parametersBuilder.V3Search(request, text);
 
             var result = await Measure.DurationWithValueAsync(() => _searchIndex.Documents.SearchAsync<SearchDocument.Full>(
                 text,
@@ -68,7 +68,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         public async Task<AutocompleteResponse> AutocompleteAsync(AutocompleteRequest request)
         {
             var text = _textBuilder.Autocomplete(request);
-            var parameters = _parametersBuilder.Autocomplete(request);
+            var parameters = _parametersBuilder.Autocomplete(request, text);
 
             var result = await Measure.DurationWithValueAsync(() => _searchIndex.Documents.SearchAsync<SearchDocument.Full>(
                 text,
@@ -89,7 +89,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         private async Task<V2SearchResponse> UseHijackIndexAsync(V2SearchRequest request)
         {
             var text = _textBuilder.V2Search(request);
-            var parameters = _parametersBuilder.V2Search(request);
+            var parameters = _parametersBuilder.V2Search(request, text);
 
             var result = await Measure.DurationWithValueAsync(() => _hijackIndex.Documents.SearchAsync<HijackDocument.Full>(
                 text,
@@ -110,7 +110,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         private async Task<V2SearchResponse> UseSearchIndexAsync(V2SearchRequest request)
         {
             var text = _textBuilder.V2Search(request);
-            var parameters = _parametersBuilder.V2Search(request);
+            var parameters = _parametersBuilder.V2Search(request, text);
 
             var result = await Measure.DurationWithValueAsync(() => _searchIndex.Documents.SearchAsync<SearchDocument.Full>(
                 text,

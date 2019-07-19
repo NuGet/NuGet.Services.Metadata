@@ -27,7 +27,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     x => x.V2Search(_v2Request),
                     Times.Once);
                 _parametersBuilder.Verify(
-                    x => x.V2Search(_v2Request),
+                    x => x.V2Search(_v2Request, It.IsAny<string>()),
                     Times.Once);
                 _searchOperations.Verify(
                     x => x.SearchAsync<SearchDocument.Full>(_v2Text, _v2Parameters),
@@ -49,7 +49,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     x => x.V2Search(_v2Request),
                     Times.Once);
                 _parametersBuilder.Verify(
-                    x => x.V2Search(_v2Request),
+                    x => x.V2Search(_v2Request, It.IsAny<string>()),
                     Times.Once);
                 _hijackOperations.Verify(
                     x => x.SearchAsync<HijackDocument.Full>(_v2Text, _v2Parameters),
@@ -72,7 +72,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     x => x.V3Search(_v3Request),
                     Times.Once);
                 _parametersBuilder.Verify(
-                    x => x.V3Search(_v3Request),
+                    x => x.V3Search(_v3Request, It.IsAny<string>()),
                     Times.Once);
                 _searchOperations.Verify(
                     x => x.SearchAsync<SearchDocument.Full>(_v3Text, _v3Parameters),
@@ -134,10 +134,10 @@ namespace NuGet.Services.AzureSearch.SearchService
                     .Setup(x => x.V3Search(It.IsAny<V3SearchRequest>()))
                     .Returns(() => _v3Text);
                 _parametersBuilder
-                    .Setup(x => x.V2Search(It.IsAny<V2SearchRequest>()))
+                    .Setup(x => x.V2Search(It.IsAny<V2SearchRequest>(), It.IsAny<string>()))
                     .Returns(() => _v2Parameters);
                 _parametersBuilder
-                    .Setup(x => x.V3Search(It.IsAny<V3SearchRequest>()))
+                    .Setup(x => x.V3Search(It.IsAny<V3SearchRequest>(), It.IsAny<string>()))
                     .Returns(() => _v3Parameters);
 
                 // Set up the search to take at least one millisecond. This allows us to test the measured duration.

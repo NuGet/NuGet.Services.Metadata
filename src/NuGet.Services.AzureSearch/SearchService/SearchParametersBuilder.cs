@@ -37,7 +37,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             };
         }
 
-        public SearchParameters V2Search(V2SearchRequest request)
+        public SearchParameters V2Search(V2SearchRequest request, string text)
         {
             var searchParameters = NewSearchParameters();
 
@@ -64,27 +64,27 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
             else
             {
-                ApplySearchIndexFilter(searchParameters, request);
+                ApplySearchIndexFilter(searchParameters, request, text);
             }
 
             return searchParameters;
         }
 
-        public SearchParameters V3Search(V3SearchRequest request)
+        public SearchParameters V3Search(V3SearchRequest request, string text)
         {
             var searchParameters = NewSearchParameters();
 
             ApplyPaging(searchParameters, request);
-            ApplySearchIndexFilter(searchParameters, request);
+            ApplySearchIndexFilter(searchParameters, request, text);
 
             return searchParameters;
         }
 
-        public SearchParameters Autocomplete(AutocompleteRequest request)
+        public SearchParameters Autocomplete(AutocompleteRequest request, string text)
         {
             var searchParameters = NewSearchParameters();
 
-            ApplySearchIndexFilter(searchParameters, request);
+            ApplySearchIndexFilter(searchParameters, request, text);
 
             switch (request.Type)
             {
@@ -123,7 +123,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             searchParameters.Top = request.Take < 0 || request.Take > MaximumTake ? DefaultTake : request.Take;
         }
 
-        private static void ApplySearchIndexFilter(SearchParameters searchParameters, SearchRequest request)
+        private static void ApplySearchIndexFilter(SearchParameters searchParameters, SearchRequest request, string text)
         {
             var searchFilters = SearchFilters.Default;
 
@@ -137,7 +137,8 @@ namespace NuGet.Services.AzureSearch.SearchService
                 searchFilters |= SearchFilters.IncludeSemVer2;
             }
 
-            searchParameters.Filter = GetFilterString(searchFilters, string.IsNullOrWhiteSpace(request.Query));
+            var isEmptySearchQuery = string.Equals(text, "*");
+            searchParameters.Filter = GetFilterString(searchFilters, isEmptySearchQuery);
         }
 
         private static string GetFilterString(SearchFilters searchFilters, bool isEmptySearchQuery)
