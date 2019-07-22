@@ -346,10 +346,10 @@ namespace NuGet.Services.AzureSearch
                 });
         }
 
-        public void TrackReadLatestIndexedBlacklistedPackagesList(int packageIdCount, TimeSpan elapsed)
+        public void TrackReadLatestIndexedExcludedPackagesList(int packageIdCount, TimeSpan elapsed)
         {
             _telemetryClient.TrackMetric(
-                Prefix + "ReadLatestIndexedBlacklistedPackagesListSeconds",
+                Prefix + "ReadLatestIndexedExcludedPackagesListSeconds",
                 elapsed.TotalSeconds,
                 new Dictionary<string, string>
                 {
@@ -357,10 +357,10 @@ namespace NuGet.Services.AzureSearch
                 });
         }
 
-        public IDisposable TrackReplaceLatestBlacklistedPackagesList(int packageIdCount)
+        public IDisposable TrackReplaceLatestExcludedPackagesList(int packageIdCount)
         {
             return _telemetryClient.TrackDuration(
-                Prefix + "ReplaceLatestIndexedBlacklistedPackagesListSeconds",
+                Prefix + "ReplaceLatestIndexedExcludedPackagesListSeconds",
                 new Dictionary<string, string>
                 {
                     { "PackageIdCount", packageIdCount.ToString() },

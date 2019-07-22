@@ -23,8 +23,8 @@ namespace NuGet.Services.AzureSearch
         void TrackReadLatestOwnersFromDatabase(int packageIdCount, TimeSpan elapsed);
         IDisposable TrackReplaceLatestIndexedOwners(int packageIdCount);
         IDisposable TrackUploadOwnerChangeHistory(int packageIdCount);
-        void TrackReadLatestIndexedBlacklistedPackagesList(int packageIdCount, TimeSpan elapsed);
-        IDisposable TrackReplaceLatestBlacklistedPackagesList(int packageIdCount);
+        void TrackReadLatestIndexedExcludedPackagesList(int packageIdCount, TimeSpan elapsed);
+        IDisposable TrackReplaceLatestExcludedPackagesList(int packageIdCount);
         IDisposable TrackVersionListsUpdated(int versionListCount, int workerCount);
         IDisposable TrackCatalog2AzureSearchProcessBatch(int catalogLeafCount, int latestCatalogLeafCount, int packageIdCount);
         void TrackV2SearchQueryWithSearchIndex(TimeSpan elapsed);
