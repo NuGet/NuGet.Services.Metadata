@@ -65,6 +65,7 @@ namespace NuGet.Services.AzureSearch
                 changes: changes);
             _baseDocumentBuilder.PopulateMetadata(document, normalizedVersion, leaf);
             document.Listed = leaf.IsListed();
+            document.LowerPackageId = leaf.PackageId.ToLowerInvariant();
 
             return document;
         }
@@ -86,6 +87,7 @@ namespace NuGet.Services.AzureSearch
                 changes: changes);
             _baseDocumentBuilder.PopulateMetadata(document, packageId, package);
             document.Listed = package.Listed;
+            document.LowerPackageId = packageId.ToLowerInvariant();
 
             return document;
         }

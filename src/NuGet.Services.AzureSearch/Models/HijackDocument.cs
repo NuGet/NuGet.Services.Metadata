@@ -18,8 +18,18 @@ namespace NuGet.Services.AzureSearch
         [SerializePropertyNamesAsCamelCase]
         public class Full : BaseMetadataDocument, ILatest, IBaseMetadataDocument
         {
-            [IsFilterable]
+            /// <summary>
+            /// This does not need to be filterable because the hijack document is only every used when both listed and
+            /// unlisted versions can be returned. Essentially, this is when the gallery is making a V2 search query
+            /// with the "ignoreFilter=true" query parameter set.
+            /// </summary>
             public bool? Listed { get; set; }
+
+            /// <summary>
+            /// This field must be the lowercase since Azure Search filters are case sensitive.
+            /// </summary>
+            [IsFilterable]
+            public string LowerPackageId { get; set; }
 
             public bool? IsLatestStableSemVer1 { get; set; }
             public bool? IsLatestSemVer1 { get; set; }

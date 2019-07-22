@@ -48,7 +48,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             var text = _textBuilder.Build(parsed);
-            var parameters = _parametersBuilder.V2Search(request);
+            var parameters = _parametersBuilder.V2SearchWithSearchIndex(request);
             return IndexOperation.Search(text, parameters);
         }
 
@@ -57,13 +57,26 @@ namespace NuGet.Services.AzureSearch.SearchService
             var parsed = _textBuilder.ParseV2Search(request);
 
             IndexOperation indexOperation;
-            if (TryGetHijackDocumentByKey(request, parsed, out indexOperation))
+            string packageIdFilter = null;
+            if (TryGetSinglePackageId(parsed, out var packageId))
             {
-                return indexOperation;
+                if (TryGetHijackDocumentByKey(request, parsed, packageId, out indexOperation))
+                {
+                    return indexOperation;
+                }
+                
+                if (parsed.Grouping.Count == 1)
+                {
+                    // Only filter by package ID if it's the only thing in the query. This is the most common case
+                    // because of the hijack from gallery for the OData FindPackagesById function. Also, if the only
+                    // thing in the query is a package ID, clear the grouping so that we generate empty search text.
+                    packageIdFilter = packageId;
+                    parsed.Grouping.Remove(QueryField.PackageId);
+                }
             }
 
             var text = _textBuilder.Build(parsed);
-            var parameters = _parametersBuilder.V2Search(request);
+            var parameters = _parametersBuilder.V2SearchWithHijackIndex(request, packageIdFilter);
             return IndexOperation.Search(text, parameters);
         }
 
@@ -97,11 +110,11 @@ namespace NuGet.Services.AzureSearch.SearchService
         private bool TryGetHijackDocumentByKey(
             SearchRequest request,
             ParsedQuery parsed,
+            string packageId,
             out IndexOperation indexOperation)
         {
             if (PagedToFirstItem(request)
                 && parsed.Grouping.Count == 2
-                && TryGetSinglePackageId(parsed, out var packageId)
                 && TryGetSingleVersion(parsed, out var normalizedVersion))
             {
                 var documentKey = DocumentUtilities.GetHijackDocumentKey(packageId, normalizedVersion);

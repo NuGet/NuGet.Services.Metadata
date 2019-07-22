@@ -1,6 +1,7 @@
-﻿using System.Collections;
+﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
 using System.Collections.Generic;
-using System.Data.Entity.Core.Metadata.Edm;
 using System.Linq;
 using Microsoft.Azure.Search.Models;
 using Moq;
@@ -72,7 +73,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 
                 TextBuilder.Verify(x => x.ParseV2Search(V2SearchRequest), Times.Once);
                 TextBuilder.Verify(x => x.Build(It.IsAny<ParsedQuery>()), Times.Never);
-                ParametersBuilder.Verify(x => x.V2Search(It.IsAny<V2SearchRequest>()), Times.Never);
+                ParametersBuilder.Verify(x => x.V2SearchWithSearchIndex(It.IsAny<V2SearchRequest>()), Times.Never);
             }
 
             [Fact]
@@ -82,7 +83,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 
                 TextBuilder.Verify(x => x.ParseV2Search(V2SearchRequest), Times.Once);
                 TextBuilder.Verify(x => x.Build(ParsedQuery), Times.Once);
-                ParametersBuilder.Verify(x => x.V2Search(V2SearchRequest), Times.Once);
+                ParametersBuilder.Verify(x => x.V2SearchWithSearchIndex(V2SearchRequest), Times.Once);
             }
         }
 
@@ -271,6 +272,37 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             [Fact]
+            public void DoesNotUsePackageIdFilterWithInvalidPackageId()
+            {
+                ParsedQuery.Grouping[QueryField.PackageId] = new HashSet<string>(new[] { "foo--bar" });
+
+                Build();
+
+                Assert.Single(ParsedQuery.Grouping);
+                TextBuilder.Verify(x => x.ParseV2Search(V2SearchRequest), Times.Once);
+                TextBuilder.Verify(x => x.Build(ParsedQuery), Times.Once);
+                ParametersBuilder.Verify(
+                    x => x.V2SearchWithHijackIndex(V2SearchRequest, null),
+                    Times.Once);
+            }
+
+            [Fact]
+            public void DoesNotUsePackageIdFilterWithMultipleGroups()
+            {
+                ParsedQuery.Grouping[QueryField.PackageId] = new HashSet<string>(new[] { Id });
+                ParsedQuery.Grouping[QueryField.Description] = new HashSet<string>(new[] { "Hi" });
+
+                Build();
+
+                Assert.Equal(2, ParsedQuery.Grouping.Count);
+                TextBuilder.Verify(x => x.ParseV2Search(V2SearchRequest), Times.Once);
+                TextBuilder.Verify(x => x.Build(ParsedQuery), Times.Once);
+                ParametersBuilder.Verify(
+                    x => x.V2SearchWithHijackIndex(V2SearchRequest, null),
+                    Times.Once);
+            }
+
+            [Fact]
             public void CallsDependenciesForGetOperation()
             {
                 ParsedQuery.Grouping[QueryField.PackageId] = new HashSet<string>(new[] { Id });
@@ -280,17 +312,37 @@ namespace NuGet.Services.AzureSearch.SearchService
 
                 TextBuilder.Verify(x => x.ParseV2Search(V2SearchRequest), Times.Once);
                 TextBuilder.Verify(x => x.Build(It.IsAny<ParsedQuery>()), Times.Never);
-                ParametersBuilder.Verify(x => x.V2Search(It.IsAny<V2SearchRequest>()), Times.Never);
+                ParametersBuilder.Verify(
+                    x => x.V2SearchWithHijackIndex(It.IsAny<V2SearchRequest>(), It.IsAny<string>()),
+                    Times.Never);
             }
 
             [Fact]
-            public void CallsDependenciesForSearchOperation()
+            public void CallsDependenciesForSearchOperationWithPackageIdFilter()
+            {
+                ParsedQuery.Grouping[QueryField.PackageId] = new HashSet<string>(new[] { Id });
+
+                Build();
+
+                Assert.Empty(ParsedQuery.Grouping);
+                TextBuilder.Verify(x => x.ParseV2Search(V2SearchRequest), Times.Once);
+                TextBuilder.Verify(x => x.Build(ParsedQuery), Times.Once);
+                ParametersBuilder.Verify(
+                    x => x.V2SearchWithHijackIndex(V2SearchRequest, Id),
+                    Times.Once);
+            }
+
+            [Fact]
+            public void CallsDependenciesForSearchOperationWithNoPackageIdFilter()
             {
                 Build();
 
+                Assert.Empty(ParsedQuery.Grouping);
                 TextBuilder.Verify(x => x.ParseV2Search(V2SearchRequest), Times.Once);
                 TextBuilder.Verify(x => x.Build(ParsedQuery), Times.Once);
-                ParametersBuilder.Verify(x => x.V2Search(V2SearchRequest), Times.Once);
+                ParametersBuilder.Verify(
+                    x => x.V2SearchWithHijackIndex(V2SearchRequest, null),
+                    Times.Once);
             }
         }
 
@@ -469,7 +521,10 @@ namespace NuGet.Services.AzureSearch.SearchService
                     .Setup(x => x.Autocomplete(It.IsAny<AutocompleteRequest>()))
                     .Returns(() => Parameters);
                 ParametersBuilder
-                    .Setup(x => x.V2Search(It.IsAny<V2SearchRequest>()))
+                    .Setup(x => x.V2SearchWithHijackIndex(It.IsAny<V2SearchRequest>(), It.IsAny<string>()))
+                    .Returns(() => Parameters);
+                ParametersBuilder
+                    .Setup(x => x.V2SearchWithSearchIndex(It.IsAny<V2SearchRequest>()))
                     .Returns(() => Parameters);
                 ParametersBuilder
                     .Setup(x => x.V3Search(It.IsAny<V3SearchRequest>()))

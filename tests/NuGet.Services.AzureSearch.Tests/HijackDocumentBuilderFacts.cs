@@ -118,6 +118,7 @@ namespace NuGet.Services.AzureSearch
     {
       ""@search.action"": ""upload"",
       ""listed"": true,
+      ""lowerPackageId"": ""windowsazure.storage"",
       ""isLatestStableSemVer1"": false,
       ""isLatestSemVer1"": true,
       ""isLatestStableSemVer2"": false,
@@ -276,6 +277,7 @@ namespace NuGet.Services.AzureSearch
     {
       ""@search.action"": ""upload"",
       ""listed"": true,
+      ""lowerPackageId"": ""windowsazure.storage"",
       ""isLatestStableSemVer1"": false,
       ""isLatestSemVer1"": true,
       ""isLatestStableSemVer2"": false,

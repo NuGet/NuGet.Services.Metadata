@@ -37,7 +37,40 @@ namespace NuGet.Services.AzureSearch.SearchService
             };
         }
 
-        public SearchParameters V2Search(V2SearchRequest request)
+        public SearchParameters V2SearchWithSearchIndex(V2SearchRequest request)
+        {
+            var searchParameters = NewV2SearchParameters(request);
+
+            ApplySearchIndexFilter(searchParameters, request);
+
+            return searchParameters;
+        }
+
+        public SearchParameters V2SearchWithHijackIndex(V2SearchRequest request, string packageId)
+        {
+            var searchParameters = NewV2SearchParameters(request);
+
+            var clauses = new List<string>();
+
+            if (!request.IncludeSemVer2)
+            {
+                clauses.Add($"{IndexFields.SemVerLevel} ne {SemVerLevelKey.SemVer2}");
+            }
+
+            if (packageId != null)
+            {
+                clauses.Add($"{IndexFields.Hijack.LowerPackageId} eq '{packageId.ToLowerInvariant()}'");
+            }
+
+            if (clauses.Count > 0)
+            {
+                searchParameters.Filter = string.Join(" and ", clauses);
+            }
+
+            return searchParameters;
+        }
+
+        private static SearchParameters NewV2SearchParameters(V2SearchRequest request)
         {
             var searchParameters = NewSearchParameters();
 
@@ -51,20 +84,6 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 ApplyPaging(searchParameters, request);
                 searchParameters.OrderBy = GetOrderBy(request.SortBy);
-            }
-
-            if (request.IgnoreFilter)
-            {
-                // Note that the prerelease flag has no effect when IgnoreFilter is true.
-
-                if (!request.IncludeSemVer2)
-                {
-                    searchParameters.Filter = $"{IndexFields.SemVerLevel} ne {SemVerLevelKey.SemVer2}";
-                }
-            }
-            else
-            {
-                ApplySearchIndexFilter(searchParameters, request);
             }
 
             return searchParameters;

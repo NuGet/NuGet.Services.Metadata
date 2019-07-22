@@ -45,14 +45,88 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
         }
 
-        public class V2Search : BaseFacts
+        public class V2SearchWithHijackIndex : V2SearchFacts
         {
+            public override SearchParameters Build(V2SearchRequest request)
+            {
+                return _target.V2SearchWithHijackIndex(request, packageId: null);
+            }
+
             [Fact]
             public void Defaults()
             {
                 var request = new V2SearchRequest();
 
-                var output = _target.V2Search(request);
+                var output = Build(request);
+
+                Assert.Equal(QueryType.Full, output.QueryType);
+                Assert.True(output.IncludeTotalResultCount);
+                Assert.Null(output.OrderBy);
+                Assert.Equal(0, output.Skip);
+                Assert.Equal(0, output.Top);
+                Assert.Equal("semVerLevel ne 2", output.Filter);
+            }
+
+            [Theory]
+            [InlineData(false, false, "semVerLevel ne 2")]
+            [InlineData(true, false, "semVerLevel ne 2")]
+            [InlineData(false, true, null)]
+            [InlineData(true, true, null)]
+            public void SemVerLevelFilter(bool includePrerelease, bool includeSemVer2, string filter)
+            {
+                var request = new V2SearchRequest
+                {
+                    IncludePrerelease = includePrerelease,
+                    IncludeSemVer2 = includeSemVer2,
+                };
+
+                var output = Build(request);
+
+                Assert.Equal(filter, output.Filter);
+            }
+
+            [Fact]
+            public void PackageIdFilter()
+            {
+                var request = new V2SearchRequest
+                {
+                    IncludePrerelease = true,
+                    IncludeSemVer2 = true,
+                };
+
+                var output = _target.V2SearchWithHijackIndex(request, "NuGet.Versioning");
+
+                Assert.Equal("lowerPackageId eq 'nuget.versioning'", output.Filter);
+            }
+
+            [Fact]
+            public void PackageIdAndSemVerLevelFilter()
+            {
+                var request = new V2SearchRequest
+                {
+                    IncludePrerelease = true,
+                    IncludeSemVer2 = false,
+                };
+
+                var output = _target.V2SearchWithHijackIndex(request, "NuGet.Versioning");
+
+                Assert.Equal("semVerLevel ne 2 and lowerPackageId eq 'nuget.versioning'", output.Filter);
+            }
+        }
+
+        public class V2SearchWithSearchIndexFacts : V2SearchFacts
+        {
+            public override SearchParameters Build(V2SearchRequest request)
+            {
+                return _target.V2SearchWithSearchIndex(request);
+            }
+
+            [Fact]
+            public void Defaults()
+            {
+                var request = new V2SearchRequest();
+
+                var output = Build(request);
 
                 Assert.Equal(QueryType.Full, output.QueryType);
                 Assert.True(output.IncludeTotalResultCount);
@@ -61,6 +135,26 @@ namespace NuGet.Services.AzureSearch.SearchService
                 Assert.Equal(0, output.Top);
                 Assert.Equal("searchFilters eq 'Default'", output.Filter);
             }
+
+            [Theory]
+            [MemberData(nameof(AllSearchFiltersExpressions))]
+            public void SearchFilters(bool includePrerelease, bool includeSemVer2, string filter)
+            {
+                var request = new V2SearchRequest
+                {
+                    IncludePrerelease = includePrerelease,
+                    IncludeSemVer2 = includeSemVer2,
+                };
+
+                var output = Build(request);
+
+                Assert.Equal(filter, output.Filter);
+            }
+        }
+
+        public abstract class V2SearchFacts : BaseFacts
+        {
+            public abstract SearchParameters Build(V2SearchRequest request);
 
             [Fact]
             public void CountOnly()
@@ -73,7 +167,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     SortBy = V2SortBy.SortableTitleAsc,
                 };
 
-                var output = _target.V2Search(request);
+                var output = Build(request);
 
                 Assert.Equal(QueryType.Full, output.QueryType);
                 Assert.True(output.IncludeTotalResultCount);
@@ -91,7 +185,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Take = 30,
                 };
 
-                var output = _target.V2Search(request);
+                var output = Build(request);
 
                 Assert.Equal(10, output.Skip);
                 Assert.Equal(30, output.Top);
@@ -105,7 +199,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Skip = -10,
                 };
 
-                var output = _target.V2Search(request);
+                var output = Build(request);
 
                 Assert.Equal(0, output.Skip);
             }
@@ -118,7 +212,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Take = -20,
                 };
 
-                var output = _target.V2Search(request);
+                var output = Build(request);
 
                 Assert.Equal(20, output.Top);
             }
@@ -131,28 +225,9 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Take = 1001,
                 };
 
-                var output = _target.V2Search(request);
+                var output = Build(request);
 
                 Assert.Equal(20, output.Top);
-            }
-
-            [Theory]
-            [InlineData(false, false, "semVerLevel ne 2")]
-            [InlineData(true, false, "semVerLevel ne 2")]
-            [InlineData(false, true, null)]
-            [InlineData(true, true, null)]
-            public void IgnoreFilter(bool includePrerelease, bool includeSemVer2, string filter)
-            {
-                var request = new V2SearchRequest
-                {
-                    IgnoreFilter = true,
-                    IncludePrerelease = includePrerelease,
-                    IncludeSemVer2 = includeSemVer2,
-                };
-
-                var output = _target.V2Search(request);
-
-                Assert.Equal(filter, output.Filter);
             }
 
             [Theory]
@@ -165,7 +240,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 };
                 var expectedOrderBy = V2SortByToOrderBy[v2SortBy];
 
-                var output = _target.V2Search(request);
+                var output = Build(request);
 
                 if (expectedOrderBy == null)
                 {
@@ -175,21 +250,6 @@ namespace NuGet.Services.AzureSearch.SearchService
                 {
                     Assert.Equal(expectedOrderBy, Assert.Single(output.OrderBy));
                 }
-            }
-
-            [Theory]
-            [MemberData(nameof(AllSearchFiltersExpressions))]
-            public void SearchFilters(bool includePrerelease, bool includeSemVer2, string filter)
-            {
-                var request = new V2SearchRequest
-                {
-                    IncludePrerelease = includePrerelease,
-                    IncludeSemVer2 = includeSemVer2,
-                };
-
-                var output = _target.V2Search(request);
-
-                Assert.Equal(filter, output.Filter);
             }
         }
 
