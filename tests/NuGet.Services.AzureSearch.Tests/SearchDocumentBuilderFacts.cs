@@ -368,7 +368,6 @@ namespace NuGet.Services.AzureSearch
       ],
       ""isLatestStable"": false,
       ""isLatest"": true,
-      ""isExcludedByDefault"": false,
       ""semVerLevel"": 2,
       ""authors"": ""Microsoft"",
       ""copyright"": ""© Microsoft Corporation. All rights reserved."",
@@ -610,6 +609,7 @@ namespace NuGet.Services.AzureSearch
       ""@search.action"": ""upload"",
       ""totalDownloadCount"": 1001,
       ""downloadScore"": 0.14381174563233068,
+      ""isExcludedByDefault"": false,
       ""owners"": [
         ""Microsoft"",
         ""azure-sdk""
@@ -624,7 +624,6 @@ namespace NuGet.Services.AzureSearch
       ],
       ""isLatestStable"": false,
       ""isLatest"": true,
-      ""isExcludedByDefault"": false,
       ""semVerLevel"": 2,
       ""authors"": ""Microsoft"",
       ""copyright"": ""© Microsoft Corporation. All rights reserved."",
