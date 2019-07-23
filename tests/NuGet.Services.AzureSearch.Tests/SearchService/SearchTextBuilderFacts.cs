@@ -204,6 +204,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     
                     // Unknown fields are ignored
                     { "fake:test", "*" },
+                    { "foo:a bar:b", "*" },
 
                     // The version field is normalized, if possible
                     { "version:1.0.0.0", "normalizedVersion:1.0.0" },
@@ -230,21 +231,24 @@ namespace NuGet.Services.AzureSearch.SearchService
                     { "title:foo unknown:bar", "title:foo" },
 
                     // If there are non-field-scoped terms and no field-scoped terms, at least of one the non-field-scoped terms is required.
-                    { "foo bar", "foo bar" },
-                    { "id packageId version title description tag author summary owner owners", "id packageId version title description tag author summary owner owners" },
-                    { "ID PACKAGEID VERSION TITLE DESCRIPTION TAG AUTHOR SUMMARY OWNER OWNERS", "ID PACKAGEID VERSION TITLE DESCRIPTION TAG AUTHOR SUMMARY OWNER OWNERS" },
+                    // Results that match all terms are boosted.
+                    { "foo", "foo" },
+                    { "foo bar", "foo bar (+foo +bar)^2" },
+                    { "id packageId VERSION Title description tag author summary owner owners",
+                        "id packageId VERSION Title description tag author summary owner owners " +
+                        "(+id +packageId +VERSION +Title +description +tag +author +summary +owner +owners)^2" },
                     
-                    // Quotes allow adjacent terms to be searched
+                    // Phrases are supported in queries
                     { @"""foo bar""", @"""foo bar""" },
-                    { @"""foo bar"" baz", @"""foo bar"" baz" },
+                    { @"""foo bar"" baz", @"""foo bar"" baz (+""foo bar"" +baz)^2" },
                     { @"title:""foo bar""", @"title:""foo bar""" },
-                    { @"title:""a b"" c title:d f", @"+title:(""a b"" d) c f" },
+                    { @"title:""a b"" c title:d f", @"+title:(""a b"" d) c f (+c +f)^2" },
                     { @"title:"" a b    c   """, @"title:""a b    c""" },
 
                     // Dangling quotes are handled with best effort
                     { @"Tags:""windows", "tags:windows" },
                     { @"json Tags:""net"" Tags:""windows sdk", @"+tags:(net windows sdk) json" },
-                    { @"json Tags:""net Tags:""windows sdk""", @"+tags:(net Tags\:) json windows sdk" },
+                    { @"json Tags:""net Tags:""windows sdk""", @"+tags:(net Tags\:) json windows sdk (+json +windows +sdk)^2" },
                     { @"sdk Tags:""windows", "+tags:windows sdk" },
                     { @"Tags:""windows sdk", "tags:(windows sdk)" },
                     { @"Tags:""""windows""", "windows" },
@@ -270,8 +274,8 @@ namespace NuGet.Services.AzureSearch.SearchService
                     { @"AND OR", @"*" },
                     { @"""AND"" ""OR""", @"*" },
                     { @"""AND OR""", @"""AND OR""" },
-                    { @"hello AND world", @"hello world" },
-                    { @"hello OR world", @"hello world" },
+                    { @"hello AND world", @"hello world (+hello +world)^2" },
+                    { @"hello OR world", @"hello world (+hello +world)^2" },
                     { @"title:""hello AND world""", @"title:""hello AND world""" },
                     { @"title:""hello OR world""", @"title:""hello OR world""" },
 
@@ -294,14 +298,17 @@ namespace NuGet.Services.AzureSearch.SearchService
                     { @"title:/ description:""/""", @"+title:\/ +description:\/" },
                     { @"title:"":""", @"title:\:" },
 
-                    { @"+ - & | ! ( ) { } [ ] ~ * ? \ / "":""", @"\+ \- \& \| \! \( \) \{ \} \[ \] \~ \* \? \\ \/ \:" },
+                    { @"+ - & | ! ( ) { } [ ] ~ * ? \ / "":""",
+                        @"\+ \- \& \| \! \( \) \{ \} \[ \] \~ \* \? \\ \/ \: " +
+                        @"(+\+ +\- +\& +\| +\! +\( +\) +\{ +\} +\[ +\] +\~ +\* +\? +\\ +\/ +\:)^2"},
 
                     // Unicode surrogate pairs
                     { "A𠈓C", "A𠈓C" },
                     { "packageId:A𠈓C", "packageId:A𠈓C" },
-                    { "A𠈓C packageId:A𠈓C A𠈓C packageId:A𠈓C hello packageId:hello", "+packageId:(A𠈓C hello) A𠈓C hello" },
                     { @"""A𠈓C"" packageId:""A𠈓C""", "+packageId:A𠈓C A𠈓C" },
                     { @"(𠈓) packageId:(𠈓)", @"+packageId:\(𠈓\) \(𠈓\)" },
+                    { "A𠈓C packageId:A𠈓C A𠈓C packageId:A𠈓C hello packageId:hello",
+                        "+packageId:(A𠈓C hello) A𠈓C hello (+A𠈓C +hello)^2" },
                 };
 
                 foreach (var datum in data)

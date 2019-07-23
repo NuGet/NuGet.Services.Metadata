@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Lucene.Net.Search;
 using NuGet.Indexing;
 using NuGet.Services.Metadata.Catalog;
 using NuGet.Versioning;
@@ -60,22 +61,15 @@ namespace NuGet.Services.AzureSearch.SearchService
                 return MatchAllDocumentsQuery;
             }
 
-            // Generate a query on package ids. This will be a prefix search
-            // if we are autocompleting package ids.
-            var builder = new AzureSearchQueryBuilder();
+            // Query package ids. If autocompleting package ids, allow prefix matches.
+            var builder = new AzureSearchTextBuilder();
 
-            builder.AppendScopedTerms(
-                IndexFields.PackageId,
-                new[] { request.Query },
+            builder.AppendScopedTerm(
+                fieldName: IndexFields.PackageId,
+                term: request.Query,
                 prefixSearch: request.Type == AutocompleteRequestType.PackageIds);
 
-            var result = builder.ToString();
-            if (string.IsNullOrWhiteSpace(result))
-            {
-                return MatchAllDocumentsQuery;
-            }
-
-            return result;
+            return builder.ToString();
         }
 
         private ParsedQuery GetParsedQuery(string query)
@@ -97,36 +91,49 @@ namespace NuGet.Services.AzureSearch.SearchService
                 return MatchAllDocumentsQuery;
             }
 
-            // Generate a Lucene query for Azure Search.
-            var builder = new AzureSearchQueryBuilder();
             var scopedTerms = parsed.Grouping.Where(g => g.Key != QueryField.Any && g.Key != QueryField.Invalid).ToList();
             var unscopedTerms = parsed.Grouping.Where(g => g.Key == QueryField.Any)
                 .Select(g => g.Value)
-                .SingleOrDefault();
+                .SingleOrDefault()?
+                .ToList();
 
-            var requireScopedTerms = unscopedTerms != null
-                || scopedTerms.Select(t => t.Key).Distinct().Count() > 1;
+            // Don't bother generating Azure Search text if all terms are scoped to invalid fields.
+            if (scopedTerms.Count == 0 && (unscopedTerms == null || unscopedTerms.Count == 0))
+            {
+                return MatchAllDocumentsQuery;
+            }
+
+            // Add the terms that are scoped to specific fields.
+            var builder = new AzureSearchTextBuilder();
+            var requireScopedTerms = unscopedTerms != null || scopedTerms.Count > 1;
 
             foreach (var scopedTerm in scopedTerms)
             {
                 var fieldName = FieldNames[scopedTerm.Key];
                 var values = ProcessFieldValues(scopedTerm.Key, scopedTerm.Value).ToList();
 
-                builder.AppendScopedTerms(fieldName, values, required: requireScopedTerms);
+                if (values.Count > 1)
+                {
+                    builder.AppendScopedTerms(fieldName, values, required: requireScopedTerms);
+                }
+                else
+                {
+                    builder.AppendScopedTerm(fieldName, values.First(), required: requireScopedTerms);
+                }
             }
 
+            // Add the terms that can match any fields.
             if (unscopedTerms != null)
             {
-                builder.AppendTerms(unscopedTerms.ToList());
+                builder.AppendTerms(unscopedTerms);
+
+                if (unscopedTerms.Count > 1)
+                {
+                    builder.AppendBoostIfMatchAllTerms(unscopedTerms, boost: 2.0f);
+                }
             }
 
-            var result = builder.ToString();
-            if (string.IsNullOrWhiteSpace(result))
-            {
-                return MatchAllDocumentsQuery;
-            }
-
-            return result;
+            return builder.ToString();
         }
 
         private static IEnumerable<string> ProcessFieldValues(QueryField field, IEnumerable<string> values)
