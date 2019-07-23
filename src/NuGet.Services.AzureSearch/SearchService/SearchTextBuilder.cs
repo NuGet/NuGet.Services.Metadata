@@ -101,14 +101,15 @@ namespace NuGet.Services.AzureSearch.SearchService
                 .ToList();
 
             // Don't bother generating Azure Search text if all terms are scoped to invalid fields.
-            if (scopedTerms.Count == 0 && (unscopedTerms == null || unscopedTerms.Count == 0))
+            var hasUnscopedTerms = unscopedTerms != null && unscopedTerms.Count > 0;
+            if (scopedTerms.Count == 0 && !hasUnscopedTerms)
             {
                 return MatchAllDocumentsQuery;
             }
 
             // Add the terms that are scoped to specific fields.
             var builder = new AzureSearchTextBuilder();
-            var requireScopedTerms = unscopedTerms != null || scopedTerms.Count > 1;
+            var requireScopedTerms = hasUnscopedTerms|| scopedTerms.Count > 1;
 
             foreach (var scopedTerm in scopedTerms)
             {
@@ -126,7 +127,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             // Add the terms that can match any fields.
-            if (unscopedTerms != null)
+            if (hasUnscopedTerms)
             {
                 builder.AppendTerms(unscopedTerms);
 
