@@ -34,7 +34,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             _parser = new NuGetQueryParser();
         }
 
-        public string V2Search(V2SearchRequest request)
+        public ParsedQuery ParseV2Search(V2SearchRequest request)
         {
             var query = request.Query;
 
@@ -45,12 +45,12 @@ namespace NuGet.Services.AzureSearch.SearchService
                 query = "packageid:" + query.Substring(3);
             }
 
-            return GetLuceneQuery(query);
+            return GetParsedQuery(query);
         }
 
-        public string V3Search(V3SearchRequest request)
+        public ParsedQuery ParseV3Search(V3SearchRequest request)
         {
-            return GetLuceneQuery(request.Query);
+            return GetParsedQuery(request.Query);
         }
 
         public string Autocomplete(AutocompleteRequest request)
@@ -78,24 +78,29 @@ namespace NuGet.Services.AzureSearch.SearchService
             return result;
         }
 
-        private string GetLuceneQuery(string query)
+        private ParsedQuery GetParsedQuery(string query)
         {
             if (string.IsNullOrWhiteSpace(query))
             {
-                return MatchAllDocumentsQuery;
+                return new ParsedQuery(new Dictionary<QueryField, HashSet<string>>());
             }
 
-            // Parse the NuGet query.
             var grouping = _parser.ParseQuery(query.Trim(), skipWhiteSpace: true);
-            if (!grouping.Any())
+
+            return new ParsedQuery(grouping);
+        }
+
+        public string Build(ParsedQuery parsed)
+        {
+            if (!parsed.Grouping.Any())
             {
                 return MatchAllDocumentsQuery;
             }
 
-            // Generate a lucene query for Azure Search.
+            // Generate a Lucene query for Azure Search.
             var builder = new AzureSearchQueryBuilder();
-            var scopedTerms = grouping.Where(g => g.Key != QueryField.Any && g.Key != QueryField.Invalid).ToList();
-            var unscopedTerms = grouping.Where(g => g.Key == QueryField.Any)
+            var scopedTerms = parsed.Grouping.Where(g => g.Key != QueryField.Any && g.Key != QueryField.Invalid).ToList();
+            var unscopedTerms = parsed.Grouping.Where(g => g.Key == QueryField.Any)
                 .Select(g => g.Value)
                 .SingleOrDefault();
 

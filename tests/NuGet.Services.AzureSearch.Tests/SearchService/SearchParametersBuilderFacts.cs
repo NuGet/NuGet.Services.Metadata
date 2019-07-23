@@ -12,6 +12,24 @@ namespace NuGet.Services.AzureSearch.SearchService
 {
     public class SearchParametersBuilderFacts
     {
+        public class GetSearchFilters : BaseFacts
+        {
+            [Theory]
+            [MemberData(nameof(AllSearchFilters))]
+            public void SearchFilters(bool includePrerelease, bool includeSemVer2, SearchFilters filter)
+            {
+                var request = new SearchRequest
+                {
+                    IncludePrerelease = includePrerelease,
+                    IncludeSemVer2 = includeSemVer2,
+                };
+
+                var actual = _target.GetSearchFilters(request);
+
+                Assert.Equal(filter, actual);
+            }
+        }
+
         public class LastCommitTimestamp : BaseFacts
         {
             [Fact]
@@ -161,7 +179,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             [Theory]
-            [MemberData(nameof(AllSearchFilters))]
+            [MemberData(nameof(AllSearchFiltersExpressions))]
             public void SearchFilters(bool includePrerelease, bool includeSemVer2, string filter)
             {
                 var request = new V2SearchRequest
@@ -249,7 +267,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             [Theory]
-            [MemberData(nameof(AllSearchFilters))]
+            [MemberData(nameof(AllSearchFiltersExpressions))]
             public void SearchFilters(bool includePrerelease, bool includeSemVer2, string filter)
             {
                 var request = new V3SearchRequest
@@ -378,7 +396,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             [Theory]
-            [MemberData(nameof(AllSearchFilters))]
+            [MemberData(nameof(AllSearchFiltersExpressions))]
             public void SearchFilters(bool includePrerelease, bool includeSemVer2, string filter)
             {
                 var request = new AutocompleteRequest
@@ -409,11 +427,14 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             public static IEnumerable<object[]> AllSearchFilters => new[]
             {
-                new object[] { false, false, "searchFilters eq 'Default'" },
-                new object[] { true, false, "searchFilters eq 'IncludePrerelease'" },
-                new object[] { false, true, "searchFilters eq 'IncludeSemVer2'" },
-                new object[] { true, true, "searchFilters eq 'IncludePrereleaseAndSemVer2'" },
+                new object[] { false, false, SearchFilters.Default },
+                new object[] { true, false, SearchFilters.IncludePrerelease },
+                new object[] { false, true, SearchFilters.IncludeSemVer2 },
+                new object[] { true, true, SearchFilters.IncludePrereleaseAndSemVer2 },
             };
+
+            public static IEnumerable<object[]> AllSearchFiltersExpressions => AllSearchFilters
+                .Select(x => new[] { x[0], x[1], $"searchFilters eq '{x[2]}'" });
 
             public static IEnumerable<object[]> AllV2SortBy => Enum
                 .GetValues(typeof(V2SortBy))
