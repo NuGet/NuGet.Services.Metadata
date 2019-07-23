@@ -109,7 +109,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             // Add the terms that are scoped to specific fields.
             var builder = new AzureSearchTextBuilder();
-            var requireScopedTerms = hasUnscopedTerms|| scopedTerms.Count > 1;
+            var requireScopedTerms = hasUnscopedTerms || scopedTerms.Count > 1;
 
             foreach (var scopedTerm in scopedTerms)
             {
