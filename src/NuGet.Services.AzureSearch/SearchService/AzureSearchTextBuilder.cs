@@ -55,7 +55,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             /// <summary>
-            /// Append search terms to the query that may match any field.
+            /// Append search terms to the query. These terms may match any field.
             /// </summary>
             /// <param name="terms">The terms to append to the search query.</param>
             public void AppendTerms(IReadOnlyList<string> terms)

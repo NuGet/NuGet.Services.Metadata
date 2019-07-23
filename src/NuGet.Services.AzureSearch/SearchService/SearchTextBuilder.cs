@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Lucene.Net.Search;
+using Microsoft.Extensions.Options;
 using NuGet.Indexing;
 using NuGet.Services.Metadata.Catalog;
 using NuGet.Versioning;
@@ -28,10 +29,12 @@ namespace NuGet.Services.AzureSearch.SearchService
             { QueryField.Version, IndexFields.NormalizedVersion },
         };
 
+        private readonly IOptionsSnapshot<SearchServiceConfiguration> _options;
         private readonly NuGetQueryParser _parser;
 
-        public SearchTextBuilder()
+        public SearchTextBuilder(IOptionsSnapshot<SearchServiceConfiguration> options)
         {
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _parser = new NuGetQueryParser();
         }
 
@@ -129,7 +132,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 
                 if (unscopedTerms.Count > 1)
                 {
-                    builder.AppendBoostIfMatchAllTerms(unscopedTerms, boost: 2.0f);
+                    builder.AppendBoostIfMatchAllTerms(unscopedTerms, _options.Value.MatchAllTermsBoost);
                 }
             }
 

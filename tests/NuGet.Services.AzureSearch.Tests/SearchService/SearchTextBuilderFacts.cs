@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Options;
+using Moq;
 using Xunit;
 
 namespace NuGet.Services.AzureSearch.SearchService
@@ -164,7 +166,11 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             public FactsBase()
             {
-                _target = new SearchTextBuilder();
+                var config = new SearchServiceConfiguration { MatchAllTermsBoost = 2.0f };
+                var options = new Mock<IOptionsSnapshot<SearchServiceConfiguration>>();
+                options.Setup(o => o.Value).Returns(config);
+
+                _target = new SearchTextBuilder(options.Object);
             }
 
             public static IEnumerable<object[]> CommonAzureSearchQueryData()
