@@ -536,7 +536,8 @@ namespace NuGet.Services.AzureSearch
                     fullVersion: Data.FullVersion,
                     package: package,
                     owners: Data.Owners,
-                    totalDownloadCount: Data.TotalDownloadCount);
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
 
                 Assert.Equal("some title", document.SortableTitle);
             }
@@ -557,7 +558,8 @@ namespace NuGet.Services.AzureSearch
                     fullVersion: Data.FullVersion,
                     package: package,
                     owners: Data.Owners,
-                    totalDownloadCount: Data.TotalDownloadCount);
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
 
                 Assert.Equal(Data.PackageId.ToLowerInvariant(), document.SortableTitle);
             }
@@ -577,7 +579,8 @@ namespace NuGet.Services.AzureSearch
                     fullVersion: Data.FullVersion,
                     package: package,
                     owners: Data.Owners,
-                    totalDownloadCount: Data.TotalDownloadCount);
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
 
                 var json = await SerializationUtilities.SerializeToJsonAsync(document);
                 Assert.Contains("\"semVerLevel\": null,", json);
@@ -596,7 +599,8 @@ namespace NuGet.Services.AzureSearch
                     fullVersion: Data.FullVersion,
                     package: Data.PackageEntity,
                     owners: Data.Owners,
-                    totalDownloadCount: Data.TotalDownloadCount);
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
 
                 SetDocumentLastUpdated(document);
                 var json = await SerializationUtilities.SerializeToJsonAsync(document);
@@ -684,7 +688,8 @@ namespace NuGet.Services.AzureSearch
                     fullVersion: Data.FullVersion,
                     package: package,
                     owners: Data.Owners,
-                    totalDownloadCount: Data.TotalDownloadCount);
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
 
                 Assert.Equal(new[] { "foo", "BAR", "Baz" }, document.Tags);
             }
@@ -704,7 +709,8 @@ namespace NuGet.Services.AzureSearch
                     fullVersion: Data.FullVersion,
                     package: package,
                     owners: Data.Owners,
-                    totalDownloadCount: Data.TotalDownloadCount);
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
 
                 Assert.Equal(Data.GalleryLicenseUrl, document.LicenseUrl);
             }
@@ -726,7 +732,8 @@ namespace NuGet.Services.AzureSearch
                     fullVersion: Data.FullVersion,
                     package: package,
                     owners: Data.Owners,
-                    totalDownloadCount: Data.TotalDownloadCount);
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
 
                 Assert.Equal(Data.GalleryLicenseUrl, document.LicenseUrl);
             }

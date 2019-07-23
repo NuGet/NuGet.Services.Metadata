@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -29,9 +30,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             private readonly DbSet<PackageRegistration> _packageRegistrations;
             private readonly DbSet<Package> _packages;
             private readonly ConcurrentBag<NewPackageRegistration> _work;
-            private readonly HashSet<string> _excludedPackagesList;
             private readonly CancellationToken _token;
             private readonly NewPackageRegistrationProducer _target;
+            private HashSet<string> _excludedPackagesList;
 
             public ProduceWorkAsync(ITestOutputHelper output)
             {
@@ -239,6 +240,65 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 Assert.Empty(work[3].Packages);
                 Assert.Equal(new[] { "OwnerE" }, work[3].Owners);
                 Assert.Equal(26, work[3].TotalDownloadCount);
+            }
+
+            [Fact]
+            public async Task PackagesAreMarkedForExclusion()
+            {
+                _packageRegistrations.Add(new PackageRegistration
+                {
+                    Key = 1,
+                    Id = "A",
+                    DownloadCount = 23,
+                    Owners = new[] { new User { Username = "OwnerA" } },
+                    Packages = new[]
+                    {
+                        new Package { Version = "1.0.0" },
+                        new Package { Version = "2.0.0" },
+                    },
+                });
+                _packageRegistrations.Add(new PackageRegistration
+                {
+                    Key = 2,
+                    Id = "B",
+                    DownloadCount = 24,
+                    Owners = new[] { new User { Username = "OwnerB" } },
+                    Packages = new[]
+                    {
+                        new Package { Version = "3.0.0" },
+                    },
+                });
+                _packageRegistrations.Add(new PackageRegistration
+                {
+                    Key = 3,
+                    Id = "C",
+                    DownloadCount = 25,
+                    Owners = new[] { new User { Username = "OwnerC" }, new User { Username = "OwnerD" } },
+                    Packages = new[]
+                    {
+                        new Package { Version = "4.0.0" },
+                    },
+                });
+                _packageRegistrations.Add(new PackageRegistration
+                {
+                    Key = 4,
+                    Id = "D",
+                    DownloadCount = 26,
+                    Owners = new[] { new User { Username = "OwnerE" } },
+                    Packages = new Package[0],
+                });
+                InitializePackagesFromPackageRegistrations();
+                _excludedPackagesList = new HashSet<string>() { "A", "C" };
+
+                await _target.ProduceWorkAsync(_work, _excludedPackagesList, _token);
+
+                var work = _work.Reverse().ToList();
+                Assert.Equal(4, work.Count);
+                for (int i = 0; i < work.Count; i++)
+                {
+                    var shouldBeExcluded =_excludedPackagesList.Contains(work[i].PackageId, StringComparer.OrdinalIgnoreCase);
+                    Assert.Equal(shouldBeExcluded, work[i].IsExcludedByDefault);
+                }
             }
 
             private void InitializePackagesFromPackageRegistrations()

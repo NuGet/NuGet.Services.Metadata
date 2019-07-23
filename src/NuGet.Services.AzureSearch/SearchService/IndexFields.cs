@@ -36,7 +36,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             public static readonly string TotalDownloadCount = Name(nameof(SearchDocument.Full.TotalDownloadCount));
             public static readonly string DownloadScore = Name(nameof(SearchDocument.Full.DownloadScore));
             public static readonly string Versions = Name(nameof(SearchDocument.UpdateLatest.Versions));
-            public static readonly string IsExcludedByDefault = Name(nameof(SearchDocument.UpdateLatest.IsExcludedByDefault));
+            public static readonly string IsExcludedByDefault = Name(nameof(SearchDocument.Full.IsExcludedByDefault));
         }
     }
 }

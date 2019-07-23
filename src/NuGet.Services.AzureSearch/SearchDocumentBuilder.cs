@@ -196,7 +196,7 @@ namespace NuGet.Services.AzureSearch
             Package package,
             string[] owners,
             long totalDownloadCount,
-            bool? isExcludedByDefault = null)
+            bool isExcludedByDefault)
         {
             var document = new SearchDocument.Full();
 
@@ -211,10 +211,10 @@ namespace NuGet.Services.AzureSearch
                 isLatestStable: isLatestStable,
                 isLatest: isLatest,
                 fullVersion: fullVersion,
-                owners: owners,
-                isExcludedByDefault: isExcludedByDefault);
+                owners: owners);
             _baseDocumentBuilder.PopulateMetadata(document, packageId, package);
             PopulateDownloadCount(document, totalDownloadCount);
+            PopulateIsExcludedByDefault(document, isExcludedByDefault);
 
             return document;
         }
@@ -257,8 +257,7 @@ namespace NuGet.Services.AzureSearch
             bool isLatestStable,
             bool isLatest,
             string fullVersion,
-            string[] owners,
-            bool? isExcludedByDefault = null)
+            string[] owners)
         {
             PopulateVersions(
                 document,
@@ -275,11 +274,6 @@ namespace NuGet.Services.AzureSearch
             PopulateOwners(
                 document,
                 owners);
-
-            if (isExcludedByDefault.HasValue)
-            {
-                document.IsExcludedByDefault = isExcludedByDefault.Value;
-            }
         }
 
         private static void PopulateOwners<T>(
@@ -321,12 +315,35 @@ namespace NuGet.Services.AzureSearch
             return document;
         }
 
+        public SearchDocument.UpdateIsExcludedByDefault UpdateIsExcludedByDefault(
+            string packageId,
+            SearchFilters searchFilters,
+            bool isExcludedByDefault)
+        {
+            var document = new SearchDocument.UpdateIsExcludedByDefault();
+
+            PopulateKey(document, packageId, searchFilters);
+            _baseDocumentBuilder.PopulateUpdated(
+                document,
+                lastUpdatedFromCatalog: false);
+            PopulateIsExcludedByDefault(document, isExcludedByDefault);
+
+            return document;
+        }
+
         private static void PopulateDownloadCount<T>(
             T document,
             long totalDownloadCount) where T : KeyedDocument, SearchDocument.IDownloadCount
         {
             document.TotalDownloadCount = totalDownloadCount;
             document.DownloadScore = DocumentUtilities.GetDownloadScore(totalDownloadCount);
+        }
+
+        private static void PopulateIsExcludedByDefault<T>(
+            T document,
+            bool isExcludedByDefault) where T : KeyedDocument, SearchDocument.IIsExcludedByDefault
+        {
+            document.IsExcludedByDefault = isExcludedByDefault;
         }
     }
 }

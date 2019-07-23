@@ -17,13 +17,16 @@ namespace NuGet.Services.AzureSearch
         /// download count).
         /// </summary>
         [SerializePropertyNamesAsCamelCase]
-        public class Full : UpdateLatest, IDownloadCount
+        public class Full : UpdateLatest, IDownloadCount, IIsExcludedByDefault
         {
             [IsFilterable]
             public long? TotalDownloadCount { get; set; }
 
             [IsFilterable]
             public double? DownloadScore { get; set; }
+
+            [IsFilterable]
+            public bool? IsExcludedByDefault { get; set; }
         }
 
         /// <summary>
@@ -44,10 +47,6 @@ namespace NuGet.Services.AzureSearch
             public string[] Versions { get; set; }
             public bool? IsLatestStable { get; set; }
             public bool? IsLatest { get; set; }
-
-            [IsFilterable]
-            public bool IsExcludedByDefault { get; set; }
-
         }
 
         /// <summary>
@@ -97,6 +96,17 @@ namespace NuGet.Services.AzureSearch
         }
 
         /// <summary>
+        /// Used when updating just the fields related to the default search exclusion of a document. Note that this model does
+        /// not need any analyzer or other Azure Search attributes since it is not used for index creation. The
+        /// <see cref="Full"/> and its parent classes handle this.
+        /// </summary>
+        [SerializePropertyNamesAsCamelCase]
+        public class UpdateIsExcludedByDefault : UpdatedDocument, IIsExcludedByDefault
+        {
+            public bool? IsExcludedByDefault { get; set; }
+        }
+
+        /// <summary>
         /// Allows index updating code to apply a new version list to a document.
         /// </summary>
         public interface IVersions : ICommittedDocument
@@ -121,6 +131,14 @@ namespace NuGet.Services.AzureSearch
         {
             long? TotalDownloadCount { get; set; }
             double? DownloadScore { get; set; }
+        }
+
+        /// <summary>
+        /// Allows index updating code to apply default search exclusion information to a document.
+        /// </summary>
+        public interface IIsExcludedByDefault: IUpdatedDocument
+        {
+            bool? IsExcludedByDefault { get; set; }
         }
 
         /// <summary>

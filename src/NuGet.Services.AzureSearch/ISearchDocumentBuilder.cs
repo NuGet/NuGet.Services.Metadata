@@ -27,6 +27,11 @@ namespace NuGet.Services.AzureSearch
             SearchFilters searchFilters,
             long totalDownloadCount);
 
+        SearchDocument.UpdateIsExcludedByDefault UpdateIsExcludedByDefault(
+            string packageId,
+            SearchFilters searchFilters,
+            bool isExcludedByDefault);
+
         SearchDocument.UpdateVersionList UpdateVersionListFromCatalog(
             string packageId,
             SearchFilters searchFilters,
@@ -56,7 +61,7 @@ namespace NuGet.Services.AzureSearch
             Package package,
             string[] owners,
             long totalDownloadCount,
-            bool? isExcludedByDefault);
+            bool isExcludedByDefault);
 
         SearchDocument.UpdateLatest UpdateLatestFromCatalog(
             SearchFilters searchFilters,

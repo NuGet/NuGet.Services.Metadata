@@ -200,6 +200,87 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             }
         }
 
+        public class LoadExcludedPackagesListAsync : BaseFacts
+        {
+            public LoadExcludedPackagesListAsync(ITestOutputHelper output) : base(output)
+            {
+            }
+
+            [Fact]
+            public async Task ReadsContent()
+            {
+                var json = @"
+[
+    ""NuGet.Frameworks"",
+    ""NuGet.Versioning""
+]
+";
+                _blob
+                    .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
+                    .ReturnsAsync(() => new MemoryStream(Encoding.UTF8.GetBytes(json)));
+
+                var actual = await _target.LoadExcludedPackagesListAsync(etag: null);
+
+                Assert.False(actual.NotModified);
+                Assert.Contains("NuGet.Frameworks", actual.Data);
+                Assert.Contains("nuget.versioning", actual.Data);
+                Assert.DoesNotContain("something.else", actual.Data);
+                Assert.Equal(_etag, actual.Metadata.ETag);
+                Assert.NotEqual(TimeSpan.Zero, actual.Metadata.LoadDuration);
+                Assert.NotEqual(default(DateTimeOffset), actual.Metadata.Loaded);
+                Assert.Equal(DateTimeOffset.MinValue, actual.Metadata.LastModified);
+                _blobClient.Verify(x => x.GetContainerReference("my-container"), Times.Once);
+                _blobClient.Verify(x => x.GetContainerReference(It.IsAny<string>()), Times.Once);
+                _container.Verify(x => x.GetBlobReference("my-excluded-packages.json"), Times.Once);
+                _container.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Once);
+                _blob.Verify(x => x.OpenReadAsync(null), Times.Once);
+                _blob.Verify(x => x.OpenReadAsync(It.IsAny<AccessCondition>()), Times.Once);
+            }
+
+            [Fact]
+            public async Task HandlesNotModified()
+            {
+                _blob
+                    .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
+                    .ThrowsAsync(new StorageException(
+                        res: new RequestResult()
+                        {
+                            HttpStatusCode = (int)HttpStatusCode.NotModified,
+                        },
+                        message: "Not so fast, buddy!",
+                        inner: null));
+
+                var excludedPackagesList = await _target.LoadExcludedPackagesListAsync(etag: "old-etag");
+
+                Assert.True(excludedPackagesList.NotModified);
+                Assert.Null(excludedPackagesList.Data);
+                Assert.Null(excludedPackagesList.Metadata);
+                _blobClient.Verify(x => x.GetContainerReference("my-container"), Times.Once);
+                _blobClient.Verify(x => x.GetContainerReference(It.IsAny<string>()), Times.Once);
+                _container.Verify(x => x.GetBlobReference("my-excluded-packages.json"), Times.Once);
+                _container.Verify(x => x.GetBlobReference(It.IsAny<string>()), Times.Once);
+                _blob.Verify(x => x.OpenReadAsync(It.Is<AccessCondition>(a => a.IfNoneMatchETag == "old-etag")), Times.Once);
+                _blob.Verify(x => x.OpenReadAsync(It.IsAny<AccessCondition>()), Times.Once);
+            }
+
+            [Fact]
+            public async Task ThrowsStorageExceptionWhenNotFound()
+            {
+                _blob
+                    .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
+                    .ThrowsAsync(new StorageException(
+                        res: new RequestResult()
+                        {
+                            HttpStatusCode = (int)HttpStatusCode.NotFound,
+                        },
+                        message: "Not so fast, buddy!",
+                        inner: null));
+
+                var exception = await Assert.ThrowsAsync<StorageException>(async () => await _target.LoadExcludedPackagesListAsync(null));
+                Assert.True(exception.RequestInformation?.HttpStatusCode == (int)HttpStatusCode.NotFound);
+            }
+        }
+
         public abstract class BaseFacts
         {
             protected readonly Mock<ICloudBlobClient> _blobClient;
@@ -226,6 +307,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                 _config.AuxiliaryDataStorageContainer = "my-container";
                 _config.AuxiliaryDataStorageDownloadsPath = "my-downloads.json";
                 _config.AuxiliaryDataStorageVerifiedPackagesPath = "my-verified-packages.json";
+                _config.AuxiliaryDataStorageExcludedPackagesListPath = "my-excluded-packages.json";
                 _options.Setup(x => x.Value).Returns(() => _config);
                 _blobClient
                     .Setup(x => x.GetContainerReference(It.IsAny<string>()))
