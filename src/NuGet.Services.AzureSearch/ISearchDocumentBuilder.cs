@@ -56,7 +56,7 @@ namespace NuGet.Services.AzureSearch
             Package package,
             string[] owners,
             long totalDownloadCount,
-            bool? isHiddenByDefault);
+            bool? isExcludedByDefault);
 
         SearchDocument.UpdateLatest UpdateLatestFromCatalog(
             SearchFilters searchFilters,

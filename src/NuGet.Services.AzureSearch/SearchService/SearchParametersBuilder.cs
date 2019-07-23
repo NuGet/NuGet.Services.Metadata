@@ -146,7 +146,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             var filterString = $"{IndexFields.Search.SearchFilters} eq '{DocumentUtilities.GetSearchFilterString(searchFilters)}'";
 
             // For empty search queries filter out the results of the packages that have been hidden by default.
-            filterString += isEmptySearchQuery ? $" and {IndexFields.Search.IsHiddenByDefault} eq false" : "";
+            filterString += isEmptySearchQuery ? $" and {IndexFields.Search.IsExcludedByDefault} eq false" : "";
 
             return filterString;
         }

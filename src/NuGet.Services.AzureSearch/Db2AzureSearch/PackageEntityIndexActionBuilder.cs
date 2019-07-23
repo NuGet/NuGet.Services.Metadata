@@ -151,7 +151,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 package,
                 owners,
                 packageRegistration.TotalDownloadCount,
-                isHiddenByDefault: packageRegistration.IsHiddenByDefault));
+                isExcludedByDefault: packageRegistration.IsExcludedByDefault));
         }
 
         private IndexAction<KeyedDocument> GetHijackIndexAction(

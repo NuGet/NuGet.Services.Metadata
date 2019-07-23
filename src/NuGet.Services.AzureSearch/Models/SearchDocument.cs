@@ -46,7 +46,7 @@ namespace NuGet.Services.AzureSearch
             public bool? IsLatest { get; set; }
 
             [IsFilterable]
-            public bool IsHiddenByDefault { get; set; }
+            public bool IsExcludedByDefault { get; set; }
 
         }
 
