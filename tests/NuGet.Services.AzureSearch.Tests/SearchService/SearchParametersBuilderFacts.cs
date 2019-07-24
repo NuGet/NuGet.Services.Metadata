@@ -53,7 +53,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 var request = new V2SearchRequest();
 
-                var output = _target.V2Search(request, SearchTextBuilder.MatchAllDocumentsQuery);
+                var output = _target.V2Search(request, excludePackagesHiddenByDefault: true);
 
                 Assert.Equal(QueryType.Full, output.QueryType);
                 Assert.True(output.IncludeTotalResultCount);
@@ -74,7 +74,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     SortBy = V2SortBy.SortableTitleAsc,
                 };
 
-                var output = _target.V2Search(request, It.IsAny<string>());
+                var output = _target.V2Search(request, It.IsAny<bool>());
 
                 Assert.Equal(QueryType.Full, output.QueryType);
                 Assert.True(output.IncludeTotalResultCount);
@@ -92,7 +92,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Take = 30,
                 };
 
-                var output = _target.V2Search(request, It.IsAny<string>());
+                var output = _target.V2Search(request, It.IsAny<bool>());
 
                 Assert.Equal(10, output.Skip);
                 Assert.Equal(30, output.Top);
@@ -106,7 +106,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Skip = -10,
                 };
 
-                var output = _target.V2Search(request, It.IsAny<string>());
+                var output = _target.V2Search(request, It.IsAny<bool>());
 
                 Assert.Equal(0, output.Skip);
             }
@@ -119,7 +119,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Take = -20,
                 };
 
-                var output = _target.V2Search(request, It.IsAny<string>());
+                var output = _target.V2Search(request, It.IsAny<bool>());
 
                 Assert.Equal(20, output.Top);
             }
@@ -132,7 +132,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Take = 1001,
                 };
 
-                var output = _target.V2Search(request, It.IsAny<string>());
+                var output = _target.V2Search(request, It.IsAny<bool>());
 
                 Assert.Equal(20, output.Top);
             }
@@ -151,7 +151,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     IncludeSemVer2 = includeSemVer2,
                 };
 
-                var output = _target.V2Search(request, It.IsAny<string>());
+                var output = _target.V2Search(request, It.IsAny<bool>());
 
                 Assert.Equal(filter, output.Filter);
             }
@@ -166,7 +166,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 };
                 var expectedOrderBy = V2SortByToOrderBy[v2SortBy];
 
-                var output = _target.V2Search(request, It.IsAny<string>());
+                var output = _target.V2Search(request, It.IsAny<bool>());
 
                 if (expectedOrderBy == null)
                 {
@@ -189,7 +189,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Query = "js"
                 };
 
-                var output = _target.V2Search(request, It.IsAny<string>());
+                var output = _target.V2Search(request, It.IsAny<bool>());
 
                 Assert.Equal(filter, output.Filter);
             }
@@ -202,7 +202,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 var request = new V3SearchRequest();
 
-                var output = _target.V3Search(request, SearchTextBuilder.MatchAllDocumentsQuery);
+                var output = _target.V3Search(request, excludePackagesHiddenByDefault: true);
 
                 Assert.Equal(QueryType.Full, output.QueryType);
                 Assert.True(output.IncludeTotalResultCount);
@@ -221,7 +221,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Take = 30,
                 };
 
-                var output = _target.V3Search(request, It.IsAny<string>());
+                var output = _target.V3Search(request, It.IsAny<bool>());
 
                 Assert.Equal(10, output.Skip);
                 Assert.Equal(30, output.Top);
@@ -235,7 +235,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Skip = -10,
                 };
 
-                var output = _target.V3Search(request, It.IsAny<string>());
+                var output = _target.V3Search(request, It.IsAny<bool>());
 
                 Assert.Equal(0, output.Skip);
             }
@@ -248,7 +248,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Take = -20,
                 };
 
-                var output = _target.V3Search(request, It.IsAny<string>());
+                var output = _target.V3Search(request, It.IsAny<bool>());
 
                 Assert.Equal(20, output.Top);
             }
@@ -261,7 +261,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Take = 1001,
                 };
 
-                var output = _target.V3Search(request, It.IsAny<string>());
+                var output = _target.V3Search(request, It.IsAny<bool>());
 
                 Assert.Equal(20, output.Top);
             }
@@ -277,7 +277,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Query = "js"
                 };
 
-                var output = _target.V3Search(request, It.IsAny<string>());
+                var output = _target.V3Search(request, It.IsAny<bool>());
 
                 Assert.Equal(filter, output.Filter);
             }
@@ -291,7 +291,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 var request = new AutocompleteRequest();
                 request.Type = AutocompleteRequestType.PackageIds;
 
-                var output = _target.Autocomplete(request, SearchTextBuilder.MatchAllDocumentsQuery);
+                var output = _target.Autocomplete(request, excludePackagesHiddenByDefault: true);
 
                 Assert.Equal(QueryType.Full, output.QueryType);
                 Assert.True(output.IncludeTotalResultCount);
@@ -309,7 +309,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 var request = new AutocompleteRequest();
                 request.Type = AutocompleteRequestType.PackageVersions;
 
-                var output = _target.Autocomplete(request, SearchTextBuilder.MatchAllDocumentsQuery);
+                var output = _target.Autocomplete(request, excludePackagesHiddenByDefault: true);
 
                 Assert.Equal(QueryType.Full, output.QueryType);
                 Assert.True(output.IncludeTotalResultCount);
@@ -331,7 +331,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Type = AutocompleteRequestType.PackageIds,
                 };
 
-                var output = _target.Autocomplete(request, It.IsAny<string>());
+                var output = _target.Autocomplete(request, It.IsAny<bool>());
 
                 Assert.Equal(10, output.Skip);
                 Assert.Equal(30, output.Top);
@@ -347,7 +347,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Type = AutocompleteRequestType.PackageVersions,
                 };
 
-                var output = _target.Autocomplete(request, It.IsAny<string>());
+                var output = _target.Autocomplete(request, It.IsAny<bool>());
 
                 Assert.Equal(0, output.Skip);
                 Assert.Equal(1, output.Top);
@@ -362,7 +362,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Type = AutocompleteRequestType.PackageIds,
                 };
 
-                var output = _target.Autocomplete(request, It.IsAny<string>());
+                var output = _target.Autocomplete(request, It.IsAny<bool>());
 
                 Assert.Equal(0, output.Skip);
             }
@@ -376,7 +376,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Type = AutocompleteRequestType.PackageIds,
                 };
 
-                var output = _target.Autocomplete(request, It.IsAny<string>());
+                var output = _target.Autocomplete(request, It.IsAny<bool>());
 
                 Assert.Equal(20, output.Top);
             }
@@ -390,7 +390,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Take = 1001,
                 };
 
-                var output = _target.Autocomplete(request, It.IsAny<string>());
+                var output = _target.Autocomplete(request, It.IsAny<bool>());
 
                 Assert.Equal(20, output.Top);
             }
@@ -406,7 +406,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Query = "js"
                 };
 
-                var output = _target.Autocomplete(request, It.IsAny<string>());
+                var output = _target.Autocomplete(request, It.IsAny<bool>());
 
                 Assert.Equal(filter, output.Filter);
             }

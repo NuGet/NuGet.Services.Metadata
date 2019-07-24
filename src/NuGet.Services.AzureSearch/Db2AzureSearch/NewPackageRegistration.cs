@@ -18,7 +18,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             long totalDownloadCount,
             string[] owners,
             IReadOnlyList<Package> packages,
-            bool isExcludedByDefault = false)
+            bool isExcludedByDefault)
         {
             PackageId = packageId ?? throw new ArgumentNullException(packageId);
             TotalDownloadCount = totalDownloadCount;

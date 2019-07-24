@@ -33,7 +33,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             var text = _textBuilder.Build(parsed);
-            var parameters = _parametersBuilder.V3Search(request, text);
+            var parameters = _parametersBuilder.V3Search(request, parsed.IsEmptyQuery());
             return IndexOperation.Search(text, parameters);
         }
 
@@ -48,7 +48,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             var text = _textBuilder.Build(parsed);
-            var parameters = _parametersBuilder.V2Search(request, text);
+            var parameters = _parametersBuilder.V2Search(request, parsed.IsEmptyQuery());
             return IndexOperation.Search(text, parameters);
         }
 
@@ -63,14 +63,14 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             var text = _textBuilder.Build(parsed);
-            var parameters = _parametersBuilder.V2Search(request, text);
+            var parameters = _parametersBuilder.V2Search(request, parsed.IsEmptyQuery());
             return IndexOperation.Search(text, parameters);
         }
 
         public IndexOperation Autocomplete(AutocompleteRequest request)
         {
             var text = _textBuilder.Autocomplete(request);
-            var parameters = _parametersBuilder.Autocomplete(request, text);
+            var parameters = _parametersBuilder.Autocomplete(request, string.IsNullOrWhiteSpace(request.Query));
             return IndexOperation.Search(text, parameters);
         }
 

@@ -200,9 +200,9 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             }
         }
 
-        public class LoadExcludedPackagesListAsync : BaseFacts
+        public class LoadExcludedPackagesAsync : BaseFacts
         {
-            public LoadExcludedPackagesListAsync(ITestOutputHelper output) : base(output)
+            public LoadExcludedPackagesAsync(ITestOutputHelper output) : base(output)
             {
             }
 
@@ -219,7 +219,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     .Setup(x => x.OpenReadAsync(It.IsAny<AccessCondition>()))
                     .ReturnsAsync(() => new MemoryStream(Encoding.UTF8.GetBytes(json)));
 
-                var actual = await _target.LoadExcludedPackagesListAsync(etag: null);
+                var actual = await _target.LoadExcludedPackagesAsync(etag: null);
 
                 Assert.False(actual.NotModified);
                 Assert.Contains("NuGet.Frameworks", actual.Data);
@@ -250,11 +250,11 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                         message: "Not so fast, buddy!",
                         inner: null));
 
-                var excludedPackagesList = await _target.LoadExcludedPackagesListAsync(etag: "old-etag");
+                var excludedPackages = await _target.LoadExcludedPackagesAsync(etag: "old-etag");
 
-                Assert.True(excludedPackagesList.NotModified);
-                Assert.Null(excludedPackagesList.Data);
-                Assert.Null(excludedPackagesList.Metadata);
+                Assert.True(excludedPackages.NotModified);
+                Assert.Null(excludedPackages.Data);
+                Assert.Null(excludedPackages.Metadata);
                 _blobClient.Verify(x => x.GetContainerReference("my-container"), Times.Once);
                 _blobClient.Verify(x => x.GetContainerReference(It.IsAny<string>()), Times.Once);
                 _container.Verify(x => x.GetBlobReference("my-excluded-packages.json"), Times.Once);
@@ -276,7 +276,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                         message: "Not so fast, buddy!",
                         inner: null));
 
-                var exception = await Assert.ThrowsAsync<StorageException>(async () => await _target.LoadExcludedPackagesListAsync(null));
+                var exception = await Assert.ThrowsAsync<StorageException>(async () => await _target.LoadExcludedPackagesAsync(null));
                 Assert.True(exception.RequestInformation?.HttpStatusCode == (int)HttpStatusCode.NotFound);
             }
         }
@@ -307,7 +307,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                 _config.AuxiliaryDataStorageContainer = "my-container";
                 _config.AuxiliaryDataStorageDownloadsPath = "my-downloads.json";
                 _config.AuxiliaryDataStorageVerifiedPackagesPath = "my-verified-packages.json";
-                _config.AuxiliaryDataStorageExcludedPackagesListPath = "my-excluded-packages.json";
+                _config.AuxiliaryDataStorageExcludedPackagesPath = "my-excluded-packages.json";
                 _options.Setup(x => x.Value).Returns(() => _config);
                 _blobClient
                     .Setup(x => x.GetContainerReference(It.IsAny<string>()))

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using NuGet.Indexing;
 
 namespace NuGet.Services.AzureSearch.SearchService
@@ -18,5 +19,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         }
 
         public Dictionary<QueryField, HashSet<string>> Grouping { get; }
+
+        public bool IsEmptyQuery() => !Grouping.Any();
     }
 }

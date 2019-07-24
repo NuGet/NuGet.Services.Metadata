@@ -34,7 +34,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
         public async Task ProduceWorkAsync(
             ConcurrentBag<NewPackageRegistration> allWork,
-            HashSet<string> excludedPackagesList,
+            HashSet<string> excludedPackages,
             CancellationToken cancellationToken)
         {
             var ranges = await GetPackageRegistrationRangesAsync();
@@ -67,7 +67,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         packages = new List<Package>();
                     }
 
-                    var isExcludedByDefault = excludedPackagesList.Contains(pr.Id);
+                    var isExcludedByDefault = excludedPackages.Contains(pr.Id);
 
                     allWork.Add(new NewPackageRegistration(
                         pr.Id,

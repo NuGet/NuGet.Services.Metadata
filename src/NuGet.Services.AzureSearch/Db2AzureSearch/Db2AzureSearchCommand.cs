@@ -35,8 +35,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         private readonly IOptionsSnapshot<Db2AzureSearchConfiguration> _options;
         private readonly ILogger<Db2AzureSearchCommand> _logger;
 
-        private HashSet<string> _excludedPackagesList;
-
         public Db2AzureSearchCommand(
             INewPackageRegistrationProducer producer,
             IPackageEntityIndexActionBuilder indexActionBuilder,
@@ -107,7 +105,11 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 // Push all package package data to the Azure Search indexes and write the version list blobs.
                 var allOwners = new ConcurrentBag<IdAndValue<IReadOnlyList<string>>>();
                 var allDownloads = new ConcurrentBag<DownloadRecord>();
-                await PushAllPackageRegistrationsAsync(cancelledCts, produceWorkCts, allOwners, allDownloads, _excludedPackagesList);
+
+                var storageResult = await _auxiliaryFileClient.LoadExcludedPackagesAsync(etag: null);
+                var excludedPackages = storageResult.Data ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                await PushAllPackageRegistrationsAsync(cancelledCts, produceWorkCts, allOwners, allDownloads, excludedPackages);
 
                 // Write the owner data file.
                 await WriteOwnerDataAsync(allOwners);
@@ -140,17 +142,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             await _blobContainerBuilder.CreateAsync(containerDeleted);
             await _indexBuilder.CreateSearchIndexAsync();
             await _indexBuilder.CreateHijackIndexAsync();
-
-            try
-            {
-                var storageResult = await _auxiliaryFileClient.LoadExcludedPackagesListAsync(etag: null);
-                _excludedPackagesList = storageResult.Data ?? new HashSet<string>();
-            }
-            catch (StorageException ex) when(ex.RequestInformation?.HttpStatusCode == (int)HttpStatusCode.NotFound)
-            {
-                _logger.LogWarning($"Excluded packages list not found in the storage. No packages will be excluded.");
-                _excludedPackagesList = new HashSet<string>();
-            }
         }
 
         private async Task PushAllPackageRegistrationsAsync(
@@ -158,11 +149,11 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             CancellationTokenSource produceWorkCts,
             ConcurrentBag<IdAndValue<IReadOnlyList<string>>> allOwners,
             ConcurrentBag<DownloadRecord> allDownloads,
-            HashSet<string> excludedPackagesList)
+            HashSet<string> excludedPackages)
         {
             _logger.LogInformation("Pushing all packages to Azure Search and initializing version lists.");
             var allWork = new ConcurrentBag<NewPackageRegistration>();
-            var producerTask = ProduceWorkAsync(allWork, excludedPackagesList, produceWorkCts, cancelledCts.Token);
+            var producerTask = ProduceWorkAsync(allWork, excludedPackages, produceWorkCts, cancelledCts.Token);
             var consumerTasks = Enumerable
                 .Range(0, _options.Value.MaxConcurrentBatches)
                 .Select(i => ConsumeWorkAsync(allWork, allOwners, allDownloads, produceWorkCts.Token, cancelledCts.Token))
@@ -213,12 +204,14 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
         private async Task ProduceWorkAsync(
             ConcurrentBag<NewPackageRegistration> allWork,
-            HashSet<string> excludedPackagesList,
+            HashSet<string> excludedPackages,
             CancellationTokenSource produceWorkCts,
             CancellationToken cancellationToken)
         {
+            Guard.Assert(excludedPackages.Comparer == StringComparer.OrdinalIgnoreCase, $"Excluded packages HashSet should be using {nameof(StringComparer.OrdinalIgnoreCase)}");
+
             await Task.Yield();
-            await _producer.ProduceWorkAsync(allWork, excludedPackagesList, cancellationToken);
+            await _producer.ProduceWorkAsync(allWork, excludedPackages, cancellationToken);
             produceWorkCts.Cancel();
         }
 

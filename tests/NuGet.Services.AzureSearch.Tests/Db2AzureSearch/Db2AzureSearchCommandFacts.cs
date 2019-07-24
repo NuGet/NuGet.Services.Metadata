@@ -84,15 +84,15 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 .Setup(x => x.DeleteIfExistsAsync())
                 .ReturnsAsync(true);
 
-            var excludedPackagesListMetadata = new AuxiliaryFileMetadata(
+            var excludedPackagesMetadata = new AuxiliaryFileMetadata(
                 DateTimeOffset.MinValue,
                 DateTimeOffset.MinValue,
                 TimeSpan.Zero,
                 fileSize: 0,
                 etag: string.Empty);
             _auxiliaryFileClient
-                .Setup(x => x.LoadExcludedPackagesListAsync(It.IsAny<string>()))
-                .ReturnsAsync(new AuxiliaryFileResult<HashSet<string>>(false, new HashSet<string>(), excludedPackagesListMetadata));
+                .Setup(x => x.LoadExcludedPackagesAsync(It.IsAny<string>()))
+                .ReturnsAsync(new AuxiliaryFileResult<HashSet<string>>(false, new HashSet<string>(StringComparer.OrdinalIgnoreCase), excludedPackagesMetadata));
 
             _target = new Db2AzureSearchCommand(
                 _producer.Object,
@@ -150,11 +150,11 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 .Returns(Task.CompletedTask)
                 .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
                 {
-                    w.Add(new NewPackageRegistration("A", 0, new string[0], new Package[0]));
-                    w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0]));
-                    w.Add(new NewPackageRegistration("C", 0, new string[0], new Package[0]));
-                    w.Add(new NewPackageRegistration("D", 0, new string[0], new Package[0]));
-                    w.Add(new NewPackageRegistration("E", 0, new string[0], new Package[0]));
+                    w.Add(new NewPackageRegistration("A", 0, new string[0], new Package[0], false));
+                    w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0], false));
+                    w.Add(new NewPackageRegistration("C", 0, new string[0], new Package[0], false));
+                    w.Add(new NewPackageRegistration("D", 0, new string[0], new Package[0], false));
+                    w.Add(new NewPackageRegistration("E", 0, new string[0], new Package[0], false));
                 });
             _builder
                 .Setup(x => x.AddNewPackageRegistration(It.IsAny<NewPackageRegistration>()))
@@ -197,9 +197,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 .Returns(Task.CompletedTask)
                 .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
                 {
-                    w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0]));
-                    w.Add(new NewPackageRegistration("B", 0, new[] { "nuget" }, new Package[0]));
-                    w.Add(new NewPackageRegistration("C", 0, new[] { "aspnet" }, new Package[0]));
+                    w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0], false));
+                    w.Add(new NewPackageRegistration("B", 0, new[] { "nuget" }, new Package[0], false));
+                    w.Add(new NewPackageRegistration("C", 0, new[] { "aspnet" }, new Package[0], false));
                 });
 
             // Return empty index action for ID "B". This package ID will not be pushed to Azure Search but will appear
@@ -260,9 +260,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 .Returns(Task.CompletedTask)
                 .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
                 {
-                    w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0]));
-                    w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0]));
-                    w.Add(new NewPackageRegistration("C", 0, new[] { "nuget" }, new Package[0]));
+                    w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0], false));
+                    w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0], false));
+                    w.Add(new NewPackageRegistration("C", 0, new[] { "nuget" }, new Package[0], false));
                 });
 
             SortedDictionary<string, SortedSet<string>> data = null;
@@ -293,7 +293,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         [Fact]
         public async Task RetrievesAndUsesExclusionList()
         {
-            var excludedPackagesList = new HashSet<string>() { "A", "B", "C" };
+            var excludedPackages = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "A", "B", "C" };
             var metadata = new AuxiliaryFileMetadata(
                 DateTimeOffset.MinValue,
                 DateTimeOffset.MinValue,
@@ -302,42 +302,34 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 etag: string.Empty);
 
             _auxiliaryFileClient
-                .Setup(x => x.LoadExcludedPackagesListAsync(null))
-                .ReturnsAsync(new AuxiliaryFileResult<HashSet<string>>(false, excludedPackagesList, metadata));
+                .Setup(x => x.LoadExcludedPackagesAsync(null))
+                .ReturnsAsync(new AuxiliaryFileResult<HashSet<string>>(false, excludedPackages, metadata));
 
             _producer
-                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), excludedPackagesList, It.IsAny<CancellationToken>()))
+                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), excludedPackages, It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask)
                 .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
                 {
-                    w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0]));
-                    w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0]));
-                    w.Add(new NewPackageRegistration("C", 0, new[] { "nuget" }, new Package[0]));
+                    w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0], false));
+                    w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0], false));
+                    w.Add(new NewPackageRegistration("C", 0, new[] { "nuget" }, new Package[0], false));
                 });
 
             await _target.ExecuteAsync();
 
             _auxiliaryFileClient.Verify(
-                x => x.LoadExcludedPackagesListAsync(null),
+                x => x.LoadExcludedPackagesAsync(null),
                 Times.Once);
             _producer.Verify(
-                x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), excludedPackagesList, It.IsAny<CancellationToken>()),
+                x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), excludedPackages, It.IsAny<CancellationToken>()),
                 Times.Once);
         }
 
         [Fact]
-        public async Task UsesEmptyListWhenExcludePackagesListIsMissing()
+        public async Task ThrowsWhenExcludedPackagesIsMissing()
         {
-            var excludedPackagesList = new HashSet<string>() { "A", "B", "C" };
-            var metadata = new AuxiliaryFileMetadata(
-                DateTimeOffset.MinValue,
-                DateTimeOffset.MinValue,
-                TimeSpan.Zero,
-                fileSize: 0,
-                etag: string.Empty);
-
             _auxiliaryFileClient
-                .Setup(x => x.LoadExcludedPackagesListAsync(null))
+                .Setup(x => x.LoadExcludedPackagesAsync(null))
                 .ThrowsAsync(new StorageException(
                     new RequestResult
                     {
@@ -349,22 +341,11 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             _producer
                 .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask)
-                .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
-                {
-                    w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0]));
-                    w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0]));
-                    w.Add(new NewPackageRegistration("C", 0, new[] { "nuget" }, new Package[0]));
-                    Assert.NotNull(hs);
-                    Assert.True(hs.Count == 0, "The exclude packages list is expected to be empty");
-                })
                 .Verifiable();
 
-            await _target.ExecuteAsync();
+            await Assert.ThrowsAsync<StorageException>(async () => await _target.ExecuteAsync());
 
-            _auxiliaryFileClient.Verify(
-                x => x.LoadExcludedPackagesListAsync(null),
-                Times.Once);
-            _producer.Verify();
+            _producer.Verify(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
@@ -379,7 +360,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         "A",
                         0,
                         new string[0],
-                        new Package[0]));
+                        new Package[0],
+                        false));
                     w.Add(new NewPackageRegistration(
                         "B",
                         0,
@@ -387,7 +369,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         new[]
                         {
                             new Package { NormalizedVersion = "1.0.0", DownloadCount = 23 },
-                        }));
+                        },
+                        false));
                     w.Add(new NewPackageRegistration(
                         "C",
                         0,
@@ -396,7 +379,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         {
                             new Package { NormalizedVersion = "1.0.0", DownloadCount = 42 },
                             new Package { NormalizedVersion = "2.0.0-ALPHA", DownloadCount = 43 },
-                        }));
+                        },
+                        false));
                 });
 
             DownloadData data = null;

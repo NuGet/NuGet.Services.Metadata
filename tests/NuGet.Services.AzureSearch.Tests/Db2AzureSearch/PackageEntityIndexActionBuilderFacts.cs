@@ -31,7 +31,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                     "NuGet.Versioning",
                     1001,
                     new string[0],
-                    new[] { new TestPackage(version) { SemVerLevelKey = SemVerLevelKey.SemVer2 } });
+                    new[] { new TestPackage(version) { SemVerLevelKey = SemVerLevelKey.SemVer2 } },
+                    false);
 
                 var actions = _target.AddNewPackageRegistration(input);
 
@@ -82,7 +83,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                     "NuGet.Versioning",
                     1001,
                     new string[0],
-                    new[] { package1, package2 });
+                    new[] { package1, package2 },
+                    false);
 
                 var actions = _target.AddNewPackageRegistration(input);
 
@@ -137,7 +139,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                     "NuGet.Versioning",
                     1001,
                     new string[0],
-                    new[] { new TestPackage("1.0.0") { Listed = false } });
+                    new[] { new TestPackage("1.0.0") { Listed = false } },
+                    false);
 
                 var actions = _target.AddNewPackageRegistration(input);
 
@@ -168,7 +171,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                     "NuGet.Versioning",
                     1001,
                     new string[0],
-                    new[] { new TestPackage("1.0.0") { SemVerLevelKey = SemVerLevelKey.SemVer2 } });
+                    new[] { new TestPackage("1.0.0") { SemVerLevelKey = SemVerLevelKey.SemVer2 } },
+                    false);
 
                 var actions = _target.AddNewPackageRegistration(input);
 

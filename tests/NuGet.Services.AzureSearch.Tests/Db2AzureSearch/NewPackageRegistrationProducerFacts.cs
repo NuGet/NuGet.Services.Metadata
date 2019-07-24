@@ -32,7 +32,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             private readonly ConcurrentBag<NewPackageRegistration> _work;
             private readonly CancellationToken _token;
             private readonly NewPackageRegistrationProducer _target;
-            private HashSet<string> _excludedPackagesList;
+            private HashSet<string> _excludedPackages;
 
             public ProduceWorkAsync(ITestOutputHelper output)
             {
@@ -47,7 +47,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 _packageRegistrations = DbSetMockFactory.Create<PackageRegistration>();
                 _packages = DbSetMockFactory.Create<Package>();
                 _work = new ConcurrentBag<NewPackageRegistration>();
-                _excludedPackagesList = new HashSet<string>();
+                _excludedPackages = new HashSet<string>();
                 _token = CancellationToken.None;
 
                 _entitiesContextFactory
@@ -72,7 +72,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             [Fact]
             public async Task AllowsNoWork()
             {
-                await _target.ProduceWorkAsync(_work, _excludedPackagesList, _token);
+                await _target.ProduceWorkAsync(_work, _excludedPackages, _token);
 
                 Assert.Empty(_work);
                 _entitiesContextFactory.Verify(x => x.CreateAsync(true), Times.Once);
@@ -113,7 +113,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 });
                 InitializePackagesFromPackageRegistrations();
 
-                await _target.ProduceWorkAsync(_work, _excludedPackagesList, _token);
+                await _target.ProduceWorkAsync(_work, _excludedPackages, _token);
 
                 Assert.Equal(3, _work.Count);
                 Assert.Contains(
@@ -156,7 +156,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 });
                 InitializePackagesFromPackageRegistrations();
 
-                await _target.ProduceWorkAsync(_work, _excludedPackagesList, _token);
+                await _target.ProduceWorkAsync(_work, _excludedPackages, _token);
 
                 Assert.Equal(3, _work.Count);
                 Assert.Contains(
@@ -215,7 +215,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 });
                 InitializePackagesFromPackageRegistrations();
 
-                await _target.ProduceWorkAsync(_work, _excludedPackagesList, _token);
+                await _target.ProduceWorkAsync(_work, _excludedPackages, _token);
 
                 var work = _work.Reverse().ToList();
                 Assert.Equal(4, work.Count);
@@ -288,15 +288,15 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                     Packages = new Package[0],
                 });
                 InitializePackagesFromPackageRegistrations();
-                _excludedPackagesList = new HashSet<string>() { "A", "C" };
+                _excludedPackages = new HashSet<string>() { "A", "C" };
 
-                await _target.ProduceWorkAsync(_work, _excludedPackagesList, _token);
+                await _target.ProduceWorkAsync(_work, _excludedPackages, _token);
 
                 var work = _work.Reverse().ToList();
                 Assert.Equal(4, work.Count);
                 for (int i = 0; i < work.Count; i++)
                 {
-                    var shouldBeExcluded =_excludedPackagesList.Contains(work[i].PackageId, StringComparer.OrdinalIgnoreCase);
+                    var shouldBeExcluded =_excludedPackages.Contains(work[i].PackageId, StringComparer.OrdinalIgnoreCase);
                     Assert.Equal(shouldBeExcluded, work[i].IsExcludedByDefault);
                 }
             }

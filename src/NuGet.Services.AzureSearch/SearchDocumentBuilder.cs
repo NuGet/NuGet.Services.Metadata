@@ -315,22 +315,6 @@ namespace NuGet.Services.AzureSearch
             return document;
         }
 
-        public SearchDocument.UpdateIsExcludedByDefault UpdateIsExcludedByDefault(
-            string packageId,
-            SearchFilters searchFilters,
-            bool isExcludedByDefault)
-        {
-            var document = new SearchDocument.UpdateIsExcludedByDefault();
-
-            PopulateKey(document, packageId, searchFilters);
-            _baseDocumentBuilder.PopulateUpdated(
-                document,
-                lastUpdatedFromCatalog: false);
-            PopulateIsExcludedByDefault(document, isExcludedByDefault);
-
-            return document;
-        }
-
         private static void PopulateDownloadCount<T>(
             T document,
             long totalDownloadCount) where T : KeyedDocument, SearchDocument.IDownloadCount

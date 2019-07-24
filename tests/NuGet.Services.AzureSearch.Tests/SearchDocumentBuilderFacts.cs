@@ -568,9 +568,6 @@ namespace NuGet.Services.AzureSearch
             [InlineData(false)]
             public void SetsIsExcludedByDefaultPropertyCorrectly(bool shouldBeExcluded)
             {
-                var package = Data.PackageEntity;
-                package.Title = "title";
-
                 var document = _target.FullFromDb(
                     Data.PackageId,
                     Data.SearchFilters,
@@ -578,7 +575,7 @@ namespace NuGet.Services.AzureSearch
                     isLatestStable: false,
                     isLatest: true,
                     fullVersion: Data.FullVersion,
-                    package: package,
+                    package: Data.PackageEntity,
                     owners: Data.Owners,
                     totalDownloadCount: Data.TotalDownloadCount,
                     isExcludedByDefault: shouldBeExcluded);

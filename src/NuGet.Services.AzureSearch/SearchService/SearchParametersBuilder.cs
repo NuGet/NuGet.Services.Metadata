@@ -37,7 +37,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             };
         }
 
-        public SearchParameters V2Search(V2SearchRequest request, string text)
+        public SearchParameters V2Search(V2SearchRequest request, bool excludePackagesHiddenByDefault)
         {
             var searchParameters = NewSearchParameters();
 
@@ -64,27 +64,27 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
             else
             {
-                ApplySearchIndexFilter(searchParameters, request, text);
+                ApplySearchIndexFilter(searchParameters, request, excludePackagesHiddenByDefault);
             }
 
             return searchParameters;
         }
 
-        public SearchParameters V3Search(V3SearchRequest request, string text)
+        public SearchParameters V3Search(V3SearchRequest request, bool excludePackagesHiddenByDefault)
         {
             var searchParameters = NewSearchParameters();
 
             ApplyPaging(searchParameters, request);
-            ApplySearchIndexFilter(searchParameters, request, text);
+            ApplySearchIndexFilter(searchParameters, request, excludePackagesHiddenByDefault);
 
             return searchParameters;
         }
 
-        public SearchParameters Autocomplete(AutocompleteRequest request, string text)
+        public SearchParameters Autocomplete(AutocompleteRequest request, bool excludePackagesHiddenByDefault)
         {
             var searchParameters = NewSearchParameters();
 
-            ApplySearchIndexFilter(searchParameters, request, text);
+            ApplySearchIndexFilter(searchParameters, request, excludePackagesHiddenByDefault);
 
             switch (request.Type)
             {
@@ -123,12 +123,11 @@ namespace NuGet.Services.AzureSearch.SearchService
             searchParameters.Top = request.Take < 0 || request.Take > MaximumTake ? DefaultTake : request.Take;
         }
 
-        private void ApplySearchIndexFilter(SearchParameters searchParameters, SearchRequest request, string text)
+        private void ApplySearchIndexFilter(SearchParameters searchParameters, SearchRequest request, bool excludePackagesHiddenByDefault)
         {
             var searchFilters = GetSearchFilters(request);
 
-            var isEmptySearchQuery = string.Equals(text, "*");
-            searchParameters.Filter = GetFilterString(searchFilters, isEmptySearchQuery);
+            searchParameters.Filter = GetFilterString(searchFilters, excludePackagesHiddenByDefault);
         }
 
         public SearchFilters GetSearchFilters(SearchRequest request)
@@ -148,12 +147,11 @@ namespace NuGet.Services.AzureSearch.SearchService
             return searchFilters;
         }
 
-        private static string GetFilterString(SearchFilters searchFilters, bool isEmptySearchQuery)
+        private static string GetFilterString(SearchFilters searchFilters, bool excludePackagesHiddenByDefault)
         {
             var filterString = $"{IndexFields.Search.SearchFilters} eq '{DocumentUtilities.GetSearchFilterString(searchFilters)}'";
 
-            // For empty search queries filter out the results of the packages that have been hidden by default.
-            filterString += isEmptySearchQuery ? $" and {IndexFields.Search.IsExcludedByDefault} eq false" : "";
+            filterString += excludePackagesHiddenByDefault ? $" and {IndexFields.Search.IsExcludedByDefault} eq false" : "";
 
             return filterString;
         }
