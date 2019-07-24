@@ -116,6 +116,11 @@ namespace NuGet.Services.AzureSearch.SearchService
                 var fieldName = FieldNames[scopedTerm.Key];
                 var values = ProcessFieldValues(scopedTerm.Key, scopedTerm.Value).ToList();
 
+                if (values.Count == 0)
+                {
+                    // This happens if tags have only delimiters.
+                    continue;
+                }
                 if (values.Count > 1)
                 {
                     builder.AppendScopedTerms(fieldName, values, required: requireScopedTerms);
@@ -131,13 +136,21 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 builder.AppendTerms(unscopedTerms);
 
+                // Generate a clause to favor results that match all unscoped terms.
+                // We don't need to include scoped terms as these are already required.
                 if (unscopedTerms.Count > 1)
                 {
                     builder.AppendBoostIfMatchAllTerms(unscopedTerms, _options.Value.MatchAllTermsBoost);
                 }
             }
 
-            return builder.ToString();
+            var result = builder.ToString();
+            if (string.IsNullOrWhiteSpace(result))
+            {
+                return MatchAllDocumentsQuery;
+            }
+
+            return result;
         }
 
         private static IEnumerable<string> ProcessFieldValues(QueryField field, IEnumerable<string> values)

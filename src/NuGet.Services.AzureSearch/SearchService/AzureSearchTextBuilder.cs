@@ -1,7 +1,6 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -107,10 +106,12 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             /// <summary>
-            /// Append a term to the query that is scoped to a specified field.
+            /// Append a term to the query that is scoped to a specified field. This generates
+            /// queries like "field:value". Unlike <see cref="AppendScopedTerms"/>, this supports
+            /// prefix matching.
             /// </summary>
             /// <param name="fieldName">The field that these terms should be scoped to.</param>
-            /// <param name="terms">The terms to search for.</param>
+            /// <param name="term">The term to search.</param>
             /// <param name="required">Whether search results MUST match these terms.</param>
             /// <param name="prefixSearch">If true, prefix matches are allowed for the terms.</param>
             public void AppendScopedTerm(
@@ -144,8 +145,10 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             /// <summary>
             /// Append search terms to the query that are scoped to a specified field.
+            /// This generates queries like "field:(value1 value2)". Unlike
+            /// <see cref="AppendScopedTerm"/>, this doesn't support prefix matches.
             /// </summary>
-            /// <param name="fieldName">The field that these terms should be scoped to.</param>
+            /// <param name="fieldName">The field that should match the terms.</param>
             /// <param name="terms">The terms to search</param>
             /// <param name="required">Whether search results MUST match these terms.</param>
             public void AppendScopedTerms(

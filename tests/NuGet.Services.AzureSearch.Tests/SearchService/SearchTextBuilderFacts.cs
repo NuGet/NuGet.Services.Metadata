@@ -220,6 +220,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     // The tags field is split by delimiters
                     { "tag:a,b;c|d", "tags:(a b c d)" },
                     { "tags:a,b;c|d", "tags:(a b c d)" },
+                    { "tags:,;|", "*" },
 
                     { "id:foo id:bar", "tokenizedPackageId:(foo bar)" },
                     { "packageId:foo packageId:bar", "packageId:(foo bar)" },
