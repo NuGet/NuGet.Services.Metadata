@@ -105,11 +105,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 // Push all package package data to the Azure Search indexes and write the version list blobs.
                 var allOwners = new ConcurrentBag<IdAndValue<IReadOnlyList<string>>>();
                 var allDownloads = new ConcurrentBag<DownloadRecord>();
-
                 var storageResult = await _auxiliaryFileClient.LoadExcludedPackagesAsync(etag: null);
-                var excludedPackages = storageResult.Data ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                await PushAllPackageRegistrationsAsync(cancelledCts, produceWorkCts, allOwners, allDownloads, excludedPackages);
+                await PushAllPackageRegistrationsAsync(cancelledCts, produceWorkCts, allOwners, allDownloads, storageResult.Data);
 
                 // Write the owner data file.
                 await WriteOwnerDataAsync(allOwners);

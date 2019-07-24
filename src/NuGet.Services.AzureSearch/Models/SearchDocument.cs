@@ -96,17 +96,6 @@ namespace NuGet.Services.AzureSearch
         }
 
         /// <summary>
-        /// Used when updating just the fields related to the default search exclusion of a document. Note that this model does
-        /// not need any analyzer or other Azure Search attributes since it is not used for index creation. The
-        /// <see cref="Full"/> and its parent classes handle this.
-        /// </summary>
-        [SerializePropertyNamesAsCamelCase]
-        public class UpdateIsExcludedByDefault : UpdatedDocument, IIsExcludedByDefault
-        {
-            public bool? IsExcludedByDefault { get; set; }
-        }
-
-        /// <summary>
         /// Allows index updating code to apply a new version list to a document.
         /// </summary>
         public interface IVersions : ICommittedDocument

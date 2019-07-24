@@ -19,7 +19,5 @@ namespace NuGet.Services.AzureSearch.SearchService
         }
 
         public Dictionary<QueryField, HashSet<string>> Grouping { get; }
-
-        public bool IsEmptyQuery() => !Grouping.Any();
     }
 }
