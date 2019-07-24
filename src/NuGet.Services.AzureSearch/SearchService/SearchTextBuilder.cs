@@ -121,7 +121,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     // This happens if tags have only delimiters.
                     continue;
                 }
-                if (values.Count > 1)
+                else if (values.Count > 1)
                 {
                     builder.AppendScopedTerms(fieldName, values, required: requireScopedTerms);
                 }
