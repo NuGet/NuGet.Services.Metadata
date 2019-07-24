@@ -303,7 +303,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
             _auxiliaryFileClient
                 .Setup(x => x.LoadExcludedPackagesListAsync(null))
-                .ReturnsAsync(new AuxiliaryFileResult<HashSet<string>>(notModified: false, excludedPackagesList, metadata));
+                .ReturnsAsync(new AuxiliaryFileResult<HashSet<string>>(false, excludedPackagesList, metadata));
 
             _producer
                 .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), excludedPackagesList, It.IsAny<CancellationToken>()))
