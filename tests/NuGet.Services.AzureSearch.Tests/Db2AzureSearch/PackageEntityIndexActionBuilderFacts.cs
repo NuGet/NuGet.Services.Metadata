@@ -101,6 +101,35 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 Assert.Equal(package2.Version, doc3.OriginalVersion);
             }
 
+            [Theory]
+            [InlineData(true)]
+            [InlineData(false)]
+            public void PassesIsExcludedByDefaultValueCorrectly(bool shouldBeExcluded)
+            {
+                var input = new NewPackageRegistration(
+                    "NuGet.Versioning",
+                    1001,
+                    new string[0],
+                    new[] { new TestPackage("1.0.0") { SemVerLevelKey = SemVerLevelKey.SemVer2 } },
+                    isExcludedByDefault: shouldBeExcluded);
+
+                var actions = _target.AddNewPackageRegistration(input);
+
+                _search.Verify(
+                    x => x.FullFromDb(
+                        input.PackageId,
+                        SearchFilters.IncludePrereleaseAndSemVer2,
+                        It.IsAny<string[]>(),
+                        It.IsAny<bool>(),
+                        It.IsAny<bool>(),
+                        It.IsAny<string>(),
+                        input.Packages[0],
+                        input.Owners,
+                        input.TotalDownloadCount,
+                        shouldBeExcluded),
+                    Times.Once);
+            }
+
             [Fact]
             public void ReturnsDeleteSearchActionsForAllUnlisted()
             {

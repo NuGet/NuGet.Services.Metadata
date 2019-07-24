@@ -563,6 +563,29 @@ namespace NuGet.Services.AzureSearch
                 Assert.Equal(Data.PackageId.ToLowerInvariant(), document.SortableTitle);
             }
 
+            [Theory]
+            [InlineData(true)]
+            [InlineData(false)]
+            public void SetsIsExcludedByDefaultPropertyCorrectly(bool shouldBeExcluded)
+            {
+                var package = Data.PackageEntity;
+                package.Title = "title";
+
+                var document = _target.FullFromDb(
+                    Data.PackageId,
+                    Data.SearchFilters,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    fullVersion: Data.FullVersion,
+                    package: package,
+                    owners: Data.Owners,
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: shouldBeExcluded);
+
+                Assert.Equal(shouldBeExcluded, document.IsExcludedByDefault);
+            }
+
             [Fact]
             public async Task SerializesNullSemVerLevel()
             {

@@ -5,10 +5,12 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Search.Models;
 using Microsoft.Extensions.Options;
+using Microsoft.WindowsAzure.Storage;
 using Moq;
 using NuGet.Protocol.Catalog;
 using NuGet.Services.AzureSearch.AuxiliaryFiles;
@@ -286,6 +288,83 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             _ownerDataClient.Verify(
                 x => x.ReplaceLatestIndexedAsync(It.IsAny<SortedDictionary<string, SortedSet<string>>>(), It.IsAny<IAccessCondition>()),
                 Times.Once);
+        }
+
+        [Fact]
+        public async Task RetrievesAndUsesExclusionList()
+        {
+            var excludedPackagesList = new HashSet<string>() { "A", "B", "C" };
+            var metadata = new AuxiliaryFileMetadata(
+                DateTimeOffset.MinValue,
+                DateTimeOffset.MinValue,
+                TimeSpan.Zero,
+                fileSize: 0,
+                etag: string.Empty);
+
+            _auxiliaryFileClient
+                .Setup(x => x.LoadExcludedPackagesListAsync(null))
+                .ReturnsAsync(new AuxiliaryFileResult<HashSet<string>>(notModified: false, excludedPackagesList, metadata));
+
+            _producer
+                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), excludedPackagesList, It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask)
+                .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
+                {
+                    w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0]));
+                    w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0]));
+                    w.Add(new NewPackageRegistration("C", 0, new[] { "nuget" }, new Package[0]));
+                });
+
+            await _target.ExecuteAsync();
+
+            _auxiliaryFileClient.Verify(
+                x => x.LoadExcludedPackagesListAsync(null),
+                Times.Once);
+            _producer.Verify(
+                x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), excludedPackagesList, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task UsesEmptyListWhenExcludePackagesListIsMissing()
+        {
+            var excludedPackagesList = new HashSet<string>() { "A", "B", "C" };
+            var metadata = new AuxiliaryFileMetadata(
+                DateTimeOffset.MinValue,
+                DateTimeOffset.MinValue,
+                TimeSpan.Zero,
+                fileSize: 0,
+                etag: string.Empty);
+
+            _auxiliaryFileClient
+                .Setup(x => x.LoadExcludedPackagesListAsync(null))
+                .ThrowsAsync(new StorageException(
+                    new RequestResult
+                    {
+                        HttpStatusCode = (int)HttpStatusCode.NotFound,
+                    },
+                    message: "Not found.",
+                    inner: null));
+
+            _producer
+                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask)
+                .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
+                {
+                    w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0]));
+                    w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0]));
+                    w.Add(new NewPackageRegistration("C", 0, new[] { "nuget" }, new Package[0]));
+                    Assert.NotNull(hs);
+                    Assert.True(hs.Count == 0, "The exclude packages list is expected to be empty");
+                })
+                .Verifiable();
+
+            await _target.ExecuteAsync();
+
+            _auxiliaryFileClient.Verify(
+                x => x.LoadExcludedPackagesListAsync(null),
+                Times.Once);
+            _producer.Verify();
         }
 
         [Fact]
