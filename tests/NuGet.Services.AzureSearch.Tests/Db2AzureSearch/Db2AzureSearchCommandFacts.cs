@@ -34,7 +34,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         private readonly Mock<IStorageFactory> _storageFactory;
         private readonly Mock<IOwnerDataClient> _ownerDataClient;
         private readonly Mock<IDownloadDataClient> _downloadDataClient;
-        private readonly Mock<IAuxiliaryFileClient> _auxiliaryFileClient;
         private readonly Mock<IOptionsSnapshot<Db2AzureSearchConfiguration>> _options;
         private readonly Db2AzureSearchConfiguration _config;
         private readonly TestCursorStorage _storage;
@@ -52,7 +51,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             _storageFactory = new Mock<IStorageFactory>();
             _ownerDataClient = new Mock<IOwnerDataClient>();
             _downloadDataClient = new Mock<IDownloadDataClient>();
-            _auxiliaryFileClient = new Mock<IAuxiliaryFileClient>();
             _options = new Mock<IOptionsSnapshot<Db2AzureSearchConfiguration>>();
             _logger = output.GetLogger<Db2AzureSearchCommand>();
 
@@ -90,9 +88,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 TimeSpan.Zero,
                 fileSize: 0,
                 etag: string.Empty);
-            _auxiliaryFileClient
-                .Setup(x => x.LoadExcludedPackagesAsync(It.IsAny<string>()))
-                .ReturnsAsync(new AuxiliaryFileResult<HashSet<string>>(false, new HashSet<string>(StringComparer.OrdinalIgnoreCase), excludedPackagesMetadata));
 
             _target = new Db2AzureSearchCommand(
                 _producer.Object,
@@ -104,7 +99,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 _storageFactory.Object,
                 _ownerDataClient.Object,
                 _downloadDataClient.Object,
-                _auxiliaryFileClient.Object,
                 _options.Object,
                 _logger);
         }
@@ -146,9 +140,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         {
             _config.AzureSearchBatchSize = 2;
             _producer
-                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()))
+                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask)
-                .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
+                .Callback<ConcurrentBag<NewPackageRegistration>, CancellationToken>((w, _) =>
                 {
                     w.Add(new NewPackageRegistration("A", 0, new string[0], new Package[0], false));
                     w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0], false));
@@ -193,9 +187,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         {
             _config.AzureSearchBatchSize = 2;
             _producer
-                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()))
+                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask)
-                .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
+                .Callback<ConcurrentBag<NewPackageRegistration>, CancellationToken>((w, _) =>
                 {
                     w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0], false));
                     w.Add(new NewPackageRegistration("B", 0, new[] { "nuget" }, new Package[0], false));
@@ -256,9 +250,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         public async Task PushesOwnerData()
         {
             _producer
-                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()))
+                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask)
-                .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
+                .Callback<ConcurrentBag<NewPackageRegistration>, CancellationToken>((w, _) =>
                 {
                     w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0], false));
                     w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0], false));
@@ -291,70 +285,12 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         }
 
         [Fact]
-        public async Task RetrievesAndUsesExclusionList()
-        {
-            var excludedPackages = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "A", "B", "C" };
-            var metadata = new AuxiliaryFileMetadata(
-                DateTimeOffset.MinValue,
-                DateTimeOffset.MinValue,
-                TimeSpan.Zero,
-                fileSize: 0,
-                etag: string.Empty);
-
-            _auxiliaryFileClient
-                .Setup(x => x.LoadExcludedPackagesAsync(null))
-                .ReturnsAsync(new AuxiliaryFileResult<HashSet<string>>(false, excludedPackages, metadata));
-
-            _producer
-                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), excludedPackages, It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask)
-                .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
-                {
-                    w.Add(new NewPackageRegistration("A", 0, new[] { "Microsoft", "EntityFramework" }, new Package[0], false));
-                    w.Add(new NewPackageRegistration("B", 0, new string[0], new Package[0], false));
-                    w.Add(new NewPackageRegistration("C", 0, new[] { "nuget" }, new Package[0], false));
-                });
-
-            await _target.ExecuteAsync();
-
-            _auxiliaryFileClient.Verify(
-                x => x.LoadExcludedPackagesAsync(null),
-                Times.Once);
-            _producer.Verify(
-                x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), excludedPackages, It.IsAny<CancellationToken>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task ThrowsWhenExcludedPackagesIsMissing()
-        {
-            _auxiliaryFileClient
-                .Setup(x => x.LoadExcludedPackagesAsync(null))
-                .ThrowsAsync(new StorageException(
-                    new RequestResult
-                    {
-                        HttpStatusCode = (int)HttpStatusCode.NotFound,
-                    },
-                    message: "Not found.",
-                    inner: null));
-
-            _producer
-                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask)
-                .Verifiable();
-
-            await Assert.ThrowsAsync<StorageException>(async () => await _target.ExecuteAsync());
-
-            _producer.Verify(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()), Times.Never);
-        }
-
-        [Fact]
         public async Task PushesDownloadData()
         {
             _producer
-                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<HashSet<string>>(), It.IsAny<CancellationToken>()))
+                .Setup(x => x.ProduceWorkAsync(It.IsAny<ConcurrentBag<NewPackageRegistration>>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask)
-                .Callback<ConcurrentBag<NewPackageRegistration>, HashSet<string>, CancellationToken>((w, hs, _) =>
+                .Callback<ConcurrentBag<NewPackageRegistration>, CancellationToken>((w, _) =>
                 {
                     w.Add(new NewPackageRegistration(
                         "A",

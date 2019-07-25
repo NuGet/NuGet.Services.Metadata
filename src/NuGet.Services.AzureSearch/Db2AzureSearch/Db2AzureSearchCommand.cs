@@ -5,12 +5,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.WindowsAzure.Storage;
 using NuGet.Protocol.Catalog;
 using NuGet.Services.AzureSearch.AuxiliaryFiles;
 using NuGet.Services.AzureSearch.Catalog2AzureSearch;
@@ -31,7 +29,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         private readonly IStorageFactory _storageFactory;
         private readonly IOwnerDataClient _ownerDataClient;
         private readonly IDownloadDataClient _downloadDataClient;
-        private readonly IAuxiliaryFileClient _auxiliaryFileClient;
         private readonly IOptionsSnapshot<Db2AzureSearchConfiguration> _options;
         private readonly ILogger<Db2AzureSearchCommand> _logger;
 
@@ -45,7 +42,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             IStorageFactory storageFactory,
             IOwnerDataClient ownerDataClient,
             IDownloadDataClient downloadDataClient,
-            IAuxiliaryFileClient auxiliaryFileClient,
             IOptionsSnapshot<Db2AzureSearchConfiguration> options,
             ILogger<Db2AzureSearchCommand> logger)
         {
@@ -58,7 +54,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             _storageFactory = storageFactory ?? throw new ArgumentNullException(nameof(storageFactory));
             _ownerDataClient = ownerDataClient ?? throw new ArgumentNullException(nameof(ownerDataClient));
             _downloadDataClient = downloadDataClient ?? throw new ArgumentNullException(nameof(downloadDataClient));
-            _auxiliaryFileClient = auxiliaryFileClient ?? throw new ArgumentNullException(nameof(auxiliaryFileClient));
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -105,9 +100,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 // Push all package package data to the Azure Search indexes and write the version list blobs.
                 var allOwners = new ConcurrentBag<IdAndValue<IReadOnlyList<string>>>();
                 var allDownloads = new ConcurrentBag<DownloadRecord>();
-                var storageResult = await _auxiliaryFileClient.LoadExcludedPackagesAsync(etag: null);
 
-                await PushAllPackageRegistrationsAsync(cancelledCts, produceWorkCts, allOwners, allDownloads, storageResult.Data);
+                await PushAllPackageRegistrationsAsync(cancelledCts, produceWorkCts, allOwners, allDownloads);
 
                 // Write the owner data file.
                 await WriteOwnerDataAsync(allOwners);
@@ -146,12 +140,11 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             CancellationTokenSource cancelledCts,
             CancellationTokenSource produceWorkCts,
             ConcurrentBag<IdAndValue<IReadOnlyList<string>>> allOwners,
-            ConcurrentBag<DownloadRecord> allDownloads,
-            HashSet<string> excludedPackages)
+            ConcurrentBag<DownloadRecord> allDownloads)
         {
             _logger.LogInformation("Pushing all packages to Azure Search and initializing version lists.");
             var allWork = new ConcurrentBag<NewPackageRegistration>();
-            var producerTask = ProduceWorkAsync(allWork, excludedPackages, produceWorkCts, cancelledCts.Token);
+            var producerTask = ProduceWorkAsync(allWork, produceWorkCts, cancelledCts.Token);
             var consumerTasks = Enumerable
                 .Range(0, _options.Value.MaxConcurrentBatches)
                 .Select(i => ConsumeWorkAsync(allWork, allOwners, allDownloads, produceWorkCts.Token, cancelledCts.Token))
@@ -202,14 +195,12 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
         private async Task ProduceWorkAsync(
             ConcurrentBag<NewPackageRegistration> allWork,
-            HashSet<string> excludedPackages,
             CancellationTokenSource produceWorkCts,
             CancellationToken cancellationToken)
         {
-            Guard.Assert(excludedPackages.Comparer == StringComparer.OrdinalIgnoreCase, $"Excluded packages HashSet should be using {nameof(StringComparer.OrdinalIgnoreCase)}");
 
             await Task.Yield();
-            await _producer.ProduceWorkAsync(allWork, excludedPackages, cancellationToken);
+            await _producer.ProduceWorkAsync(allWork, cancellationToken);
             produceWorkCts.Cancel();
         }
 

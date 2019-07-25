@@ -8,9 +8,9 @@ namespace NuGet.Services.AzureSearch.SearchService
     public interface ISearchParametersBuilder
     {
         SearchParameters LastCommitTimestamp();
-        SearchParameters V2Search(V2SearchRequest request, bool excludePackagesHiddenByDefault);
-        SearchParameters V3Search(V3SearchRequest request, bool excludePackagesHiddenByDefault);
-        SearchParameters Autocomplete(AutocompleteRequest request, bool excludePackagesHiddenByDefault);
+        SearchParameters V2Search(V2SearchRequest request, bool isDefaultSearch);
+        SearchParameters V3Search(V3SearchRequest request, bool isDefaultSearch);
+        SearchParameters Autocomplete(AutocompleteRequest request, bool isDefaultSearch);
         SearchFilters GetSearchFilters(SearchRequest request);
     }
 }

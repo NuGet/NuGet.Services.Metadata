@@ -37,7 +37,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             };
         }
 
-        public SearchParameters V2Search(V2SearchRequest request, bool excludePackagesHiddenByDefault)
+        public SearchParameters V2Search(V2SearchRequest request, bool isDefaultSearch)
         {
             var searchParameters = NewSearchParameters();
 
@@ -64,27 +64,27 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
             else
             {
-                ApplySearchIndexFilter(searchParameters, request, excludePackagesHiddenByDefault);
+                ApplySearchIndexFilter(searchParameters, request, isDefaultSearch);
             }
 
             return searchParameters;
         }
 
-        public SearchParameters V3Search(V3SearchRequest request, bool excludePackagesHiddenByDefault)
+        public SearchParameters V3Search(V3SearchRequest request, bool isDefaultSearch)
         {
             var searchParameters = NewSearchParameters();
 
             ApplyPaging(searchParameters, request);
-            ApplySearchIndexFilter(searchParameters, request, excludePackagesHiddenByDefault);
+            ApplySearchIndexFilter(searchParameters, request, isDefaultSearch);
 
             return searchParameters;
         }
 
-        public SearchParameters Autocomplete(AutocompleteRequest request, bool excludePackagesHiddenByDefault)
+        public SearchParameters Autocomplete(AutocompleteRequest request, bool isDefaultSearch)
         {
             var searchParameters = NewSearchParameters();
 
-            ApplySearchIndexFilter(searchParameters, request, excludePackagesHiddenByDefault);
+            ApplySearchIndexFilter(searchParameters, request, isDefaultSearch);
 
             switch (request.Type)
             {

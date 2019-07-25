@@ -53,7 +53,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 var request = new V2SearchRequest();
 
-                var output = _target.V2Search(request, excludePackagesHiddenByDefault: true);
+                var output = _target.V2Search(request, isDefaultSearch: true);
 
                 Assert.Equal(QueryType.Full, output.QueryType);
                 Assert.True(output.IncludeTotalResultCount);
@@ -202,7 +202,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 var request = new V3SearchRequest();
 
-                var output = _target.V3Search(request, excludePackagesHiddenByDefault: true);
+                var output = _target.V3Search(request, isDefaultSearch: true);
 
                 Assert.Equal(QueryType.Full, output.QueryType);
                 Assert.True(output.IncludeTotalResultCount);
@@ -291,7 +291,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 var request = new AutocompleteRequest();
                 request.Type = AutocompleteRequestType.PackageIds;
 
-                var output = _target.Autocomplete(request, excludePackagesHiddenByDefault: true);
+                var output = _target.Autocomplete(request, isDefaultSearch: true);
 
                 Assert.Equal(QueryType.Full, output.QueryType);
                 Assert.True(output.IncludeTotalResultCount);
@@ -309,7 +309,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 var request = new AutocompleteRequest();
                 request.Type = AutocompleteRequestType.PackageVersions;
 
-                var output = _target.Autocomplete(request, excludePackagesHiddenByDefault: true);
+                var output = _target.Autocomplete(request, isDefaultSearch: true);
 
                 Assert.Equal(QueryType.Full, output.QueryType);
                 Assert.True(output.IncludeTotalResultCount);
