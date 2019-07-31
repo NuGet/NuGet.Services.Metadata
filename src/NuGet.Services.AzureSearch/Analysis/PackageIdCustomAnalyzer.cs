@@ -7,9 +7,12 @@ using Microsoft.Azure.Search.Models;
 namespace NuGet.Services.AzureSearch
 {
     /// <summary>
-    /// Support for NuGet style identifier analysis. Splits tokens
-    /// on non alpha-numeric characters and camel casing, and lower
-    /// cases tokens.
+    /// Support for NuGet style identifier analysis:
+    /// 
+    /// 1. Splits tokens on non-alphanumeric characters and camel casing
+    /// 2. Lower cases tokens
+    /// 3. Shingles adjacent tokens
+    /// 4. Truncate tokens
     /// </summary>
     public static class PackageIdCustomAnalyzer
     {
@@ -20,8 +23,9 @@ namespace NuGet.Services.AzureSearch
             PackageIdCustomTokenizer.Name,
             new List<TokenFilterName>
             {
-                IdentifierCustomTokenFilter.Name,
+                PackageIdSplitterCustomTokenFilter.Name,
                 TokenFilterName.Lowercase,
+                PackageIdShinglerCustomTokenFilter.Name,
                 TruncateCustomTokenFilter.Name,
             });
     }

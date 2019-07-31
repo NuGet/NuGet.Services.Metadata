@@ -10,13 +10,13 @@ namespace NuGet.Services.AzureSearch
     /// This does not consume the original token. For example, "Foo2Bar.Baz"
     /// becomes "Foo", "2", "Bar", "Baz", and "Foo2Bar.Baz".
     /// </summary>
-    public static class IdentifierCustomTokenFilter
+    public static class PackageIdSplitterCustomTokenFilter
     {
         public const string Name = "nuget_id_filter";
 
         public static WordDelimiterTokenFilter Instance = new WordDelimiterTokenFilter(
             Name,
             splitOnCaseChange: true,
-            preserveOriginal: true);
+            preserveOriginal: false);
     }
 }
