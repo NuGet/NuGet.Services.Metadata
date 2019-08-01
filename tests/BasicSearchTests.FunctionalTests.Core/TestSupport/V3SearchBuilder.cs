@@ -1,12 +1,42 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
+using System.Collections.Specialized;
 
 namespace BasicSearchTests.FunctionalTests.Core.TestSupport
 {
     public class V3SearchBuilder : QueryBuilder
     {
+        public int? Skip { get; set; }
+
+        public int? Take { get; set; }
+
+        public bool IncludeSemVer2 { get; set; }
+
         public V3SearchBuilder() : base("/query?") { }
+
+        protected override NameValueCollection GetQueryString()
+        {
+            var queryString = System.Web.HttpUtility.ParseQueryString(string.Empty);
+            queryString["q"] = Query;
+            queryString["prerelease"] = Prerelease.ToString();
+
+            if (Skip.HasValue)
+            {
+                queryString["Skip"] = Skip.ToString();
+            }
+
+            if (Take.HasValue)
+            {
+                queryString["Take"] = Take.ToString();
+            }
+
+            if (IncludeSemVer2)
+            {
+                queryString["semVerLevel"] = "2.0.0";
+            }
+
+            return queryString;
+        }
     }
 }
