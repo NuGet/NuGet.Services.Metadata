@@ -56,7 +56,7 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
 
             if (take.HasValue)
             {
-                requestUri += $"&take={take}";
+                requestUri += $"&skip={take}";
             }
 
             if (includePrerelease)
