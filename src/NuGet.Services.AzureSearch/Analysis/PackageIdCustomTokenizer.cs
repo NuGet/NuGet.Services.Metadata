@@ -12,6 +12,6 @@ namespace NuGet.Services.AzureSearch
 
         public static readonly PatternTokenizer Instance = new PatternTokenizer(
             Name,
-            @"[.\-_,;:'*#!~+()\[\]{}\s]");
+            @"((?<=[A-Z])(?=[A-Z][a-z]))|([.\-_,;:'*#!~+()\[\]{}\s])");
     }
 }
