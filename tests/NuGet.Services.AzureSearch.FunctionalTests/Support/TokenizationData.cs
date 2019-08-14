@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
-using System.IO.Packaging;
 using System.Linq;
 
 namespace NuGet.Services.AzureSearch.FunctionalTests
@@ -49,10 +48,13 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
         public static readonly IEnumerable<object[]> LowercasesAndAddsTokensOnCasingAndNonAlphaNumeric = ToMemberData(new Dictionary<string, string[]>
         {
             { "HelloWorld", new[] { "helloworld", "hello", "world" } },
+            { "helloWorld", new[] { "helloworld", "hello", "world" } },
             { "foo2bar", new[] { "foo2bar", "foo", "2", "bar" } },
-            { "HTML", new[] { "html"} },
-            { "HTMLThing", new[] { "html", "thing" } },
-            { "HTMLThingA", new[] { "html", "thinga", "thing", "a" } },
+            { "FOO", new[] { "foo"} },
+            { "FOOBar", new[] { "foo", "bar" } },
+            { "FooBAR", new[] { "foobar", "foo", "bar" } },
+            { "FOOBarBuzz", new[] { "foo", "barbuzz", "bar", "buzz" } },
+            { "FooBARBuzz", new[] { "foobar", "foo", "bar", "buzz" } },
             { "HelloWorld𠈓Foo", new[] { "helloworld𠈓foo", "hello", "world𠈓foo" } },
         });
 
