@@ -3,8 +3,8 @@
 namespace NuGet.Services.AzureSearch
 {
     /// <summary>
-    /// Splits tokens that on a set of symbols and whitespace.
-    /// For example, "Foo.Bar Baz" becomes "Foo", "Bar", and "Baz".
+    /// Splits tokens on a set of symbols, whitespace, and initialisms.
+    /// For example, "FOOBar.Baz Qux" becomes "FOO", "Bar", "Baz", and "Qux".
     /// </summary>
     public static class PackageIdCustomTokenizer
     {
