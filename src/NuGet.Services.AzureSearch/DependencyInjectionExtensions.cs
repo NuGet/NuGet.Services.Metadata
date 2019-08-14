@@ -260,7 +260,8 @@ namespace NuGet.Services.AzureSearch
             services.AddTransient<IBaseDocumentBuilder, BaseDocumentBuilder>();
             services.AddTransient<ICatalogIndexActionBuilder, CatalogIndexActionBuilder>();
             services.AddTransient<ICatalogLeafFetcher, CatalogLeafFetcher>();
-            services.AddTransient<ICollector, AzureSearchCollector>();
+            //services.AddTransient<ICollector, AzureSearchCollector>();
+            services.AddTransient<ICollector, AzureSearchLightningCollector>();
             services.AddTransient<ICommitCollectorLogic, AzureSearchCollectorLogic>();
             services.AddTransient<IDatabaseOwnerFetcher, DatabaseOwnerFetcher>();
             services.AddTransient<IDiagnosticsService, LoggerDiagnosticsService>();
