@@ -114,6 +114,7 @@
     <Compile Include="Helpers\PackageContentUriBuilder.cs" />
     <Compile Include="Helpers\PackageUtility.cs" />
     <Compile Include="ICatalogIndexProcessor.cs" />
+    <Compile Include="Icons\IconsCollector.cs" />
     <Compile Include="IPackageCatalogItemCreator.cs" />
     <Compile Include="IPackagesContainerHandler.cs" />
     <Compile Include="IHttpRetryStrategy.cs" />
