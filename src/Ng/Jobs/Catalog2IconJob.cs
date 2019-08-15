@@ -31,7 +31,8 @@ namespace Ng.Jobs
             _collector = new IconsCollector(
                 new Uri(source),
                 TelemetryService,
-                CommandHelpers.GetHttpMessageHandlerFactory(TelemetryService, verbose));
+                CommandHelpers.GetHttpMessageHandlerFactory(TelemetryService, verbose),
+                LoggerFactory.CreateLogger<IconsCollector>());
             var cursorStorage = cursorStorageFactory.Create();
             _front = new DurableCursor(cursorStorage.ResolveUri("c2icursor.json"), cursorStorage, DateTime.MinValue.ToUniversalTime());
         }
