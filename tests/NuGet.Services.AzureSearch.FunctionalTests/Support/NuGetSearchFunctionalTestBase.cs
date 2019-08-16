@@ -47,14 +47,14 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
             bool includePrerelease = true,
             bool includeSemVer2 = true)
         {
-            var results = await V3SearchAsync(new V3SearchBuilder()
-                {
-                    Query = HttpUtility.UrlEncode(query),
-                    Skip = skip,
-                    Take = take,
-                    Prerelease = includePrerelease,
-                    IncludeSemVer2 = includeSemVer2
-                });
+            var results = await V3SearchAsync(new V3SearchBuilder
+            {
+                Query = query,
+                Skip = skip,
+                Take = take,
+                Prerelease = includePrerelease,
+                IncludeSemVer2 = includeSemVer2
+            });
 
             return results.Data.Select(t => t.Id.ToLowerInvariant()).ToList();
         }

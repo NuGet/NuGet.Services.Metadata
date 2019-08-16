@@ -42,8 +42,8 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
 
             yield return new object[] { "tags:\"aws-sdk-v3\"", new[] { "awssdk.core", "awssdk.s3" } };
 
-            yield return new object[] { "entityframework", new[] { "entityframework" } };
-            yield return new object[] { "entity framework", new[] { "entityframework" } };
+            yield return new object[] { "entityframework", new[] { "entityframework", "microsoft.entityframeworkcore" } };
+            yield return new object[] { "entity framework", new[] { "microsoft.entityframeworkcore", "microsoft.entityframeworkcore.relational", "entityframework" } };
             yield return new object[] { "EntityFrameworkCore", new[] { "microsoft.entityframeworkcore" } };
             yield return new object[] { "microsoft.entityframeworkcore", new[] { "microsoft.entityframeworkcore" } };
             yield return new object[] { "mysql", new[] { "mysql.data" } };
