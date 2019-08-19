@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -15,6 +16,7 @@ namespace Ng.Jobs
 {
     public class Catalog2IconJob : LoopingNgJob
     {
+        private const int DegreeOfParallelism = 100;
         private IconsCollector _collector;
         private DurableCursor _front;
 
@@ -25,6 +27,8 @@ namespace Ng.Jobs
 
         protected override void Init(IDictionary<string, string> arguments, CancellationToken cancellationToken)
         {
+            ServicePointManager.DefaultConnectionLimit = DegreeOfParallelism;
+
             var verbose = arguments.GetOrDefault(Arguments.Verbose, false);
             var cursorStorageFactory = CreateIconCursorStorageFactory(arguments, verbose);
             var source = arguments.GetOrThrow<string>(Arguments.Source);

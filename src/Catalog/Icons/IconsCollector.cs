@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,7 +17,6 @@ namespace NuGet.Services.Metadata.Catalog.Icons
 {
     public class IconsCollector : CommitCollector
     {
-        private const int DegreeOfParallelism = 100;
         private readonly ILogger<IconsCollector> _logger;
 
         public IconsCollector(
@@ -56,7 +56,9 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 .GroupBy(i => i.PackageIdentity)                        // if we have multiple commits for the same identity
                 .Select(g => g.OrderBy(i => i.CommitTimeStamp).Last()); // take the last one of those.
             var itemsToProcess = new ConcurrentBag<CatalogCommitItem>(filteredItems);
-            var tasks = Enumerable.Range(1, DegreeOfParallelism).Select(_ => CopyIconsAsync(client, itemsToProcess, cancellationToken));
+            var tasks = Enumerable
+                .Range(1, ServicePointManager.DefaultConnectionLimit)
+                .Select(_ => CopyIconsAsync(client, itemsToProcess, cancellationToken));
             await Task.WhenAll(tasks);
             return true;
         }
