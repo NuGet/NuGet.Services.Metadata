@@ -114,7 +114,9 @@
     <Compile Include="Helpers\PackageContentUriBuilder.cs" />
     <Compile Include="Helpers\PackageUtility.cs" />
     <Compile Include="ICatalogIndexProcessor.cs" />
+    <Compile Include="Icons\IconProcessor.cs" />
     <Compile Include="Icons\IconsCollector.cs" />
+    <Compile Include="Icons\IIconProcessor.cs" />
     <Compile Include="IPackageCatalogItemCreator.cs" />
     <Compile Include="IPackagesContainerHandler.cs" />
     <Compile Include="IHttpRetryStrategy.cs" />
@@ -130,6 +132,7 @@
     <Compile Include="Helpers\UriUtils.cs" />
     <Compile Include="LogEvents.cs" />
     <Compile Include="Helpers\NuGetVersionUtility.cs" />
+    <Compile Include="Persistence\ByteArrayStorageContent.cs" />
     <Compile Include="Persistence\AzureCloudBlockBlob.cs" />
     <Compile Include="Persistence\DeleteRequestOptions.cs" />
     <Compile Include="Persistence\IAzureStorage.cs" />

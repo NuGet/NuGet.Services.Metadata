@@ -47,6 +47,8 @@ namespace NuGet.Services.Metadata.Catalog
         public const string UsePackageSourceFallback = "UsePackageSourceFallback";
         public const string Version = "Version";
         public const string Handler = "Handler";
+        public const string ExternalIconIngestionSucceeded = "ExternalIconIngestionSucceeded";
+        public const string IconExtractionSucceeded = "IconExtractionSucceeded";
         public const string IconExtractionFailed = "IconExtractionFailed";
         public const string GetPackageDetailsSeconds = "GetPackageDetailsSeconds";
         public const string GetPackageSeconds = "GetPackageSeconds";

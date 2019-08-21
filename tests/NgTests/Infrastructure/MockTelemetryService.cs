@@ -104,5 +104,13 @@ namespace NgTests.Infrastructure
 
             return TrackDuration(nameof(TrackGetPackageQueryDuration), properties);
         }
+
+        public void TrackIconExternalIconIngestionSuccess(string packageId, string normalizedPackageVersion)
+        {
+        }
+
+        public void TrackIconExtractionSuccess(string packageId, string normalizedPackageVersion)
+        {
+        }
     }
 }

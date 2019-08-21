@@ -30,15 +30,21 @@ namespace Ng.Jobs
             ServicePointManager.DefaultConnectionLimit = DegreeOfParallelism;
 
             var verbose = arguments.GetOrDefault(Arguments.Verbose, false);
-            var cursorStorageFactory = CreateIconCursorStorageFactory(arguments, verbose);
+            var auxStorageFactory = CreateAuxStorageFactory(arguments, verbose);
+            var targetStorageFactory = CreateTargetStorageFactory(arguments, verbose);
             var source = arguments.GetOrThrow<string>(Arguments.Source);
+            var auxStorage = auxStorageFactory.Create();
+            var iconProcessor = new IconProcessor(TelemetryService, LoggerFactory.CreateLogger<IconProcessor>());
+            var targetStorage = targetStorageFactory.Create();
             _collector = new IconsCollector(
                 new Uri(source),
                 TelemetryService,
+                auxStorage,
+                targetStorage,
+                iconProcessor,
                 CommandHelpers.GetHttpMessageHandlerFactory(TelemetryService, verbose),
                 LoggerFactory.CreateLogger<IconsCollector>());
-            var cursorStorage = cursorStorageFactory.Create();
-            _front = new DurableCursor(cursorStorage.ResolveUri("c2icursor.json"), cursorStorage, DateTime.MinValue.ToUniversalTime());
+            _front = new DurableCursor(auxStorage.ResolveUri("c2icursor.json"), auxStorage, DateTime.MinValue.ToUniversalTime());
         }
 
         protected override async Task RunInternalAsync(CancellationToken cancellationToken)
@@ -50,9 +56,14 @@ namespace Ng.Jobs
             } while (run);
         }
 
-        private IStorageFactory CreateIconCursorStorageFactory(IDictionary<string, string> arguments, bool verbose)
+        private IStorageFactory CreateAuxStorageFactory(IDictionary<string, string> arguments, bool verbose)
         {
-            return CommandHelpers.CreateSuffixedStorageFactory("Icon", arguments, verbose);
+            return CommandHelpers.CreateSuffixedStorageFactory("Aux", arguments, verbose);
+        }
+
+        private IStorageFactory CreateTargetStorageFactory(IDictionary<string, string> arguments, bool verbose)
+        {
+            return CommandHelpers.CreateSuffixedStorageFactory("Target", arguments, verbose);
         }
     }
 }
