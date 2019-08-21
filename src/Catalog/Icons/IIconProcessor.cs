@@ -23,10 +23,14 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             Stream iconDataStream,
             IStorage destinationStorage,
             string destinationStoragePath,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken,
+            string packageId,
+            string normalizedPackageVersion);
         Task DeleteIcon(
             Storage destinationStorage,
             string destinationStoragePath,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken,
+            string packageId,
+            string normalizedPackageVersion);
     }
 }

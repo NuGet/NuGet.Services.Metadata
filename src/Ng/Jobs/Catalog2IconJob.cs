@@ -30,8 +30,10 @@ namespace Ng.Jobs
             ServicePointManager.DefaultConnectionLimit = DegreeOfParallelism;
 
             var verbose = arguments.GetOrDefault(Arguments.Verbose, false);
+            var packageStorageBase = arguments.GetOrThrow<string>(Arguments.ContentBaseAddress);
             var auxStorageFactory = CreateAuxStorageFactory(arguments, verbose);
             var targetStorageFactory = CreateTargetStorageFactory(arguments, verbose);
+            var packageStorage = new AzureStorage(new Uri(packageStorageBase), TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(10), false, false, true, null);
             var source = arguments.GetOrThrow<string>(Arguments.Source);
             var auxStorage = auxStorageFactory.Create();
             var iconProcessor = new IconProcessor(TelemetryService, LoggerFactory.CreateLogger<IconProcessor>());
@@ -39,8 +41,9 @@ namespace Ng.Jobs
             _collector = new IconsCollector(
                 new Uri(source),
                 TelemetryService,
+                packageStorage,
                 auxStorage,
-                targetStorage,
+                targetStorageFactory,
                 iconProcessor,
                 CommandHelpers.GetHttpMessageHandlerFactory(TelemetryService, verbose),
                 LoggerFactory.CreateLogger<IconsCollector>());

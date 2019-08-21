@@ -34,7 +34,9 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             Stream iconDataStream,
             IStorage destinationStorage,
             string destinationStoragePath,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            string packageId,
+            string normalizedPackageVersion)
         {
             var destinationUri = destinationStorage.ResolveUri(destinationStoragePath);
 
@@ -45,15 +47,23 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             }
 
             var contentType = DetermineContentType(iconData);
+            if (string.IsNullOrWhiteSpace(contentType))
+            {
+                _logger.LogInformation("Failed to determine image type.");
+                _telemetryService.TrackExternalIconIngestionFailure(packageId, normalizedPackageVersion);
+                return;
+            }
             var content = new ByteArrayStorageContent(iconData, contentType, DefaultCacheControl);
             await destinationStorage.SaveAsync(destinationUri, content, cancellationToken);
-            _telemetryService.TrackIconExternalIconIngestionSuccess("", ""); // TODO: fix
+            _telemetryService.TrackExternalIconIngestionSuccess(packageId, normalizedPackageVersion);
         }
 
         public async Task DeleteIcon(
             Storage destinationStorage,
             string destinationStoragePath,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            string packageId,
+            string normalizedPackageVersion)
         {
             if (destinationStorage.Exists(destinationStoragePath))
             {

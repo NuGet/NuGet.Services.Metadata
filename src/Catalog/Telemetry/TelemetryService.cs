@@ -195,7 +195,61 @@ namespace NuGet.Services.Metadata.Catalog
             return new DurationMetric(_telemetryClient, name, properties);
         }
 
-        public void TrackIconExternalIconIngestionSuccess(string packageId, string normalizedPackageVersion)
+        public IDisposable TrackExternalIconProcessingDuration(string packageId, string normalizedPackageVersion)
+        {
+            return TrackDuration(TelemetryConstants.ExternalIconProcessing, new Dictionary<string, string>
+            {
+                { TelemetryConstants.Id, packageId },
+                { TelemetryConstants.Version, normalizedPackageVersion }
+            });
+        }
+
+        public IDisposable TrackEmbeddedIconProcessingDuration(string packageId, string normalizedPackageVersion)
+        {
+            return TrackDuration(TelemetryConstants.EmbeddedIconProcessing, new Dictionary<string, string>
+            {
+                { TelemetryConstants.Id, packageId },
+                { TelemetryConstants.Version, normalizedPackageVersion }
+            });
+        }
+
+        public void TrackIconDeletionSuccess(string packageId, string normalizedPackageVersion)
+        {
+            _telemetryClient.TrackMetric(
+                TelemetryConstants.IconDeletionSucceeded,
+                1,
+                new Dictionary<string, string>
+                {
+                    { TelemetryConstants.Id, packageId },
+                    { TelemetryConstants.Version, normalizedPackageVersion }
+                });
+        }
+
+        public void TrackIconDeletionFailure(string packageId, string normalizedPackageVersion)
+        {
+            _telemetryClient.TrackMetric(
+                TelemetryConstants.IconDeletionFailed,
+                1,
+                new Dictionary<string, string>
+                {
+                    { TelemetryConstants.Id, packageId },
+                    { TelemetryConstants.Version, normalizedPackageVersion }
+                });
+        }
+
+        public void TrackExternalIconIngestionFailure(string packageId, string normalizedPackageVersion)
+        {
+            _telemetryClient.TrackMetric(
+                TelemetryConstants.ExternalIconIngestionFailed,
+                1,
+                new Dictionary<string, string>
+                {
+                    { TelemetryConstants.Id, packageId },
+                    { TelemetryConstants.Version, normalizedPackageVersion }
+                });
+        }
+
+        public void TrackExternalIconIngestionSuccess(string packageId, string normalizedPackageVersion)
         {
             _telemetryClient.TrackMetric(
                 TelemetryConstants.ExternalIconIngestionSucceeded,
