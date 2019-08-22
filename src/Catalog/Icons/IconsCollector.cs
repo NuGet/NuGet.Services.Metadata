@@ -34,7 +34,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             IIconProcessor iconProcessor,
             Func<HttpMessageHandler> httpHandlerFactory,
             ILogger<IconsCollector> logger)
-            : base(index, telemetryService, httpHandlerFactory)
+            : base(index, telemetryService, httpHandlerFactory, httpClientTimeout: TimeSpan.FromMinutes(5))
         {
             _packageStorage = packageStorage ?? throw new ArgumentNullException(nameof(packageStorage));
             _auxStorage = auxStorage ?? throw new ArgumentNullException(nameof(auxStorage));
@@ -96,7 +96,6 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                         }
                         else if (item.IsPackageDelete)
                         {
-                            // TODO: delete icon
                             await ProcessPackageDelete(storage, item, cancellationToken);
                         }
                     }
@@ -125,7 +124,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 using (_logger.BeginScope("Processing icon url {IconUrl}", iconUrl))
                 using (_telemetryService.TrackExternalIconProcessingDuration(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString()))
                 {
-                    using (var response = await TryGetResponse(httpClient, iconUrl))
+                    using (var response = await TryGetResponse(httpClient, iconUrl, cancellationToken))
                     {
                         if (response == null)
                         {
@@ -146,7 +145,6 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                         {
                             var targetStoragePath = GetTargetStorageIconPath(item);
                             await _iconProcessor.CopyIconFromExternalSource(iconDataStream, storage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
-
                         }
                     }
                 }
@@ -165,17 +163,65 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             }
         }
 
-        private async Task<HttpResponseMessage> TryGetResponse(CollectorHttpClient httpClient, Uri iconUrl)
+        private async Task<HttpResponseMessage> TryGetResponse(CollectorHttpClient httpClient, Uri iconUrl, CancellationToken cancellationToken)
         {
             try
             {
-                return await httpClient.GetAsync(iconUrl);
+                return await httpClient.GetAsync(iconUrl, cancellationToken);
+            }
+            catch (HttpRequestException e) when (IsConnectFailure(e))
+            {
+                _logger.LogInformation("Failed to connect to remote host to retrieve icon");
+            }
+            catch (HttpRequestException e) when (IsDnsFailure(e))
+            {
+                _logger.LogInformation("Failed to resolve DNS name for icon URL");
+            }
+            catch (HttpRequestException e) when (IsConnectionClosed(e))
+            {
+                _logger.LogInformation("Connection closed unexpectedly while trying to retrieve the icon");
+            }
+            catch (HttpRequestException e) when (IsTrustFailure(e))
+            {
+                _logger.LogInformation("TLS setup failed while trying to retrieve icon");
+            }
+            catch (TaskCanceledException e)
+            {
+                if (e.CancellationToken == cancellationToken)
+                {
+                    throw;
+                }
+                _logger.LogInformation("Timed out while trying to get the icon data");
+            }
+            catch (HttpRequestException e)
+            {
+                _logger.LogInformation(0, e, "HTTP exception while trying to retrieve icon file");
             }
             catch (Exception e)
             {
                 _logger.LogError(0, e, "Exception while trying to retrieve URL: {IconUrl}", iconUrl);
-                return null;
             }
+            return null;
+        }
+
+        private static bool IsConnectFailure(HttpRequestException e)
+        {
+            return (e?.InnerException as WebException)?.Status == WebExceptionStatus.ConnectFailure;
+        }
+
+        private static bool IsDnsFailure(HttpRequestException e)
+        {
+            return (e?.InnerException as WebException)?.Status == WebExceptionStatus.NameResolutionFailure;
+        }
+
+        private static bool IsConnectionClosed(HttpRequestException e)
+        {
+            return (e?.InnerException as WebException)?.Status == WebExceptionStatus.ConnectionClosed;
+        }
+
+        private static bool IsTrustFailure(HttpRequestException e)
+        {
+            return (e?.InnerException as WebException)?.Status == WebExceptionStatus.TrustFailure;
         }
 
         private static string GetTargetStorageIconPath(CatalogCommitItem item)
