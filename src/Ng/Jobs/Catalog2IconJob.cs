@@ -37,7 +37,6 @@ namespace Ng.Jobs
             var source = arguments.GetOrThrow<string>(Arguments.Source);
             var auxStorage = auxStorageFactory.Create();
             var iconProcessor = new IconProcessor(TelemetryService, LoggerFactory.CreateLogger<IconProcessor>());
-            var targetStorage = targetStorageFactory.Create();
             _collector = new IconsCollector(
                 new Uri(source),
                 TelemetryService,

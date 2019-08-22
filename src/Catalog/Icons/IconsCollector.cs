@@ -66,7 +66,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             CancellationToken cancellationToken)
         {
             var filteredItems = items
-                .GroupBy(i => i.PackageIdentity)                          // if we have multiple commits for the same package
+                .GroupBy(i => i.PackageIdentity)                          // if we have multiple commits for the same package (id AND version)
                 .Select(g => g.OrderBy(i => i.CommitTimeStamp).ToList()); // group them together for processing in order
             var itemsToProcess = new ConcurrentBag<IReadOnlyCollection<CatalogCommitItem>>(filteredItems);
             var tasks = Enumerable
@@ -122,11 +122,33 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     iconUrl,
                     item.PackageIdentity.Id,
                     item.PackageIdentity.Version);
+                using (_logger.BeginScope("Processing icon url {IconUrl}", iconUrl))
                 using (_telemetryService.TrackExternalIconProcessingDuration(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString()))
-                using (var iconDataStream = await httpClient.GetStreamAsync(iconUrl))
                 {
-                    var targetStoragePath = GetTargetStorageIconPath(item);
-                    await _iconProcessor.CopyIconFromExternalSource(iconDataStream, storage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
+                    using (var response = await TryGetResponse(httpClient, iconUrl))
+                    {
+                        if (response == null)
+                        {
+                            return;
+                        }
+                        if (response.StatusCode >= HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.MovedPermanently || response.StatusCode == HttpStatusCode.Found)
+                        {
+                            // normally, HttpClient follows redirects on its own, but there is a limit to it, so if the redirect chain is too long
+                            // it will return 301 or 302, so we'll ignore these specifically.
+                            // TODO: if not 404, retry
+                            _logger.LogInformation("Icon url {IconUrl} responded with {ResponseCode}", iconUrl, response.StatusCode);
+                            _telemetryService.TrackExternalIconIngestionFailure(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
+                            return;
+                        }
+                        response.EnsureSuccessStatusCode();
+
+                        using (var iconDataStream = await response.Content.ReadAsStreamAsync())
+                        {
+                            var targetStoragePath = GetTargetStorageIconPath(item);
+                            await _iconProcessor.CopyIconFromExternalSource(iconDataStream, storage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
+
+                        }
+                    }
                 }
             }
             else if (hasEmbeddedIcon)
@@ -143,9 +165,22 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             }
         }
 
+        private async Task<HttpResponseMessage> TryGetResponse(CollectorHttpClient httpClient, Uri iconUrl)
+        {
+            try
+            {
+                return await httpClient.GetAsync(iconUrl);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(0, e, "Exception while trying to retrieve URL: {IconUrl}", iconUrl);
+                return null;
+            }
+        }
+
         private static string GetTargetStorageIconPath(CatalogCommitItem item)
         {
-            return $"{item.PackageIdentity.Id}/{item.PackageIdentity.Version.ToNormalizedString()}/icon";
+            return $"{item.PackageIdentity.Id.ToLowerInvariant()}/{item.PackageIdentity.Version.ToNormalizedString().ToLowerInvariant()}/icon";
         }
 
         private class ExternalIconUrlInformation
