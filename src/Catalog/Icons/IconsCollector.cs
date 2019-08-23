@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -19,6 +20,8 @@ namespace NuGet.Services.Metadata.Catalog.Icons
 {
     public class IconsCollector : CommitCollector
     {
+        private const int MaxExternalIconIngestAttempts = 3;
+
         private readonly IAzureStorage _packageStorage;
         private readonly IStorage _auxStorage;
         private readonly IStorageFactory _targetStorageFactory;
@@ -109,7 +112,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             await _iconProcessor.DeleteIcon(storage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
         }
 
-        private async Task ProcessPackageDetails(CollectorHttpClient httpClient, Storage storage, CatalogCommitItem item, CancellationToken cancellationToken)
+        private async Task ProcessPackageDetails(CollectorHttpClient httpClient, Storage destinationStorage, CatalogCommitItem item, CancellationToken cancellationToken)
         {
             var leafContent = await httpClient.GetStringAsync(item.Uri, cancellationToken);
             var data = JsonConvert.DeserializeObject<ExternalIconUrlInformation>(leafContent);
@@ -121,32 +124,25 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     iconUrl,
                     item.PackageIdentity.Id,
                     item.PackageIdentity.Version);
+                if (IsValidIconUrl(iconUrl))
+                {
+                    _logger.LogInformation("Invalid icon URL {IconUrl}", iconUrl);
+                    return;
+                }
                 using (_logger.BeginScope("Processing icon url {IconUrl}", iconUrl))
                 using (_telemetryService.TrackExternalIconProcessingDuration(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString()))
                 {
-                    using (var response = await TryGetResponse(httpClient, iconUrl, cancellationToken))
+                    var attemptIndex = 0;
+                    AttemptResult ingestionResult;
+                    do
                     {
-                        if (response == null)
+                        var attemptTime = Stopwatch.StartNew();
+                        ingestionResult = await TryIngestExternalIconAsync(httpClient, item, iconUrl, destinationStorage, cancellationToken);
+                        if (ingestionResult == AttemptResult.FailCanRetry && attemptTime.Elapsed < TimeSpan.FromSeconds(5))
                         {
-                            return;
+                            await Task.Delay(TimeSpan.FromSeconds(5));
                         }
-                        if (response.StatusCode >= HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.MovedPermanently || response.StatusCode == HttpStatusCode.Found)
-                        {
-                            // normally, HttpClient follows redirects on its own, but there is a limit to it, so if the redirect chain is too long
-                            // it will return 301 or 302, so we'll ignore these specifically.
-                            // TODO: if not 404, retry
-                            _logger.LogInformation("Icon url {IconUrl} responded with {ResponseCode}", iconUrl, response.StatusCode);
-                            _telemetryService.TrackExternalIconIngestionFailure(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
-                            return;
-                        }
-                        response.EnsureSuccessStatusCode();
-
-                        using (var iconDataStream = await response.Content.ReadAsStreamAsync())
-                        {
-                            var targetStoragePath = GetTargetStorageIconPath(item);
-                            await _iconProcessor.CopyIconFromExternalSource(iconDataStream, storage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
-                        }
-                    }
+                    } while (ingestionResult == AttemptResult.FailCanRetry && ++attemptIndex < MaxExternalIconIngestAttempts);
                 }
             }
             else if (hasEmbeddedIcon)
@@ -158,16 +154,90 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 using (var packageStream = await packageBlobReference.GetStreamAsync(cancellationToken))
                 {
                     var targetStoragePath = GetTargetStorageIconPath(item);
-                    await _iconProcessor.CopyEmbeddedIconFromPackage(packageStream, data.IconFile, storage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
+                    await _iconProcessor.CopyEmbeddedIconFromPackage(packageStream, data.IconFile, destinationStorage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
                 }
             }
         }
 
-        private async Task<HttpResponseMessage> TryGetResponse(CollectorHttpClient httpClient, Uri iconUrl, CancellationToken cancellationToken)
+        private bool IsValidIconUrl(Uri iconUrl)
+        {
+            return iconUrl.Scheme == Uri.UriSchemeHttp || iconUrl.Scheme == Uri.UriSchemeHttps;
+        }
+
+        private enum AttemptResult
+        {
+            Success,
+            FailCanRetry,
+            FailCannotRetry
+        }
+
+        private async Task<AttemptResult> TryIngestExternalIconAsync(HttpClient httpClient, CatalogCommitItem item, Uri iconUrl, Storage destinationStorage, CancellationToken cancellationToken)
+        {
+            var getResult = await TryGetResponse(httpClient, iconUrl, cancellationToken);
+            if (getResult.AttemptResult != AttemptResult.Success)
+            {
+                return getResult.AttemptResult;
+            }
+            using (var response = getResult.HttpResponseMessage)
+            {
+                if (response.StatusCode >= HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.MovedPermanently || response.StatusCode == HttpStatusCode.Found)
+                {
+                    // normally, HttpClient follows redirects on its own, but there is a limit to it, so if the redirect chain is too long
+                    // it will return 301 or 302, so we'll ignore these specifically.
+                    _logger.LogInformation("Icon url {IconUrl} responded with {ResponseCode}", iconUrl, response.StatusCode);
+                    _telemetryService.TrackExternalIconIngestionFailure(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
+                    return response.StatusCode < HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.NotFound ? AttemptResult.FailCannotRetry : AttemptResult.FailCanRetry;
+                }
+                response.EnsureSuccessStatusCode();
+
+                using (var iconDataStream = await response.Content.ReadAsStreamAsync())
+                {
+                    var targetStoragePath = GetTargetStorageIconPath(item);
+                    await _iconProcessor.CopyIconFromExternalSource(iconDataStream, destinationStorage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
+                }
+            }
+
+            return AttemptResult.Success;
+        }
+
+        private class TryGetResponseResult
+        {
+            public HttpResponseMessage HttpResponseMessage { get; set; }
+            public AttemptResult AttemptResult;
+
+            public static TryGetResponseResult Success(HttpResponseMessage httpResponseMessage)
+            {
+                return new TryGetResponseResult
+                {
+                    AttemptResult = AttemptResult.Success,
+                    HttpResponseMessage = httpResponseMessage,
+                };
+            }
+
+            public static TryGetResponseResult FailCanRetry()
+            {
+                return new TryGetResponseResult
+                {
+                    AttemptResult = AttemptResult.FailCanRetry,
+                    HttpResponseMessage = null,
+                };
+            }
+
+            public static TryGetResponseResult FailCannotRetry()
+            {
+                return new TryGetResponseResult
+                {
+                    AttemptResult = AttemptResult.FailCannotRetry,
+                    HttpResponseMessage = null,
+                };
+            }
+        }
+
+        private async Task<TryGetResponseResult> TryGetResponse(HttpClient httpClient, Uri iconUrl, CancellationToken cancellationToken)
         {
             try
             {
-                return await httpClient.GetAsync(iconUrl, cancellationToken);
+                return TryGetResponseResult.Success(await httpClient.GetAsync(iconUrl, cancellationToken));
             }
             catch (HttpRequestException e) when (IsConnectFailure(e))
             {
@@ -176,6 +246,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             catch (HttpRequestException e) when (IsDnsFailure(e))
             {
                 _logger.LogInformation("Failed to resolve DNS name for icon URL");
+                return TryGetResponseResult.FailCannotRetry();
             }
             catch (HttpRequestException e) when (IsConnectionClosed(e))
             {
@@ -201,7 +272,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             {
                 _logger.LogError(0, e, "Exception while trying to retrieve URL: {IconUrl}", iconUrl);
             }
-            return null;
+            return TryGetResponseResult.FailCanRetry();
         }
 
         private static bool IsConnectFailure(HttpRequestException e)
