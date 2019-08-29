@@ -203,6 +203,9 @@ namespace NuGet.Services.BasicSearch
             ServicePointManager.SecurityProtocol &= ~SecurityProtocolType.Ssl3;
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 
+            // Ensure that certificate validation check for online revocations.
+            ServicePointManager.CheckCertificateRevocationList = true;
+
             var secretReaderFactory = new SecretReaderFactory();
             var secretReader = secretReaderFactory.CreateSecretReader();
 
