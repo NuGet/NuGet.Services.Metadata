@@ -5,9 +5,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.ServiceModel.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -21,6 +23,9 @@ namespace NuGet.Services.Metadata.Catalog.Icons
     public class IconsCollector : CommitCollector
     {
         private const int MaxExternalIconIngestAttempts = 3;
+        private const string CacheFilename = "c2i_cache.json";
+
+        private static ConcurrentDictionary<Uri, ExternalIconCopyResult> ExternalIconCopyResults = null;
 
         private readonly IAzureStorage _packageStorage;
         private readonly IStorage _auxStorage;
@@ -68,6 +73,8 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             bool isLastBatch,
             CancellationToken cancellationToken)
         {
+            await InitializeCache(cancellationToken);
+
             var filteredItems = items
                 .GroupBy(i => i.PackageIdentity)                          // if we have multiple commits for the same package (id AND version)
                 .Select(g => g.OrderBy(i => i.CommitTimeStamp).ToList()); // group them together for processing in order
@@ -76,7 +83,41 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 .Range(1, ServicePointManager.DefaultConnectionLimit)
                 .Select(_ => ProcessIconsAsync(client, itemsToProcess, cancellationToken));
             await Task.WhenAll(tasks);
+
+            await StoreCache(cancellationToken);
+
             return true;
+        }
+
+        private async Task StoreCache(CancellationToken cancellationToken)
+        {
+            var cacheUrl = _auxStorage.ResolveUri(CacheFilename);
+            var serialized = JsonConvert.SerializeObject(ExternalIconCopyResults);
+            var content = new StringStorageContent(serialized, contentType: "text/json");
+            await _auxStorage.SaveAsync(cacheUrl, content, cancellationToken);
+        }
+
+        private async Task InitializeCache(CancellationToken cancellationToken)
+        {
+            if (ExternalIconCopyResults != null)
+            {
+                return;
+            }
+
+            var cacheUrl = _auxStorage.ResolveUri(CacheFilename);
+            var content = await _auxStorage.LoadAsync(cacheUrl, cancellationToken);
+            if (content == null)
+            {
+                ExternalIconCopyResults = new ConcurrentDictionary<Uri, ExternalIconCopyResult>();
+                return;
+            }
+            using (var contentStream = content.GetContentStream())
+            using (var reader = new StreamReader(contentStream))
+            {
+                var serializer = new JsonSerializer();
+                var dictionary = (Dictionary<Uri, ExternalIconCopyResult>)serializer.Deserialize(reader, typeof(Dictionary<Uri, ExternalIconCopyResult>));
+                ExternalIconCopyResults = new ConcurrentDictionary<Uri, ExternalIconCopyResult>(dictionary);
+            }
         }
 
         private async Task ProcessIconsAsync(
@@ -124,25 +165,51 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     iconUrl,
                     item.PackageIdentity.Id,
                     item.PackageIdentity.Version);
-                if (IsValidIconUrl(iconUrl))
+                if (!IsValidIconUrl(iconUrl))
                 {
                     _logger.LogInformation("Invalid icon URL {IconUrl}", iconUrl);
                     return;
+                }
+                if (ExternalIconCopyResults.TryGetValue(iconUrl, out var result))
+                {
+                    if (result.IsCopySucceeded)
+                    {
+                        // TODO: do internal copy and return
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Previous copy attempt failed, skipping {IconUrl} for {PackageId} {PackageVersion}",
+                            iconUrl,
+                            item.PackageIdentity.Id,
+                            item.PackageIdentity.Version);
+                        return;
+                    }
                 }
                 using (_logger.BeginScope("Processing icon url {IconUrl}", iconUrl))
                 using (_telemetryService.TrackExternalIconProcessingDuration(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString()))
                 {
                     var attemptIndex = 0;
-                    AttemptResult ingestionResult;
+                    TryIngestExternalIconAsyncResult ingestionResult;
                     do
                     {
                         var attemptTime = Stopwatch.StartNew();
                         ingestionResult = await TryIngestExternalIconAsync(httpClient, item, iconUrl, destinationStorage, cancellationToken);
-                        if (ingestionResult == AttemptResult.FailCanRetry && attemptTime.Elapsed < TimeSpan.FromSeconds(5))
+                        if (ingestionResult.Result == AttemptResult.FailCanRetry && attemptTime.Elapsed < TimeSpan.FromSeconds(5))
                         {
                             await Task.Delay(TimeSpan.FromSeconds(5));
                         }
-                    } while (ingestionResult == AttemptResult.FailCanRetry && ++attemptIndex < MaxExternalIconIngestAttempts);
+                    } while (ingestionResult.Result == AttemptResult.FailCanRetry && ++attemptIndex < MaxExternalIconIngestAttempts);
+
+                    ExternalIconCopyResult cacheItem;
+                    if (ingestionResult.Result == AttemptResult.Success)
+                    {
+                        cacheItem = ExternalIconCopyResult.Success(iconUrl, ingestionResult.ResultUrl);
+                    }
+                    else
+                    {
+                        cacheItem = ExternalIconCopyResult.Fail(iconUrl);
+                    }
+                    ExternalIconCopyResults.AddOrUpdate(iconUrl, cacheItem, (_, v) => v); // TODO: double check what to do when overwriting the cache entry
                 }
             }
             else if (hasEmbeddedIcon)
@@ -154,7 +221,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 using (var packageStream = await packageBlobReference.GetStreamAsync(cancellationToken))
                 {
                     var targetStoragePath = GetTargetStorageIconPath(item);
-                    await _iconProcessor.CopyEmbeddedIconFromPackage(packageStream, data.IconFile, destinationStorage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
+                    var resultUrl = await _iconProcessor.CopyEmbeddedIconFromPackage(packageStream, data.IconFile, destinationStorage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
                 }
             }
         }
@@ -171,12 +238,40 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             FailCannotRetry
         }
 
-        private async Task<AttemptResult> TryIngestExternalIconAsync(HttpClient httpClient, CatalogCommitItem item, Uri iconUrl, Storage destinationStorage, CancellationToken cancellationToken)
+        private class TryIngestExternalIconAsyncResult
+        {
+            public AttemptResult Result { get; private set; }
+            public Uri ResultUrl { get; private set; }
+            public static TryIngestExternalIconAsyncResult Fail(AttemptResult failResult)
+            {
+                if (failResult == AttemptResult.Success)
+                {
+                    throw new ArgumentException($"{nameof(failResult)} cannot be {AttemptResult.Success}", nameof(failResult));
+                }
+
+                return new TryIngestExternalIconAsyncResult
+                {
+                    Result = failResult,
+                    ResultUrl = null,
+                };
+            }
+            public static TryIngestExternalIconAsyncResult FailCannotRetry() => Fail(AttemptResult.FailCannotRetry);
+            public static TryIngestExternalIconAsyncResult FailCanRetry() => Fail(AttemptResult.FailCanRetry);
+            public static TryIngestExternalIconAsyncResult Success(Uri resultUrl) 
+                => new TryIngestExternalIconAsyncResult 
+                {
+                    Result = AttemptResult.Success,
+                    ResultUrl = resultUrl ?? throw new ArgumentNullException(nameof(resultUrl))
+                };
+        }
+
+        private async Task<TryIngestExternalIconAsyncResult> TryIngestExternalIconAsync(HttpClient httpClient, CatalogCommitItem item, Uri iconUrl, Storage destinationStorage, CancellationToken cancellationToken)
         {
             var getResult = await TryGetResponse(httpClient, iconUrl, cancellationToken);
+            var resultUrl = (Uri)null;
             if (getResult.AttemptResult != AttemptResult.Success)
             {
-                return getResult.AttemptResult;
+                return TryIngestExternalIconAsyncResult.Fail(getResult.AttemptResult);
             }
             using (var response = getResult.HttpResponseMessage)
             {
@@ -186,18 +281,22 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     // it will return 301 or 302, so we'll ignore these specifically.
                     _logger.LogInformation("Icon url {IconUrl} responded with {ResponseCode}", iconUrl, response.StatusCode);
                     _telemetryService.TrackExternalIconIngestionFailure(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
-                    return response.StatusCode < HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.NotFound ? AttemptResult.FailCannotRetry : AttemptResult.FailCanRetry;
+                    return response.StatusCode < HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.NotFound ? TryIngestExternalIconAsyncResult.FailCannotRetry() : TryIngestExternalIconAsyncResult.FailCanRetry();
                 }
                 response.EnsureSuccessStatusCode();
 
                 using (var iconDataStream = await response.Content.ReadAsStreamAsync())
                 {
                     var targetStoragePath = GetTargetStorageIconPath(item);
-                    await _iconProcessor.CopyIconFromExternalSource(iconDataStream, destinationStorage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
+                    resultUrl = await _iconProcessor.CopyIconFromExternalSource(iconDataStream, destinationStorage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
+                    if (resultUrl == null)
+                    {
+                        return TryIngestExternalIconAsyncResult.FailCannotRetry();
+                    }
                 }
             }
 
-            return AttemptResult.Success;
+            return TryIngestExternalIconAsyncResult.Success(resultUrl);
         }
 
         private class TryGetResponseResult

@@ -114,6 +114,7 @@
     <Compile Include="Helpers\PackageContentUriBuilder.cs" />
     <Compile Include="Helpers\PackageUtility.cs" />
     <Compile Include="ICatalogIndexProcessor.cs" />
+    <Compile Include="Icons\ExternalIconCopyResult.cs" />
     <Compile Include="Icons\IconProcessor.cs" />
     <Compile Include="Icons\IconsCollector.cs" />
     <Compile Include="Icons\IIconProcessor.cs" />

@@ -11,7 +11,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
 {
     public interface IIconProcessor
     {
-        Task CopyEmbeddedIconFromPackage(
+        Task<Uri> CopyEmbeddedIconFromPackage(
             Stream packageStream,
             string iconFilename,
             IStorage destinationStorage,
@@ -19,7 +19,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             CancellationToken cancellationToken,
             string packageId,
             string normalizedPackageVersion);
-        Task CopyIconFromExternalSource(
+        Task<Uri> CopyIconFromExternalSource(
             Stream iconDataStream,
             IStorage destinationStorage,
             string destinationStoragePath,

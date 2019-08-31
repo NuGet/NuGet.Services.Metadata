@@ -30,7 +30,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task CopyIconFromExternalSource(
+        public async Task<Uri> CopyIconFromExternalSource(
             Stream iconDataStream,
             IStorage destinationStorage,
             string destinationStoragePath,
@@ -43,7 +43,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             var iconData = await GetStreamBytesAsync(iconDataStream, MaxExternalIconSize, cancellationToken);
             if (iconData == null)
             {
-                return;
+                return null;
             }
 
             var contentType = DetermineContentType(iconData);
@@ -51,11 +51,12 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             {
                 _logger.LogInformation("Failed to determine image type.");
                 _telemetryService.TrackExternalIconIngestionFailure(packageId, normalizedPackageVersion);
-                return;
+                return null;
             }
             var content = new ByteArrayStorageContent(iconData, contentType, DefaultCacheControl);
             await destinationStorage.SaveAsync(destinationUri, content, cancellationToken);
             _telemetryService.TrackExternalIconIngestionSuccess(packageId, normalizedPackageVersion);
+            return destinationUri;
         }
 
         public async Task DeleteIcon(
@@ -72,7 +73,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             }
         }
 
-        public async Task CopyEmbeddedIconFromPackage(
+        public async Task<Uri> CopyEmbeddedIconFromPackage(
             Stream packageStream,
             string iconFilename,
             IStorage destinationStorage,
@@ -85,6 +86,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             var destinationUri = destinationStorage.ResolveUri(destinationStoragePath);
 
             await ExtractAndStoreIconAsync(packageStream, iconPath, destinationStorage, destinationUri, cancellationToken, packageId, normalizedPackageVersion);
+            return destinationUri;
         }
 
         private async Task ExtractAndStoreIconAsync(
