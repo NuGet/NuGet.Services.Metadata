@@ -301,7 +301,7 @@
       <Version>2.25.0-master-30088</Version>
     </PackageReference>
     <PackageReference Include="NuGetGallery.Core">
-      <Version>4.4.5-master-39280</Version>
+      <Version>4.4.5-dev-2323501</Version>
     </PackageReference>
     <PackageReference Include="System.Net.Http">
       <Version>4.3.3</Version>
