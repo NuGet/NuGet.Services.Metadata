@@ -15,6 +15,7 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.DataMovement;
 using Microsoft.WindowsAzure.Storage.RetryPolicies;
 using NuGet.Protocol;
+using NuGetGallery;
 
 namespace NuGet.Services.Metadata.Catalog.Persistence
 {
@@ -389,7 +390,12 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             {
                 if (await source.ExistsAsync())
                 {
-                    return !string.IsNullOrEmpty(source.Properties.ContentMD5) && source.Properties.ContentMD5 == destination.Properties.ContentMD5;
+                    var sourceBlobMetadata = source.Metadata;
+                    var destinationBlobMetadata = destination.Metadata;
+
+                    return ((sourceBlobMetadata != null && sourceBlobMetadata.TryGetValue(CoreConstants.Sha512HashAlgorithmId, out var sourceHashValue)) &&
+                        (destinationBlobMetadata != null && destinationBlobMetadata.TryGetValue(CoreConstants.Sha512HashAlgorithmId, out var destinationHashValue)) &&
+                        sourceHashValue == destinationHashValue);
                 }
                 return true;
             }
