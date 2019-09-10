@@ -174,7 +174,25 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 {
                     if (result.IsCopySucceeded)
                     {
-                        // TODO: do internal copy and return
+                        _logger.LogInformation("Seen {IconUrl} before, will copy from {CachedLocation}",
+                            iconUrl,
+                            result.StorageUrl);
+                        var storageUrl = result.StorageUrl;
+                        var targetStoragePath = GetTargetStorageIconPath(item);
+                        var destinationUrl = destinationStorage.ResolveUri(targetStoragePath);
+                        if (storageUrl == destinationUrl)
+                        {
+                            // We came across the package that initially caused the icon to be added to the cache.
+                            // Skipping it.
+                            return;
+                        }
+                        await Retry.IncrementalAsync(
+                            async () => await destinationStorage.CopyAsync(storageUrl, destinationStorage, destinationUrl, null, cancellationToken),
+                            e => true,
+                            3,
+                            initialWaitInterval: TimeSpan.FromSeconds(5),
+                            waitIncrement: TimeSpan.FromSeconds(1));
+                        return;
                     }
                     else
                     {
@@ -188,17 +206,13 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 using (_logger.BeginScope("Processing icon url {IconUrl}", iconUrl))
                 using (_telemetryService.TrackExternalIconProcessingDuration(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString()))
                 {
-                    var attemptIndex = 0;
-                    TryIngestExternalIconAsyncResult ingestionResult;
-                    do
-                    {
-                        var attemptTime = Stopwatch.StartNew();
-                        ingestionResult = await TryIngestExternalIconAsync(httpClient, item, iconUrl, destinationStorage, cancellationToken);
-                        if (ingestionResult.Result == AttemptResult.FailCanRetry && attemptTime.Elapsed < TimeSpan.FromSeconds(5))
-                        {
-                            await Task.Delay(TimeSpan.FromSeconds(5));
-                        }
-                    } while (ingestionResult.Result == AttemptResult.FailCanRetry && ++attemptIndex < MaxExternalIconIngestAttempts);
+                    var ingestionResult = await Retry.IncrementalAsync(
+                        async () => await TryIngestExternalIconAsync(httpClient, item, iconUrl, destinationStorage, cancellationToken),
+                        e => false,
+                        r => r.Result == AttemptResult.FailCanRetry,
+                        MaxExternalIconIngestAttempts,
+                        initialWaitInterval: TimeSpan.FromSeconds(5),
+                        waitIncrement: TimeSpan.FromSeconds(1));
 
                     ExternalIconCopyResult cacheItem;
                     if (ingestionResult.Result == AttemptResult.Success)

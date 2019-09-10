@@ -113,6 +113,7 @@
     <Compile Include="Helpers\LicenseHelper.cs" />
     <Compile Include="Helpers\PackageContentUriBuilder.cs" />
     <Compile Include="Helpers\PackageUtility.cs" />
+    <Compile Include="Helpers\Retry.cs" />
     <Compile Include="ICatalogIndexProcessor.cs" />
     <Compile Include="Icons\ExternalIconCopyResult.cs" />
     <Compile Include="Icons\IconProcessor.cs" />
