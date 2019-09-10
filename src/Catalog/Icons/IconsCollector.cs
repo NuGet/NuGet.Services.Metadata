@@ -4,12 +4,10 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.ServiceModel.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -23,6 +21,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
     public class IconsCollector : CommitCollector
     {
         private const int MaxExternalIconIngestAttempts = 3;
+        private const int MaxBlobStorageCopyAttempts = 3;
         private const string CacheFilename = "c2i_cache.json";
 
         private static ConcurrentDictionary<Uri, ExternalIconCopyResult> ExternalIconCopyResults = null;
@@ -191,7 +190,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                         await Retry.IncrementalAsync(
                             async () => await destinationStorage.CopyAsync(storageUrl, destinationStorage, destinationUrl, null, cancellationToken),
                             e => true,
-                            3,
+                            MaxBlobStorageCopyAttempts,
                             initialWaitInterval: TimeSpan.FromSeconds(5),
                             waitIncrement: TimeSpan.FromSeconds(1));
                         return;
