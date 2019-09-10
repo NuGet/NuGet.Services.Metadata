@@ -377,20 +377,20 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             }
             catch (HttpRequestException e) when (IsConnectFailure(e))
             {
-                _logger.LogInformation("Failed to connect to remote host to retrieve icon");
+                _logger.LogInformation("Failed to connect to remote host to retrieve the icon");
             }
             catch (HttpRequestException e) when (IsDnsFailure(e))
             {
-                _logger.LogInformation("Failed to resolve DNS name for icon URL");
+                _logger.LogInformation("Failed to resolve DNS name for the icon URL");
                 return TryGetResponseResult.FailCannotRetry();
             }
             catch (HttpRequestException e) when (IsConnectionClosed(e))
             {
                 _logger.LogInformation("Connection closed unexpectedly while trying to retrieve the icon");
             }
-            catch (HttpRequestException e) when (IsTrustFailure(e))
+            catch (HttpRequestException e) when (IsTLSSetupFailure(e))
             {
-                _logger.LogInformation("TLS setup failed while trying to retrieve icon");
+                _logger.LogInformation("TLS setup failed while trying to retrieve the icon");
             }
             catch (TaskCanceledException e)
             {
@@ -426,9 +426,10 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             return (e?.InnerException as WebException)?.Status == WebExceptionStatus.ConnectionClosed;
         }
 
-        private static bool IsTrustFailure(HttpRequestException e)
+        private static bool IsTLSSetupFailure(HttpRequestException e)
         {
-            return (e?.InnerException as WebException)?.Status == WebExceptionStatus.TrustFailure;
+            var innerWebException = e?.InnerException as WebException;
+            return innerWebException?.Status == WebExceptionStatus.TrustFailure || innerWebException?.Status == WebExceptionStatus.SecureChannelFailure;
         }
 
         private static string GetTargetStorageIconPath(CatalogCommitItem item)
