@@ -15,7 +15,6 @@ using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.DataMovement;
 using Microsoft.WindowsAzure.Storage.RetryPolicies;
 using NuGet.Protocol;
-using NuGetGallery;
 
 namespace NuGet.Services.Metadata.Catalog.Persistence
 {
@@ -26,6 +25,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
         private readonly CloudBlobDirectory _directory;
         private readonly bool _useServerSideCopy;
 
+        public const string Sha512HashAlgorithmId = "SHA512";
         public static readonly TimeSpan DefaultServerTimeout = TimeSpan.FromSeconds(30);
         public static readonly TimeSpan DefaultMaxExecutionTime = TimeSpan.FromMinutes(10);
 
@@ -392,8 +392,8 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                 {
                     var sourceBlobMetadata = source.Metadata;
                     var destinationBlobMetadata = destination.Metadata;
-                    var isSynchronized = ((sourceBlobMetadata != null && sourceBlobMetadata.TryGetValue(CoreConstants.Sha512HashAlgorithmId, out var sourceHashValue)) &&
-                        (destinationBlobMetadata != null && destinationBlobMetadata.TryGetValue(CoreConstants.Sha512HashAlgorithmId, out var destinationHashValue)) &&
+                    var isSynchronized = ((sourceBlobMetadata != null && sourceBlobMetadata.TryGetValue(Sha512HashAlgorithmId, out var sourceHashValue)) &&
+                        (destinationBlobMetadata != null && destinationBlobMetadata.TryGetValue(Sha512HashAlgorithmId, out var destinationHashValue)) &&
                         sourceHashValue == destinationHashValue);
 
                     if (isSynchronized)
