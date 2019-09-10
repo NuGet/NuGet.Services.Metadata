@@ -392,10 +392,20 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                 {
                     var sourceBlobMetadata = source.Metadata;
                     var destinationBlobMetadata = destination.Metadata;
-
-                    return ((sourceBlobMetadata != null && sourceBlobMetadata.TryGetValue(CoreConstants.Sha512HashAlgorithmId, out var sourceHashValue)) &&
+                    var isSynchronized = ((sourceBlobMetadata != null && sourceBlobMetadata.TryGetValue(CoreConstants.Sha512HashAlgorithmId, out var sourceHashValue)) &&
                         (destinationBlobMetadata != null && destinationBlobMetadata.TryGetValue(CoreConstants.Sha512HashAlgorithmId, out var destinationHashValue)) &&
                         sourceHashValue == destinationHashValue);
+
+                    if (isSynchronized)
+                    {
+                        Trace.WriteLine(string.Format("The source blob ({0}) and destination blob ({1}) have the same Sha512 hash value and are synchronized.",
+                            source.Uri.ToString(), destination.Uri.ToString()));
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
                 }
                 return true;
             }
