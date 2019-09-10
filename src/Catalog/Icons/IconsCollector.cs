@@ -281,35 +281,58 @@ namespace NuGet.Services.Metadata.Catalog.Icons
 
         private async Task<TryIngestExternalIconAsyncResult> TryIngestExternalIconAsync(HttpClient httpClient, CatalogCommitItem item, Uri iconUrl, Storage destinationStorage, CancellationToken cancellationToken)
         {
-            var getResult = await TryGetResponse(httpClient, iconUrl, cancellationToken);
+            bool retry;
             var resultUrl = (Uri)null;
-            if (getResult.AttemptResult != AttemptResult.Success)
+            int maxRetries = 10;
+            do
             {
-                return TryIngestExternalIconAsyncResult.Fail(getResult.AttemptResult);
-            }
-            using (var response = getResult.HttpResponseMessage)
-            {
-                if (response.StatusCode >= HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.MovedPermanently || response.StatusCode == HttpStatusCode.Found)
+                retry = false;
+                var getResult = await TryGetResponse(httpClient, iconUrl, cancellationToken);
+                if (getResult.AttemptResult != AttemptResult.Success)
                 {
-                    // normally, HttpClient follows redirects on its own, but there is a limit to it, so if the redirect chain is too long
-                    // it will return 301 or 302, so we'll ignore these specifically.
-                    _logger.LogInformation("Icon url {IconUrl} responded with {ResponseCode}", iconUrl, response.StatusCode);
-                    _telemetryService.TrackExternalIconIngestionFailure(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
-                    return response.StatusCode < HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.NotFound ? TryIngestExternalIconAsyncResult.FailCannotRetry() : TryIngestExternalIconAsyncResult.FailCanRetry();
+                    return TryIngestExternalIconAsyncResult.Fail(getResult.AttemptResult);
                 }
-                response.EnsureSuccessStatusCode();
-
-                using (var iconDataStream = await response.Content.ReadAsStreamAsync())
+                using (var response = getResult.HttpResponseMessage)
                 {
-                    var targetStoragePath = GetTargetStorageIconPath(item);
-                    resultUrl = await _iconProcessor.CopyIconFromExternalSource(iconDataStream, destinationStorage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
-                    if (resultUrl == null)
+                    if (response.StatusCode >= HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.MovedPermanently || response.StatusCode == HttpStatusCode.Found)
                     {
-                        return TryIngestExternalIconAsyncResult.FailCannotRetry();
+                        // normally, HttpClient follows redirects on its own, but there is a limit to it, so if the redirect chain is too long
+                        // it will return 301 or 302, so we'll ignore these specifically.
+                        _logger.LogInformation("Icon url {IconUrl} responded with {ResponseCode}", iconUrl, response.StatusCode);
+                        _telemetryService.TrackExternalIconIngestionFailure(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
+                        return response.StatusCode < HttpStatusCode.BadRequest || response.StatusCode == HttpStatusCode.NotFound ? TryIngestExternalIconAsyncResult.FailCannotRetry() : TryIngestExternalIconAsyncResult.FailCanRetry();
+                    }
+                    if (response.StatusCode == (HttpStatusCode)308)
+                    {
+                        // HttpClient does not seem to support HTTP status code 308, and we have at least one case when we get it:
+                        // http://app.exceptionless.com/images/exceptionless-32.png
+                        // so, we'll had it processed manually
+
+                        var newUrl = response.Headers.Location;
+
+                        if (iconUrl == newUrl || newUrl == null || !IsValidIconUrl(newUrl))
+                        {
+                            return TryIngestExternalIconAsyncResult.FailCannotRetry();
+                        }
+
+                        iconUrl = newUrl;
+                        retry = true;
+                        continue;
+                    }
+                    response.EnsureSuccessStatusCode();
+
+                    using (var iconDataStream = await response.Content.ReadAsStreamAsync())
+                    {
+                        var targetStoragePath = GetTargetStorageIconPath(item);
+                        resultUrl = await _iconProcessor.CopyIconFromExternalSource(iconDataStream, destinationStorage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
                     }
                 }
-            }
+            } while (retry && --maxRetries >= 0);
 
+            if (resultUrl == null)
+            {
+                return TryIngestExternalIconAsyncResult.FailCannotRetry();
+            }
             return TryIngestExternalIconAsyncResult.Success(resultUrl);
         }
 
