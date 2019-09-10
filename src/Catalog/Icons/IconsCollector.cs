@@ -127,6 +127,8 @@ namespace NuGet.Services.Metadata.Catalog.Icons
         {
             await Task.Yield();
             var storage = _targetStorageFactory.Create();
+
+            using (_logger.BeginScope("{CallGuid}", Guid.NewGuid()))
             while (items.TryTake(out var entries))
             {
                 var firstItem = entries.First();
@@ -392,17 +394,13 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             {
                 _logger.LogInformation("TLS setup failed while trying to retrieve the icon");
             }
-            catch (TaskCanceledException e)
+            catch (TaskCanceledException e) when (e.CancellationToken != cancellationToken)
             {
-                if (e.CancellationToken == cancellationToken)
-                {
-                    throw;
-                }
                 _logger.LogInformation("Timed out while trying to get the icon data");
             }
             catch (HttpRequestException e)
             {
-                _logger.LogInformation(0, e, "HTTP exception while trying to retrieve icon file");
+                _logger.LogError(0, e, "HTTP exception while trying to retrieve icon file");
             }
             catch (Exception e)
             {
