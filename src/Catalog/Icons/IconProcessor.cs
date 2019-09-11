@@ -66,6 +66,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             string packageId,
             string normalizedPackageVersion)
         {
+            _logger.LogInformation("Deleting icon blob {IconPath}", destinationStoragePath);
             if (destinationStorage.Exists(destinationStoragePath))
             {
                 var iconUri = new Uri(destinationStorage.BaseAddress, destinationStoragePath);
