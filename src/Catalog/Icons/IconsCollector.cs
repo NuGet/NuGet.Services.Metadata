@@ -325,7 +325,11 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                         retry = true;
                         continue;
                     }
-                    response.EnsureSuccessStatusCode();
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _logger.LogWarning("Unexpected response code {ResponseCode} for {IconUrl}", response.StatusCode, iconUrl);
+                        return TryIngestExternalIconAsyncResult.FailCanRetry();
+                    }
 
                     using (var iconDataStream = await response.Content.ReadAsStreamAsync())
                     {
