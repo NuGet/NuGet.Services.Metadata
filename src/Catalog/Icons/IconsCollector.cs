@@ -32,6 +32,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
         private readonly IStorageFactory _targetStorageFactory;
         private readonly IIconProcessor _iconProcessor;
         private readonly ICatalogClient _catalogClient;
+        private readonly IHttpResponseMessageProvider _httpResponseMessageProvider;
         private readonly ILogger<IconsCollector> _logger;
 
         public IconsCollector(
@@ -42,6 +43,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             IStorageFactory targetStorageFactory,
             IIconProcessor iconProcessor,
             ICatalogClient catalogClient,
+            IHttpResponseMessageProvider httpResponseMessageProvider,
             Func<HttpMessageHandler> httpHandlerFactory,
             ILogger<IconsCollector> logger)
             : base(index, telemetryService, httpHandlerFactory, httpClientTimeout: TimeSpan.FromMinutes(5))
@@ -51,6 +53,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             _targetStorageFactory = targetStorageFactory ?? throw new ArgumentNullException(nameof(targetStorageFactory));
             _iconProcessor = iconProcessor ?? throw new ArgumentNullException(nameof(iconProcessor));
             _catalogClient = catalogClient ?? throw new ArgumentNullException(nameof(catalogClient));
+            _httpResponseMessageProvider = httpResponseMessageProvider ?? throw new ArgumentNullException(nameof(httpResponseMessageProvider));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -142,7 +145,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     {
                         if (item.IsPackageDetails)
                         {
-                            await ProcessPackageDetails(httpClient, catalogClient, storage, item, cancellationToken);
+                            await ProcessPackageDetails(storage, item, cancellationToken);
                         }
                         else if (item.IsPackageDelete)
                         {
@@ -159,9 +162,9 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             await _iconProcessor.DeleteIcon(storage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
         }
 
-        private async Task ProcessPackageDetails(CollectorHttpClient httpClient, ICatalogClient catalogClient, Storage destinationStorage, CatalogCommitItem item, CancellationToken cancellationToken)
+        private async Task ProcessPackageDetails(Storage destinationStorage, CatalogCommitItem item, CancellationToken cancellationToken)
         {
-            var data = await catalogClient.GetPackageDetailsLeafAsync(item.Uri.AbsoluteUri);
+            var data = await _catalogClient.GetPackageDetailsLeafAsync(item.Uri.AbsoluteUri);
             var hasExternalIconUrl = !string.IsNullOrWhiteSpace(data.IconUrl);
             var hasEmbeddedIcon = !string.IsNullOrWhiteSpace(data.IconFile);
             if (hasExternalIconUrl && !hasEmbeddedIcon && Uri.TryCreate(data.IconUrl, UriKind.Absolute, out var iconUrl))
@@ -212,7 +215,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 using (_telemetryService.TrackExternalIconProcessingDuration(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString()))
                 {
                     var ingestionResult = await Retry.IncrementalAsync(
-                        async () => await TryIngestExternalIconAsync(httpClient, item, iconUrl, destinationStorage, cancellationToken),
+                        async () => await TryIngestExternalIconAsync(item, iconUrl, destinationStorage, cancellationToken),
                         e => false,
                         r => r.Result == AttemptResult.FailCanRetry,
                         MaxExternalIconIngestAttempts,
@@ -284,7 +287,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 };
         }
 
-        private async Task<TryIngestExternalIconAsyncResult> TryIngestExternalIconAsync(HttpClient httpClient, CatalogCommitItem item, Uri iconUrl, Storage destinationStorage, CancellationToken cancellationToken)
+        private async Task<TryIngestExternalIconAsyncResult> TryIngestExternalIconAsync(CatalogCommitItem item, Uri iconUrl, Storage destinationStorage, CancellationToken cancellationToken)
         {
             bool retry;
             var resultUrl = (Uri)null;
@@ -292,7 +295,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             do
             {
                 retry = false;
-                var getResult = await TryGetResponse(httpClient, iconUrl, cancellationToken);
+                var getResult = await TryGetResponse(iconUrl, cancellationToken);
                 if (getResult.AttemptResult != AttemptResult.Success)
                 {
                     return TryIngestExternalIconAsyncResult.Fail(getResult.AttemptResult);
@@ -374,11 +377,11 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             }
         }
 
-        private async Task<TryGetResponseResult> TryGetResponse(HttpClient httpClient, Uri iconUrl, CancellationToken cancellationToken)
+        private async Task<TryGetResponseResult> TryGetResponse(Uri iconUrl, CancellationToken cancellationToken)
         {
             try
             {
-                return TryGetResponseResult.Success(await httpClient.GetAsync(iconUrl, cancellationToken));
+                return TryGetResponseResult.Success(await _httpResponseMessageProvider.GetAsync(iconUrl, cancellationToken));
             }
             catch (HttpRequestException e) when (IsConnectFailure(e))
             {

@@ -43,6 +43,7 @@ namespace Ng.Jobs
             var httpClient = new HttpClient(httpHandlerFactory());
             var simpleHttpClient = new SimpleHttpClient(httpClient, LoggerFactory.CreateLogger<SimpleHttpClient>());
             var catalogClient = new CatalogClient(simpleHttpClient, LoggerFactory.CreateLogger<CatalogClient>());
+            var httpResponseProvider = new HttpResponseMessageProvider(httpClient);
             _collector = new IconsCollector(
                 new Uri(source),
                 TelemetryService,
@@ -51,6 +52,7 @@ namespace Ng.Jobs
                 targetStorageFactory,
                 iconProcessor,
                 catalogClient,
+                httpResponseProvider,
                 httpHandlerFactory,
                 LoggerFactory.CreateLogger<IconsCollector>());
             _front = new DurableCursor(auxStorage.ResolveUri("c2icursor.json"), auxStorage, DateTime.MinValue.ToUniversalTime());
