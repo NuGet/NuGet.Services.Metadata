@@ -4,9 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using NuGet.Protocol.Catalog;
 using NuGet.Services.Configuration;
 using NuGet.Services.Metadata.Catalog;
 using NuGet.Services.Metadata.Catalog.Icons;
@@ -37,6 +39,10 @@ namespace Ng.Jobs
             var source = arguments.GetOrThrow<string>(Arguments.Source);
             var auxStorage = auxStorageFactory.Create();
             var iconProcessor = new IconProcessor(TelemetryService, LoggerFactory.CreateLogger<IconProcessor>());
+            var httpHandlerFactory = CommandHelpers.GetHttpMessageHandlerFactory(TelemetryService, verbose);
+            var httpClient = new HttpClient(httpHandlerFactory());
+            var simpleHttpClient = new SimpleHttpClient(httpClient, LoggerFactory.CreateLogger<SimpleHttpClient>());
+            var catalogClient = new CatalogClient(simpleHttpClient, LoggerFactory.CreateLogger<CatalogClient>());
             _collector = new IconsCollector(
                 new Uri(source),
                 TelemetryService,
@@ -44,7 +50,8 @@ namespace Ng.Jobs
                 auxStorage,
                 targetStorageFactory,
                 iconProcessor,
-                CommandHelpers.GetHttpMessageHandlerFactory(TelemetryService, verbose),
+                catalogClient,
+                httpHandlerFactory,
                 LoggerFactory.CreateLogger<IconsCollector>());
             _front = new DurableCursor(auxStorage.ResolveUri("c2icursor.json"), auxStorage, DateTime.MinValue.ToUniversalTime());
         }

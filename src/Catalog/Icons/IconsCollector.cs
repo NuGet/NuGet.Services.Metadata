@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NuGet.Protocol.Catalog;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using NuGet.Services.Metadata.Catalog.Persistence;
 
@@ -30,6 +31,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
         private readonly IStorage _auxStorage;
         private readonly IStorageFactory _targetStorageFactory;
         private readonly IIconProcessor _iconProcessor;
+        private readonly ICatalogClient _catalogClient;
         private readonly ILogger<IconsCollector> _logger;
 
         public IconsCollector(
@@ -39,6 +41,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             IStorage auxStorage,
             IStorageFactory targetStorageFactory,
             IIconProcessor iconProcessor,
+            ICatalogClient catalogClient,
             Func<HttpMessageHandler> httpHandlerFactory,
             ILogger<IconsCollector> logger)
             : base(index, telemetryService, httpHandlerFactory, httpClientTimeout: TimeSpan.FromMinutes(5))
@@ -47,6 +50,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             _auxStorage = auxStorage ?? throw new ArgumentNullException(nameof(auxStorage));
             _targetStorageFactory = targetStorageFactory ?? throw new ArgumentNullException(nameof(targetStorageFactory));
             _iconProcessor = iconProcessor ?? throw new ArgumentNullException(nameof(iconProcessor));
+            _catalogClient = catalogClient ?? throw new ArgumentNullException(nameof(catalogClient));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -80,7 +84,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             var itemsToProcess = new ConcurrentBag<IReadOnlyCollection<CatalogCommitItem>>(filteredItems);
             var tasks = Enumerable
                 .Range(1, ServicePointManager.DefaultConnectionLimit)
-                .Select(_ => ProcessIconsAsync(client, itemsToProcess, cancellationToken));
+                .Select(_ => ProcessIconsAsync(client, _catalogClient, itemsToProcess, cancellationToken));
             await Task.WhenAll(tasks);
 
             await StoreCache(cancellationToken);
@@ -121,6 +125,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
 
         private async Task ProcessIconsAsync(
             CollectorHttpClient httpClient,
+            ICatalogClient catalogClient,
             ConcurrentBag<IReadOnlyCollection<CatalogCommitItem>> items,
             CancellationToken cancellationToken)
         {
@@ -137,7 +142,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     {
                         if (item.IsPackageDetails)
                         {
-                            await ProcessPackageDetails(httpClient, storage, item, cancellationToken);
+                            await ProcessPackageDetails(httpClient, catalogClient, storage, item, cancellationToken);
                         }
                         else if (item.IsPackageDelete)
                         {
@@ -154,10 +159,9 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             await _iconProcessor.DeleteIcon(storage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
         }
 
-        private async Task ProcessPackageDetails(CollectorHttpClient httpClient, Storage destinationStorage, CatalogCommitItem item, CancellationToken cancellationToken)
+        private async Task ProcessPackageDetails(CollectorHttpClient httpClient, ICatalogClient catalogClient, Storage destinationStorage, CatalogCommitItem item, CancellationToken cancellationToken)
         {
-            var leafContent = await httpClient.GetStringAsync(item.Uri, cancellationToken);
-            var data = JsonConvert.DeserializeObject<ExternalIconUrlInformation>(leafContent);
+            var data = await catalogClient.GetPackageDetailsLeafAsync(item.Uri.AbsoluteUri);
             var hasExternalIconUrl = !string.IsNullOrWhiteSpace(data.IconUrl);
             var hasEmbeddedIcon = !string.IsNullOrWhiteSpace(data.IconFile);
             if (hasExternalIconUrl && !hasEmbeddedIcon && Uri.TryCreate(data.IconUrl, UriKind.Absolute, out var iconUrl))
@@ -432,12 +436,6 @@ namespace NuGet.Services.Metadata.Catalog.Icons
         private static string GetTargetStorageIconPath(CatalogCommitItem item)
         {
             return $"{item.PackageIdentity.Id.ToLowerInvariant()}/{item.PackageIdentity.Version.ToNormalizedString().ToLowerInvariant()}/icon";
-        }
-
-        private class ExternalIconUrlInformation
-        {
-            public string IconUrl { get; set; }
-            public string IconFile { get; set; }
         }
     }
 }
