@@ -87,7 +87,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             var itemsToProcess = new ConcurrentBag<IReadOnlyCollection<CatalogCommitItem>>(filteredItems);
             var tasks = Enumerable
                 .Range(1, ServicePointManager.DefaultConnectionLimit)
-                .Select(_ => ProcessIconsAsync(client, _catalogClient, itemsToProcess, cancellationToken));
+                .Select(_ => ProcessIconsAsync(itemsToProcess, cancellationToken));
             await Task.WhenAll(tasks);
 
             await StoreCache(cancellationToken);
@@ -127,8 +127,6 @@ namespace NuGet.Services.Metadata.Catalog.Icons
         }
 
         private async Task ProcessIconsAsync(
-            CollectorHttpClient httpClient,
-            ICatalogClient catalogClient,
             ConcurrentBag<IReadOnlyCollection<CatalogCommitItem>> items,
             CancellationToken cancellationToken)
         {
