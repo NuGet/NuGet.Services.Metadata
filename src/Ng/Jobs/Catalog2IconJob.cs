@@ -40,20 +40,27 @@ namespace Ng.Jobs
             var auxStorage = auxStorageFactory.Create();
             var iconProcessor = new IconProcessor(TelemetryService, LoggerFactory.CreateLogger<IconProcessor>());
             var httpHandlerFactory = CommandHelpers.GetHttpMessageHandlerFactory(TelemetryService, verbose);
-            var httpClient = new HttpClient(httpHandlerFactory());
+            var httpMessageHandler = httpHandlerFactory();
+            var httpClient = new HttpClient(httpMessageHandler);
             var simpleHttpClient = new SimpleHttpClient(httpClient, LoggerFactory.CreateLogger<SimpleHttpClient>());
             var catalogClient = new CatalogClient(simpleHttpClient, LoggerFactory.CreateLogger<CatalogClient>());
             var httpResponseProvider = new HttpResponseMessageProvider(httpClient);
+
+            var leafProcessor = new CatalogLeafDataProcessor(
+                packageStorage,
+                auxStorage,
+                iconProcessor,
+                httpResponseProvider,
+                TelemetryService,
+                LoggerFactory.CreateLogger<CatalogLeafDataProcessor>());
+
             _collector = new IconsCollector(
                 new Uri(source),
                 TelemetryService,
-                packageStorage,
-                auxStorage,
                 targetStorageFactory,
-                iconProcessor,
                 catalogClient,
-                httpResponseProvider,
-                httpHandlerFactory,
+                leafProcessor,
+                () => httpMessageHandler,
                 LoggerFactory.CreateLogger<IconsCollector>());
             _front = new DurableCursor(auxStorage.ResolveUri("c2icursor.json"), auxStorage, DateTime.MinValue.ToUniversalTime());
         }

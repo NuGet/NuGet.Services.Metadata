@@ -50,7 +50,6 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             if (string.IsNullOrWhiteSpace(contentType))
             {
                 _logger.LogInformation("Failed to determine image type.");
-                _telemetryService.TrackExternalIconIngestionFailure(packageId, normalizedPackageVersion);
                 return null;
             }
             var content = new ByteArrayStorageContent(iconData, contentType, DefaultCacheControl);
