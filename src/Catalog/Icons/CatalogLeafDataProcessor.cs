@@ -44,6 +44,8 @@ namespace NuGet.Services.Metadata.Catalog.Icons
         {
             var targetStoragePath = GetTargetStorageIconPath(item);
             await _iconProcessor.DeleteIcon(storage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
+            // it would be nice to remove the icon copy result from cache for this item, but we don't have a an icon URL here,
+            // so can't remove anything. Will rely on the copy code to catch the copy failure and cleanup the cache appropriately.
         }
 
         public async Task ProcessPackageDetails(Storage destinationStorage, CatalogCommitItem item, string iconUrlString, string iconFile, CancellationToken cancellationToken)
@@ -82,6 +84,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     _logger.LogInformation("Seen {IconUrl} before, will copy from {CachedLocation}",
                         iconUrl,
                         cachedResult.StorageUrl);
+                    var tryRegularCopy = false;
                     var storageUrl = cachedResult.StorageUrl;
                     var targetStoragePath = GetTargetStorageIconPath(item);
                     var destinationUrl = destinationStorage.ResolveUri(targetStoragePath);
@@ -91,13 +94,26 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                         // Skipping it.
                         return;
                     }
-                    await Retry.IncrementalAsync(
-                        async () => await destinationStorage.CopyAsync(storageUrl, destinationStorage, destinationUrl, null, cancellationToken),
-                        e => { _logger.LogError(0, e, "Exception while copying from cache"); return true; },
-                        MaxBlobStorageCopyAttempts,
-                        initialWaitInterval: TimeSpan.FromSeconds(5),
-                        waitIncrement: TimeSpan.FromSeconds(1));
-                    return;
+                    try
+                    {
+                        await Retry.IncrementalAsync(
+                            async () => await destinationStorage.CopyAsync(storageUrl, destinationStorage, destinationUrl, null, cancellationToken),
+                            e => { _logger.LogError(0, e, "Exception while copying from cache"); return true; },
+                            MaxBlobStorageCopyAttempts,
+                            initialWaitInterval: TimeSpan.FromSeconds(5),
+                            waitIncrement: TimeSpan.FromSeconds(1));
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.LogError(0, e, "Copy from cache failed after {NumRetries} attempts. Falling back to copy from external URL.", MaxBlobStorageCopyAttempts);
+                        _iconCopyResultCache.ClearCachedResult(iconUrl, storageUrl);
+                        tryRegularCopy = true;
+                    }
+
+                    if (!tryRegularCopy)
+                    {
+                        return;
+                    }
                 }
                 else
                 {

@@ -71,5 +71,17 @@ namespace NuGet.Services.Metadata.Catalog.Icons
         {
             ExternalIconCopyResults.AddOrUpdate(iconUrl, newItem, (_, v) => v); // will not overwrite existing entries
         }
+
+        public void ClearCachedResult(Uri externalIconUrl, Uri targetStorageUrl)
+        {
+            if (ExternalIconCopyResults.TryRemove(externalIconUrl, out var removedValue))
+            {
+                if (removedValue.StorageUrl != targetStorageUrl)
+                {
+                    // if we removed item that does not match the target URL, put it back.
+                    StoreCachedResult(externalIconUrl, removedValue);
+                }
+            }
+        }
     }
 }
