@@ -52,7 +52,10 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             var hasEmbeddedIcon = !string.IsNullOrWhiteSpace(iconFile);
             if (hasExternalIconUrl && !hasEmbeddedIcon && Uri.TryCreate(iconUrlString, UriKind.Absolute, out var iconUrl))
             {
-                await ProcessExternalIconUrl(destinationStorage, item, iconUrl, cancellationToken);
+                using (_logger.BeginScope("Processing icon url {IconUrl}", iconUrl))
+                {
+                    await ProcessExternalIconUrl(destinationStorage, item, iconUrl, cancellationToken);
+                }
             }
             else if (hasEmbeddedIcon)
             {
@@ -105,7 +108,6 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     return;
                 }
             }
-            using (_logger.BeginScope("Processing icon url {IconUrl}", iconUrl))
             using (_telemetryService.TrackExternalIconProcessingDuration(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString()))
             {
                 var ingestionResult = await Retry.IncrementalAsync(
