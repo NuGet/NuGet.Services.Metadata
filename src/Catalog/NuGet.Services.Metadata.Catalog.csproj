@@ -121,10 +121,13 @@
     <Compile Include="Icons\ExternalIconCopyResult.cs" />
     <Compile Include="Icons\HttpResponseMessageProvider.cs" />
     <Compile Include="Icons\ICatalogLeafDataProcessor.cs" />
+    <Compile Include="Icons\IconCopyResultCache.cs" />
     <Compile Include="Icons\IconProcessor.cs" />
     <Compile Include="Icons\IconsCollector.cs" />
     <Compile Include="Icons\IExternalIconContentProvider.cs" />
     <Compile Include="Icons\IHttpResponseMessageProvider.cs" />
+    <Compile Include="Icons\IIconCopyResultCache.cs" />
+    <Compile Include="Icons\IIconCopyResultCachePersistence.cs" />
     <Compile Include="Icons\IIconProcessor.cs" />
     <Compile Include="Icons\TryGetResponseResult.cs" />
     <Compile Include="IPackageCatalogItemCreator.cs" />

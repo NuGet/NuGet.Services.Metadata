@@ -21,6 +21,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
         private readonly IStorageFactory _targetStorageFactory;
         private readonly ICatalogClient _catalogClient;
         private readonly ICatalogLeafDataProcessor _catalogLeafDataProcessor;
+        private readonly IIconCopyResultCachePersistence _iconCopyResultCache;
         private readonly ILogger<IconsCollector> _logger;
 
         public IconsCollector(
@@ -29,6 +30,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             IStorageFactory targetStorageFactory,
             ICatalogClient catalogClient,
             ICatalogLeafDataProcessor catalogLeafDataProcessor,
+            IIconCopyResultCachePersistence iconCopyResultCache,
             Func<HttpMessageHandler> httpHandlerFactory,
             ILogger<IconsCollector> logger)
             : base(index, telemetryService, httpHandlerFactory, httpClientTimeout: TimeSpan.FromMinutes(5))
@@ -36,6 +38,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             _targetStorageFactory = targetStorageFactory ?? throw new ArgumentNullException(nameof(targetStorageFactory));
             _catalogClient = catalogClient ?? throw new ArgumentNullException(nameof(catalogClient));
             _catalogLeafDataProcessor = catalogLeafDataProcessor ?? throw new ArgumentNullException(nameof(catalogLeafDataProcessor));
+            _iconCopyResultCache = iconCopyResultCache ?? throw new ArgumentNullException(nameof(iconCopyResultCache));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -61,7 +64,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             bool isLastBatch,
             CancellationToken cancellationToken)
         {
-            await _catalogLeafDataProcessor.InitializeIconUrlCache(cancellationToken);
+            await _iconCopyResultCache.InitializeIconUrlCacheAsync(cancellationToken);
 
             var filteredItems = items
                 .GroupBy(i => i.PackageIdentity)                          // if we have multiple commits for the same package (id AND version)
@@ -72,7 +75,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 .Select(_ => ProcessIconsAsync(itemsToProcess, cancellationToken));
             await Task.WhenAll(tasks);
 
-            await _catalogLeafDataProcessor.StoreIconUrlCache(cancellationToken);
+            await _iconCopyResultCache.StoreIconUrlCacheAsync(cancellationToken);
 
             return true;
         }

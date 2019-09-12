@@ -2,14 +2,10 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using NuGet.Services.Metadata.Catalog.Persistence;
 
@@ -19,30 +15,27 @@ namespace NuGet.Services.Metadata.Catalog.Icons
     {
         private const int MaxExternalIconIngestAttempts = 3;
         private const int MaxBlobStorageCopyAttempts = 3;
-        private const string CacheFilename = "c2i_cache.json";
-
-        private static ConcurrentDictionary<Uri, ExternalIconCopyResult> ExternalIconCopyResults = null;
 
         private readonly IAzureStorage _packageStorage;
-        private readonly IStorage _auxStorage;
         private readonly IIconProcessor _iconProcessor;
         private readonly IExternalIconContentProvider _externalIconContentProvider;
+        private readonly IIconCopyResultCache _iconCopyResultCache;
         private readonly ITelemetryService _telemetryService;
         private readonly ILogger<CatalogLeafDataProcessor> _logger;
 
         public CatalogLeafDataProcessor(
             IAzureStorage packageStorage,
-            IStorage auxStorage,
             IIconProcessor iconProcessor,
             IExternalIconContentProvider externalIconContentProvider,
+            IIconCopyResultCache iconCopyResultCache,
             ITelemetryService telemetryService,
             ILogger<CatalogLeafDataProcessor> logger
             )
         {
             _packageStorage = packageStorage ?? throw new ArgumentNullException(nameof(packageStorage));
-            _auxStorage = auxStorage ?? throw new ArgumentNullException(nameof(auxStorage));
             _iconProcessor = iconProcessor ?? throw new ArgumentNullException(nameof(iconProcessor));
             _externalIconContentProvider = externalIconContentProvider ?? throw new ArgumentNullException(nameof(externalIconContentProvider));
+            _iconCopyResultCache = iconCopyResultCache ?? throw new ArgumentNullException(nameof(iconCopyResultCache));
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -67,37 +60,6 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             }
         }
 
-        public async Task InitializeIconUrlCache(CancellationToken cancellationToken)
-        {
-            if (ExternalIconCopyResults != null)
-            {
-                return;
-            }
-
-            var cacheUrl = _auxStorage.ResolveUri(CacheFilename);
-            var content = await _auxStorage.LoadAsync(cacheUrl, cancellationToken);
-            if (content == null)
-            {
-                ExternalIconCopyResults = new ConcurrentDictionary<Uri, ExternalIconCopyResult>();
-                return;
-            }
-            using (var contentStream = content.GetContentStream())
-            using (var reader = new StreamReader(contentStream))
-            {
-                var serializer = new JsonSerializer();
-                var dictionary = (Dictionary<Uri, ExternalIconCopyResult>)serializer.Deserialize(reader, typeof(Dictionary<Uri, ExternalIconCopyResult>));
-                ExternalIconCopyResults = new ConcurrentDictionary<Uri, ExternalIconCopyResult>(dictionary);
-            }
-        }
-
-        public async Task StoreIconUrlCache(CancellationToken cancellationToken)
-        {
-            var cacheUrl = _auxStorage.ResolveUri(CacheFilename);
-            var serialized = JsonConvert.SerializeObject(ExternalIconCopyResults);
-            var content = new StringStorageContent(serialized, contentType: "text/json");
-            await _auxStorage.SaveAsync(cacheUrl, content, cancellationToken);
-        }
-
         private async Task ProcessExternalIconUrl(Storage destinationStorage, CatalogCommitItem item, Uri iconUrl, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Found external icon url {IconUrl} for {PackageId} {PackageVersion}",
@@ -109,14 +71,15 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 _logger.LogInformation("Invalid icon URL {IconUrl}", iconUrl);
                 return;
             }
-            if (ExternalIconCopyResults.TryGetValue(iconUrl, out var result))
+            var cachedResult = _iconCopyResultCache.GetCachedResult(iconUrl);
+            if (cachedResult != null)
             {
-                if (result.IsCopySucceeded)
+                if (cachedResult.IsCopySucceeded)
                 {
                     _logger.LogInformation("Seen {IconUrl} before, will copy from {CachedLocation}",
                         iconUrl,
-                        result.StorageUrl);
-                    var storageUrl = result.StorageUrl;
+                        cachedResult.StorageUrl);
+                    var storageUrl = cachedResult.StorageUrl;
                     var targetStoragePath = GetTargetStorageIconPath(item);
                     var destinationUrl = destinationStorage.ResolveUri(targetStoragePath);
                     if (storageUrl == destinationUrl)
@@ -163,7 +126,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     _telemetryService.TrackExternalIconIngestionFailure(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
                     cacheItem = ExternalIconCopyResult.Fail(iconUrl);
                 }
-                ExternalIconCopyResults.AddOrUpdate(iconUrl, cacheItem, (_, v) => v); // will not overwrite existing entries
+                _iconCopyResultCache.StoreCachedResult(iconUrl, cacheItem);
             }
         }
 

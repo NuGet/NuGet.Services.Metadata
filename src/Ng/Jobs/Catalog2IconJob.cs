@@ -37,7 +37,6 @@ namespace Ng.Jobs
             var targetStorageFactory = CreateTargetStorageFactory(arguments, verbose);
             var packageStorage = new AzureStorage(new Uri(packageStorageBase), TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(10), false, false, true, null);
             var source = arguments.GetOrThrow<string>(Arguments.Source);
-            var auxStorage = auxStorageFactory.Create();
             var iconProcessor = new IconProcessor(TelemetryService, LoggerFactory.CreateLogger<IconProcessor>());
             var httpHandlerFactory = CommandHelpers.GetHttpMessageHandlerFactory(TelemetryService, verbose);
             var httpMessageHandler = httpHandlerFactory();
@@ -46,12 +45,13 @@ namespace Ng.Jobs
             var catalogClient = new CatalogClient(simpleHttpClient, LoggerFactory.CreateLogger<CatalogClient>());
             var httpResponseProvider = new HttpResponseMessageProvider(httpClient);
             var externalIconProvider = new ExternalIconContentProvider(httpResponseProvider, LoggerFactory.CreateLogger<ExternalIconContentProvider>());
+            var iconCopyResultCache = new IconCopyResultCache(auxStorageFactory.Create());
 
             var leafProcessor = new CatalogLeafDataProcessor(
                 packageStorage,
-                auxStorage,
                 iconProcessor,
                 externalIconProvider,
+                iconCopyResultCache,
                 TelemetryService,
                 LoggerFactory.CreateLogger<CatalogLeafDataProcessor>());
 
@@ -61,9 +61,11 @@ namespace Ng.Jobs
                 targetStorageFactory,
                 catalogClient,
                 leafProcessor,
+                iconCopyResultCache,
                 () => httpMessageHandler,
                 LoggerFactory.CreateLogger<IconsCollector>());
-            _front = new DurableCursor(auxStorage.ResolveUri("c2icursor.json"), auxStorage, DateTime.MinValue.ToUniversalTime());
+            var cursorStorage = auxStorageFactory.Create();
+            _front = new DurableCursor(cursorStorage.ResolveUri("c2icursor.json"), cursorStorage, DateTime.MinValue.ToUniversalTime());
         }
 
         protected override async Task RunInternalAsync(CancellationToken cancellationToken)
