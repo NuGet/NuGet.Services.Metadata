@@ -45,12 +45,13 @@ namespace Ng.Jobs
             var simpleHttpClient = new SimpleHttpClient(httpClient, LoggerFactory.CreateLogger<SimpleHttpClient>());
             var catalogClient = new CatalogClient(simpleHttpClient, LoggerFactory.CreateLogger<CatalogClient>());
             var httpResponseProvider = new HttpResponseMessageProvider(httpClient);
+            var externalIconProvider = new ExternalIconContentProvider(httpResponseProvider, LoggerFactory.CreateLogger<ExternalIconContentProvider>());
 
             var leafProcessor = new CatalogLeafDataProcessor(
                 packageStorage,
                 auxStorage,
                 iconProcessor,
-                httpResponseProvider,
+                externalIconProvider,
                 TelemetryService,
                 LoggerFactory.CreateLogger<CatalogLeafDataProcessor>());
 

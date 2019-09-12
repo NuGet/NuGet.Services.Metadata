@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -27,7 +26,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
         private readonly IAzureStorage _packageStorage;
         private readonly IStorage _auxStorage;
         private readonly IIconProcessor _iconProcessor;
-        private readonly IHttpResponseMessageProvider _httpResponseMessageProvider;
+        private readonly IExternalIconContentProvider _externalIconContentProvider;
         private readonly ITelemetryService _telemetryService;
         private readonly ILogger<CatalogLeafDataProcessor> _logger;
 
@@ -35,7 +34,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             IAzureStorage packageStorage,
             IStorage auxStorage,
             IIconProcessor iconProcessor,
-            IHttpResponseMessageProvider httpResponseMessageProvider,
+            IExternalIconContentProvider externalIconContentProvider,
             ITelemetryService telemetryService,
             ILogger<CatalogLeafDataProcessor> logger
             )
@@ -43,7 +42,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             _packageStorage = packageStorage ?? throw new ArgumentNullException(nameof(packageStorage));
             _auxStorage = auxStorage ?? throw new ArgumentNullException(nameof(auxStorage));
             _iconProcessor = iconProcessor ?? throw new ArgumentNullException(nameof(iconProcessor));
-            _httpResponseMessageProvider = httpResponseMessageProvider ?? throw new ArgumentNullException(nameof(httpResponseMessageProvider));
+            _externalIconContentProvider = externalIconContentProvider ?? throw new ArgumentNullException(nameof(externalIconContentProvider));
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -193,13 +192,6 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             return iconUrl.Scheme == Uri.UriSchemeHttp || iconUrl.Scheme == Uri.UriSchemeHttps;
         }
 
-        private enum AttemptResult
-        {
-            Success,
-            FailCanRetry,
-            FailCannotRetry
-        }
-
         private class TryIngestExternalIconAsyncResult
         {
             public AttemptResult Result { get; private set; }
@@ -235,7 +227,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             do
             {
                 retry = false;
-                var getResult = await TryGetResponse(iconUrl, cancellationToken);
+                var getResult = await _externalIconContentProvider.TryGetResponseAsync(iconUrl, cancellationToken);
                 if (getResult.AttemptResult != AttemptResult.Success)
                 {
                     return TryIngestExternalIconAsyncResult.Fail(getResult.AttemptResult);
@@ -285,98 +277,6 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 return TryIngestExternalIconAsyncResult.FailCannotRetry();
             }
             return TryIngestExternalIconAsyncResult.Success(resultUrl);
-        }
-
-        private class TryGetResponseResult
-        {
-            public HttpResponseMessage HttpResponseMessage { get; set; }
-            public AttemptResult AttemptResult;
-
-            public static TryGetResponseResult Success(HttpResponseMessage httpResponseMessage)
-            {
-                return new TryGetResponseResult
-                {
-                    AttemptResult = AttemptResult.Success,
-                    HttpResponseMessage = httpResponseMessage,
-                };
-            }
-
-            public static TryGetResponseResult FailCanRetry()
-            {
-                return new TryGetResponseResult
-                {
-                    AttemptResult = AttemptResult.FailCanRetry,
-                    HttpResponseMessage = null,
-                };
-            }
-
-            public static TryGetResponseResult FailCannotRetry()
-            {
-                return new TryGetResponseResult
-                {
-                    AttemptResult = AttemptResult.FailCannotRetry,
-                    HttpResponseMessage = null,
-                };
-            }
-        }
-
-        private async Task<TryGetResponseResult> TryGetResponse(Uri iconUrl, CancellationToken cancellationToken)
-        {
-            try
-            {
-                return TryGetResponseResult.Success(await _httpResponseMessageProvider.GetAsync(iconUrl, cancellationToken));
-            }
-            catch (HttpRequestException e) when (IsConnectFailure(e))
-            {
-                _logger.LogInformation("Failed to connect to remote host to retrieve the icon");
-            }
-            catch (HttpRequestException e) when (IsDnsFailure(e))
-            {
-                _logger.LogInformation("Failed to resolve DNS name for the icon URL");
-                return TryGetResponseResult.FailCannotRetry();
-            }
-            catch (HttpRequestException e) when (IsConnectionClosed(e))
-            {
-                _logger.LogInformation("Connection closed unexpectedly while trying to retrieve the icon");
-            }
-            catch (HttpRequestException e) when (IsTLSSetupFailure(e))
-            {
-                _logger.LogInformation("TLS setup failed while trying to retrieve the icon");
-            }
-            catch (TaskCanceledException e) when (e.CancellationToken != cancellationToken)
-            {
-                _logger.LogInformation("Timed out while trying to get the icon data");
-            }
-            catch (HttpRequestException e)
-            {
-                _logger.LogError(0, e, "HTTP exception while trying to retrieve icon file");
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(0, e, "Exception while trying to retrieve URL: {IconUrl}", iconUrl);
-            }
-            return TryGetResponseResult.FailCanRetry();
-        }
-
-        private static bool IsConnectFailure(HttpRequestException e)
-        {
-            return (e?.InnerException as WebException)?.Status == WebExceptionStatus.ConnectFailure;
-        }
-
-        private static bool IsDnsFailure(HttpRequestException e)
-        {
-            return (e?.InnerException as WebException)?.Status == WebExceptionStatus.NameResolutionFailure;
-        }
-
-        private static bool IsConnectionClosed(HttpRequestException e)
-        {
-            return (e?.InnerException as WebException)?.Status == WebExceptionStatus.ConnectionClosed;
-        }
-
-        private static bool IsTLSSetupFailure(HttpRequestException e)
-        {
-            var innerWebException = e?.InnerException as WebException;
-            return innerWebException?.Status == WebExceptionStatus.TrustFailure || innerWebException?.Status == WebExceptionStatus.SecureChannelFailure;
         }
 
         private static string GetTargetStorageIconPath(CatalogCommitItem item)
