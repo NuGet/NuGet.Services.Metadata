@@ -232,22 +232,25 @@ namespace NuGet.Services.AzureSearch.SearchService
                     { "title:foo bar", "+title:foo bar" },
                     { "title:foo unknown:bar", "title:foo" },
 
-                    // If there is a single unscoped term, favor results that match all token fragments after splitting on periods.
-                    { "Foo.Bar", "Foo.Bar (+Foo +Bar)^2" },
-                    { "Foo..Bar", "Foo..Bar (+Foo +Bar)^2" },
-                    { "..", ".." },
-                    { ".Foo", ".Foo" },
-                    { "Foo.", "Foo." },
-                    { "Foo.Bar Buzz", "Foo.Bar Buzz (+Foo.Bar +Buzz)^2" },
-
-                    // If there are unscoped terms and no field-scoped terms, at least of one the unscoped terms is required.
+                    // If there are non-field-scoped terms and no field-scoped terms, at least of one the non-field-scoped terms is required.
                     // Results that match all terms are boosted.
                     { "foo", "foo" },
                     { "foo bar", "foo bar (+foo +bar)^2" },
+                    { "foo.bar baz.qux", "foo.bar baz.qux (+foo.bar +baz.qux)^2" },
                     { "id packageId VERSION Title description tag author summary owner owners",
                         "id packageId VERSION Title description tag author summary owner owners " +
                         "(+id +packageId +VERSION +Title +description +tag +author +summary +owner +owners)^2" },
                     
+                    // If there is a single non-field-scoped term that is a valid package ID and has separator
+                    // characters, mega boost the exact match.
+                    { "foo.bar", "foo.bar packageId:foo.bar^1000" },
+                    { "foo_bar", "foo_bar packageId:foo_bar^1000" },
+                    { "foo-bar", @"foo\-bar packageId:foo\-bar^1000" },
+                    { "  foo.bar.Baz   ", "foo.bar.Baz packageId:foo.bar.Baz^1000" },
+                    { @"""foo.bar""", @"foo.bar packageId:foo.bar^1000" },
+                    { @"""foo-bar""", @"foo\-bar packageId:foo\-bar^1000" },
+                    { @"""foo_bar""", "foo_bar packageId:foo_bar^1000" },
+
                     // Phrases are supported in queries
                     { @"""foo bar""", @"""foo bar""" },
                     { @"""foo bar"" baz", @"""foo bar"" baz (+""foo bar"" +baz)^2" },

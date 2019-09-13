@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -14,21 +15,21 @@ using NuGetGallery;
 
 namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 {
-    public class DownloadDataClient : IDownloadDataClient
+    public class VerifiedPackagesDataClient : IVerifiedPackagesDataClient
     {
         private static readonly JsonSerializer Serializer = new JsonSerializer();
 
         private readonly ICloudBlobClient _cloudBlobClient;
         private readonly IOptionsSnapshot<AzureSearchConfiguration> _options;
         private readonly IAzureSearchTelemetryService _telemetryService;
-        private readonly ILogger<DownloadDataClient> _logger;
+        private readonly ILogger<VerifiedPackagesDataClient> _logger;
         private readonly Lazy<ICloudBlobContainer> _lazyContainer;
 
-        public DownloadDataClient(
+        public VerifiedPackagesDataClient(
             ICloudBlobClient cloudBlobClient,
             IOptionsSnapshot<AzureSearchConfiguration> options,
             IAzureSearchTelemetryService telemetryService,
-            ILogger<DownloadDataClient> logger)
+            ILogger<VerifiedPackagesDataClient> logger)
         {
             _cloudBlobClient = cloudBlobClient ?? throw new ArgumentNullException(nameof(cloudBlobClient));
             _options = options ?? throw new ArgumentNullException(nameof(options));
@@ -41,7 +42,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 
         private ICloudBlobContainer Container => _lazyContainer.Value;
 
-        public async Task<AuxiliaryFileResult<DownloadData>> ReadLatestIndexedAsync(
+        public async Task<AuxiliaryFileResult<HashSet<string>>> ReadLatestAsync(
             IAccessCondition accessCondition,
             StringCache stringCache)
         {
@@ -49,23 +50,16 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             var blobName = GetLatestIndexedBlobName();
             var blobReference = Container.GetBlobReference(blobName);
 
-            _logger.LogInformation("Reading the latest indexed downloads from {BlobName}.", blobName);
+            _logger.LogInformation("Reading the latest verified packages from {BlobName}.", blobName);
 
             bool modified;
-            var downloads = new DownloadData();
+            var data = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             AuxiliaryFileMetadata metadata;
             try
             {
                 using (var stream = await blobReference.OpenReadAsync(accessCondition))
                 {
-                    ReadStream(
-                        stream,
-                        (id, version, downloadCount) =>
-                        {
-                            id = stringCache.Dedupe(id);
-                            version = stringCache.Dedupe(version);
-                            downloads.SetDownloadCount(id, version, downloadCount);
-                        });
+                    ReadStream(stream, id => data.Add(stringCache.Dedupe(id)));
                     modified = true;
                     metadata = new AuxiliaryFileMetadata(
                         lastModified: new DateTimeOffset(blobReference.LastModifiedUtc, TimeSpan.Zero),
@@ -78,27 +72,27 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             {
                 _logger.LogInformation("The blob {BlobName} has not changed.", blobName);
                 modified = false;
-                downloads = null;
+                data = null;
                 metadata = null;
             }
 
             stopwatch.Stop();
-            _telemetryService.TrackReadLatestIndexedDownloads(downloads?.Count, modified, stopwatch.Elapsed);
+            _telemetryService.TrackReadLatestVerifiedPackages(data?.Count, modified, stopwatch.Elapsed);
 
-            return new AuxiliaryFileResult<DownloadData>(
+            return new AuxiliaryFileResult<HashSet<string>>(
                 modified,
-                downloads,
+                data,
                 metadata);
         }
 
-        public async Task ReplaceLatestIndexedAsync(
-            DownloadData newData,
+        public async Task ReplaceLatestAsync(
+            HashSet<string> newData,
             IAccessCondition accessCondition)
         {
-            using (_telemetryService.TrackReplaceLatestIndexedDownloads(newData.Count))
+            using (_telemetryService.TrackReplaceLatestVerifiedPackages(newData.Count))
             {
                 var blobName = GetLatestIndexedBlobName();
-                _logger.LogInformation("Replacing the latest indexed downloads from {BlobName}.", blobName);
+                _logger.LogInformation("Replacing the latest verified packages from {BlobName}.", blobName);
 
                 var blobReference = Container.GetBlobReference(blobName);
 
@@ -112,54 +106,30 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             }
         }
 
-        private static void ReadStream(
-            Stream stream,
-            Action<string, string, long> addVersion)
+        private static void ReadStream(Stream stream, Action<string> add)
         {
             using (var textReader = new StreamReader(stream))
             using (var jsonReader = new JsonTextReader(textReader))
             {
                 Guard.Assert(jsonReader.Read(), "The blob should be readable.");
-                Guard.Assert(jsonReader.TokenType == JsonToken.StartObject, "The first token should be the start of an object.");
+                Guard.Assert(jsonReader.TokenType == JsonToken.StartArray, "The first token should be the start of an array.");
                 Guard.Assert(jsonReader.Read(), "There should be a second token.");
-
-                while (jsonReader.TokenType == JsonToken.PropertyName)
+                while (jsonReader.TokenType == JsonToken.String)
                 {
-                    // We assume the package ID has valid characters.
                     var id = (string)jsonReader.Value;
+                    add(id);
 
-                    Guard.Assert(jsonReader.Read(), "There should be a token after the package ID.");
-                    Guard.Assert(jsonReader.TokenType == JsonToken.StartObject, "The token after the package ID should be the start of an object.");
-                    Guard.Assert(jsonReader.Read(), "There should be a token after the start of the ID object.");
-
-                    while (jsonReader.TokenType == JsonToken.PropertyName)
-                    {
-                        // We assume the package version is already normalized.
-                        var version = (string)jsonReader.Value;
-
-                        Guard.Assert(jsonReader.Read(), "There should be a token after the package version.");
-                        Guard.Assert(jsonReader.TokenType == JsonToken.Integer, "The token after the package version should be an integer.");
-
-                        var downloads = (long)jsonReader.Value;
-
-                        Guard.Assert(jsonReader.Read(), "There should be a token after the download count.");
-
-                        addVersion(id, version, downloads);
-                    }
-
-                    Guard.Assert(jsonReader.TokenType == JsonToken.EndObject, "The token after the package versions should be the end of an object.");
-                    Guard.Assert(jsonReader.Read(), "There should be a token after the package ID object.");
+                    Guard.Assert(jsonReader.Read(), "There should be a token after the string.");
                 }
 
-                Guard.Assert(jsonReader.TokenType == JsonToken.EndObject, "The last token should be the end of an object.");
-                Guard.Assert(!jsonReader.Read(), "There should be no token after the end of the object.");
+                Guard.Assert(jsonReader.TokenType == JsonToken.EndArray, "The last token should be the end of an array.");
+                Guard.Assert(!jsonReader.Read(), "There should be no token after the end of the array.");
             }
         }
 
         private string GetLatestIndexedBlobName()
         {
-            return $"{_options.Value.NormalizeStoragePath()}downloads/downloads.v2.json";
+            return $"{_options.Value.NormalizeStoragePath()}verified-packages/verified-packages.v1.json";
         }
     }
 }
-

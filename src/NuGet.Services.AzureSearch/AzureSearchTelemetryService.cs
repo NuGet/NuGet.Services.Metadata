@@ -134,17 +134,6 @@ namespace NuGet.Services.AzureSearch
                 });
         }
 
-        public void TrackAuxiliaryFileNotModified(string blobName, TimeSpan elapsed)
-        {
-            _telemetryClient.TrackMetric(
-                Prefix + "AuxiliaryFileNotModifiedSeconds",
-                elapsed.TotalSeconds,
-                new Dictionary<string, string>
-                {
-                    { "BlobName", blobName },
-                });
-        }
-
         public IDisposable TrackUploadOwnerChangeHistory(int packageIdCount)
         {
             return _telemetryClient.TrackDuration(
@@ -286,14 +275,15 @@ namespace NuGet.Services.AzureSearch
                 });
         }
 
-        public void TrackReadLatestIndexedDownloads(int packageIdCount, TimeSpan elapsed)
+        public void TrackReadLatestIndexedDownloads(int? packageIdCount, bool notModified, TimeSpan elapsed)
         {
             _telemetryClient.TrackMetric(
                 Prefix + "ReadLatestIndexedDownloadsSeconds",
                 elapsed.TotalSeconds,
                 new Dictionary<string, string>
                 {
-                    { "PackageIdCount", packageIdCount.ToString() },
+                    { "PackageIdCount", packageIdCount?.ToString() },
+                    { "NotModified", notModified.ToString() },
                 });
         }
 
@@ -376,6 +366,42 @@ namespace NuGet.Services.AzureSearch
             _telemetryClient.TrackMetric(
                 Prefix + "V2GetDocumentWithHijackIndexMs",
                 elapsed.TotalMilliseconds);
+        }
+
+        public void TrackReadLatestVerifiedPackages(int? packageIdCount, bool notModified, TimeSpan elapsed)
+        {
+            _telemetryClient.TrackMetric(
+                Prefix + "ReadLatestVerifiedPackagesSeconds",
+                elapsed.TotalSeconds,
+                new Dictionary<string, string>
+                {
+                    { "PackageIdCount", packageIdCount?.ToString() },
+                    { "NotModified", notModified.ToString() },
+                });
+        }
+
+        public IDisposable TrackReplaceLatestVerifiedPackages(int packageIdCount)
+        {
+            return _telemetryClient.TrackDuration(
+                Prefix + "ReplaceLatestVerifiedPackagesSeconds",
+                new Dictionary<string, string>
+                {
+                    { "PackageIdCount", packageIdCount.ToString() },
+                });
+        }
+
+        public void TrackAuxiliaryFilesStringCache(int stringCount, long charCount, int requestCount, int hitCount)
+        {
+            _telemetryClient.TrackMetric(
+                Prefix + "AuxiliaryFilesStringCache",
+                1,
+                new Dictionary<string, string>
+                {
+                    { "StringCount", stringCount.ToString() },
+                    { "CharCount", charCount.ToString() },
+                    { "RequestCount", requestCount.ToString() },
+                    { "HitCount", hitCount.ToString() },
+                });
         }
     }
 }

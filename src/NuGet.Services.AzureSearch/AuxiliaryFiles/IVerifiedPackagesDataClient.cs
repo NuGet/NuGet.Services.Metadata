@@ -3,13 +3,13 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using NuGetGallery;
 
 namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 {
-    public interface IAuxiliaryFileClient
+    public interface IVerifiedPackagesDataClient
     {
-        Task<DownloadData> LoadDownloadDataAsync();
-        Task<HashSet<string>> LoadVerifiedPackagesAsync();
-        Task<HashSet<string>> LoadExcludedPackagesAsync();
+        Task<AuxiliaryFileResult<HashSet<string>>> ReadLatestAsync(IAccessCondition accessCondition, StringCache stringCache);
+        Task ReplaceLatestAsync(HashSet<string> newData, IAccessCondition accessCondition);
     }
 }
