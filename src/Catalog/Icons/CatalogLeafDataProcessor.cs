@@ -105,7 +105,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     }
                     catch (Exception e)
                     {
-                        _logger.LogError(0, e, "Copy from cache failed after {NumRetries} attempts. Falling back to copy from external URL.", MaxBlobStorageCopyAttempts);
+                        _logger.LogWarning(0, e, "Copy from cache failed after {NumRetries} attempts. Falling back to copy from external URL.", MaxBlobStorageCopyAttempts);
                         _iconCopyResultCache.ClearCachedResult(iconUrl, storageUrl);
                         tryRegularCopy = true;
                     }
