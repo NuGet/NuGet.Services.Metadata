@@ -392,20 +392,35 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                 {
                     var sourceBlobMetadata = source.Metadata;
                     var destinationBlobMetadata = destination.Metadata;
-                    var isSynchronized = ((sourceBlobMetadata != null && sourceBlobMetadata.TryGetValue(Sha512HashAlgorithmId, out var sourceHashValue)) &&
-                        (destinationBlobMetadata != null && destinationBlobMetadata.TryGetValue(Sha512HashAlgorithmId, out var destinationHashValue)) &&
-                        sourceHashValue == destinationHashValue);
-
-                    if (isSynchronized)
-                    {
-                        Trace.WriteLine(string.Format("The source blob ({0}) and destination blob ({1}) have the same Sha512 hash value and are synchronized.",
-                            source.Uri.ToString(), destination.Uri.ToString()));
-                        return true;
-                    }
-                    else
+                    if (sourceBlobMetadata == null || destinationBlobMetadata == null)
                     {
                         return false;
                     }
+
+                    var sourceBlobHasSha512Hash = sourceBlobMetadata.TryGetValue(Sha512HashAlgorithmId, out var sourceBlobSha512Hash);
+                    var destinationBlobHasSha512Hash = destinationBlobMetadata.TryGetValue(Sha512HashAlgorithmId, out var destinationBlobSha512Hash);
+                    if (!sourceBlobHasSha512Hash)
+                    {
+                        Trace.WriteLine(string.Format("The source blob ({0}) doesn't have the Sha512 hash.", source.Uri.ToString()));
+                    }
+                    if (!destinationBlobHasSha512Hash)
+                    {
+                        Trace.WriteLine(string.Format("The destination blob ({0}) doesn't have the Sha512 hash.", destination.Uri.ToString()));
+                    }
+                    if (sourceBlobHasSha512Hash && destinationBlobHasSha512Hash)
+                    {
+                        if (sourceBlobSha512Hash == destinationBlobSha512Hash)
+                        {
+                            Trace.WriteLine(string.Format("The source blob ({0}) and destination blob ({1}) have the same Sha512 hash and are synchronized.",
+                                source.Uri.ToString(), destination.Uri.ToString()));
+                            return true;
+                        }
+
+                        Trace.WriteLine(string.Format("The source blob ({0}) and destination blob ({1}) have the different Sha512 hash and are not synchronized.",
+                            source.Uri.ToString(), destination.Uri.ToString()));
+                    }
+
+                    return false;
                 }
                 return true;
             }
