@@ -22,7 +22,7 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
                     await runLogicAsync();
                     return;
                 }
-                catch (Exception e) when (currentRetry < maxRetries && shouldRetryOnException(e))
+                catch (Exception e) when (currentRetry < maxRetries - 1 && shouldRetryOnException(e))
                 {
                     await Task.Delay(initialWaitInterval + TimeSpan.FromSeconds(waitIncrement.TotalSeconds * currentRetry));
                 }
@@ -48,7 +48,7 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
                         return result;
                     }
                 }
-                catch (Exception e) when (currentRetry < maxRetries && shouldRetryOnException(e))
+                catch (Exception e) when (currentRetry < maxRetries - 1 && shouldRetryOnException(e))
                 {
                     await Task.Delay(initialWaitInterval + TimeSpan.FromSeconds(waitIncrement.TotalSeconds * currentRetry));
                 }
