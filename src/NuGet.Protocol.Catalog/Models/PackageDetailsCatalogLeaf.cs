@@ -63,7 +63,7 @@ namespace NuGet.Protocol.Catalog
         public string ProjectUrl { get; set; }
 
         [JsonProperty("releaseNotes")]
-        [JsonConverter(typeof(BareStringOrArrayConcatenatingConverter))]
+        [JsonConverter(typeof(BareStringOrArrayFirstConverter))]
         public string ReleaseNotes { get; set; }
 
         [JsonProperty("requireLicenseAgreement")]
