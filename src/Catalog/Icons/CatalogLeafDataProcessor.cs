@@ -98,14 +98,14 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     {
                         await Retry.IncrementalAsync(
                             async () => await destinationStorage.CopyAsync(storageUrl, destinationStorage, destinationUrl, null, cancellationToken),
-                            e => { _logger.LogError(0, e, "Exception while copying from cache"); return true; },
+                            e => { _logger.LogWarning(0, e, "Exception while copying from cache"); return true; },
                             MaxBlobStorageCopyAttempts,
                             initialWaitInterval: TimeSpan.FromSeconds(5),
                             waitIncrement: TimeSpan.FromSeconds(1));
                     }
                     catch (Exception e)
                     {
-                        _logger.LogError(0, e, "Copy from cache failed after {NumRetries} attempts. Falling back to copy from external URL.", MaxBlobStorageCopyAttempts);
+                        _logger.LogWarning(0, e, "Copy from cache failed after {NumRetries} attempts. Falling back to copy from external URL.", MaxBlobStorageCopyAttempts);
                         _iconCopyResultCache.ClearCachedResult(iconUrl, storageUrl);
                         tryRegularCopy = true;
                     }
