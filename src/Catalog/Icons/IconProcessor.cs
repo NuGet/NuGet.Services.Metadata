@@ -52,6 +52,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 _logger.LogInformation("Failed to determine image type.");
                 return null;
             }
+            _logger.LogInformation("Content type for {PackageId} {PackageVersion} {ContentType}", packageId, normalizedPackageVersion, contentType);
             var content = new ByteArrayStorageContent(iconData, contentType, DefaultCacheControl);
             await destinationStorage.SaveAsync(destinationUri, content, cancellationToken);
             _telemetryService.TrackExternalIconIngestionSuccess(packageId, normalizedPackageVersion);
