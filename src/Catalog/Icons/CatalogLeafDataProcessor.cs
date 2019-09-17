@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -245,6 +246,10 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                         return TryIngestExternalIconAsyncResult.FailCanRetry();
                     }
 
+                    if (response.Headers.TryGetValues("Content-Type", out var values))
+                    {
+                        _logger.LogInformation("Reported content type: {ContentType}", values.FirstOrDefault());
+                    }
                     using (var iconDataStream = await response.Content.ReadAsStreamAsync())
                     {
                         var targetStoragePath = GetTargetStorageIconPath(item);
