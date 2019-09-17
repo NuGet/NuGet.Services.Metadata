@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using NuGet.Protocol.Catalog.Serialization;
 
 namespace NuGet.Protocol.Catalog
 {
@@ -63,7 +62,6 @@ namespace NuGet.Protocol.Catalog
         public string ProjectUrl { get; set; }
 
         [JsonProperty("releaseNotes")]
-        [JsonConverter(typeof(BareStringOrArrayConcatenatingConverter))]
         public string ReleaseNotes { get; set; }
 
         [JsonProperty("requireLicenseAgreement")]
