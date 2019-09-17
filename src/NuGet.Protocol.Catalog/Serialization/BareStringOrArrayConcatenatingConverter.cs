@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Linq;
 using Newtonsoft.Json;
 
 namespace NuGet.Protocol.Catalog
@@ -15,7 +14,7 @@ namespace NuGet.Protocol.Catalog
     /// https://api.nuget.org/v3/catalog0/data/2018.03.11.05.06.09/fluentconsoleapplication.0.1.0.json
     /// (see releaseNotes).
     /// </summary>
-    public class BareStringOrArrayFirstConverter : JsonConverter
+    public class BareStringOrArrayConcatenatingConverter : JsonConverter
     {
         public override bool CanConvert(Type objectType)
         {
@@ -27,7 +26,7 @@ namespace NuGet.Protocol.Catalog
             if (reader.TokenType == JsonToken.StartArray)
             {
                 var array = serializer.Deserialize<string[]>(reader);
-                return array.FirstOrDefault();
+                return string.Join("", array);
             }
 
             return serializer.Deserialize<string>(reader);
