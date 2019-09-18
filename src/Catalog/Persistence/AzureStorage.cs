@@ -401,23 +401,24 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                     var destinationBlobHasSha512Hash = destinationBlobMetadata.TryGetValue(Sha512HashAlgorithmId, out var destinationBlobSha512Hash);
                     if (!sourceBlobHasSha512Hash)
                     {
-                        Trace.WriteLine(string.Format("The source blob ({0}) doesn't have the Sha512 hash.", source.Uri.ToString()));
+                        Trace.TraceWarning(string.Format("The source blob ({0}) doesn't have the SHA512 hash.", source.Uri.ToString()));
                     }
                     if (!destinationBlobHasSha512Hash)
                     {
-                        Trace.WriteLine(string.Format("The destination blob ({0}) doesn't have the Sha512 hash.", destination.Uri.ToString()));
+                        Trace.TraceWarning(string.Format("The destination blob ({0}) doesn't have the SHA512 hash.", destination.Uri.ToString()));
                     }
                     if (sourceBlobHasSha512Hash && destinationBlobHasSha512Hash)
                     {
                         if (sourceBlobSha512Hash == destinationBlobSha512Hash)
                         {
-                            Trace.WriteLine(string.Format("The source blob ({0}) and destination blob ({1}) have the same Sha512 hash and are synchronized.",
+                            Trace.WriteLine(string.Format("The source blob ({0}) and destination blob ({1}) have the same SHA512 hash and are synchronized.",
                                 source.Uri.ToString(), destination.Uri.ToString()));
                             return true;
                         }
 
-                        Trace.WriteLine(string.Format("The source blob ({0}) and destination blob ({1}) have the different Sha512 hash and are not synchronized.",
-                            source.Uri.ToString(), destination.Uri.ToString()));
+                        Trace.TraceWarning(string.Format("The source blob ({0}) and destination blob ({1}) have the different SHA512 hash and are not synchronized. " +
+                            "The source blob hash is {2} while the destination blob hash is {3}",
+                            source.Uri.ToString(), destination.Uri.ToString(), sourceBlobSha512Hash, destinationBlobSha512Hash));
                     }
 
                     return false;
