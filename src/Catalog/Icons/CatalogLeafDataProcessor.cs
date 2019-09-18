@@ -30,8 +30,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             IExternalIconContentProvider externalIconContentProvider,
             IIconCopyResultCache iconCopyResultCache,
             ITelemetryService telemetryService,
-            ILogger<CatalogLeafDataProcessor> logger
-            )
+            ILogger<CatalogLeafDataProcessor> logger)
         {
             _packageStorage = packageStorage ?? throw new ArgumentNullException(nameof(packageStorage));
             _iconProcessor = iconProcessor ?? throw new ArgumentNullException(nameof(iconProcessor));
