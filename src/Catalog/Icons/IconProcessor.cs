@@ -46,7 +46,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 return null;
             }
 
-            var contentType = DetermineContentType(iconData);
+            var contentType = DetermineContentType(iconData, onlyGallerySupported: false);
             if (string.IsNullOrWhiteSpace(contentType))
             {
                 _logger.LogInformation("Failed to determine image type.");
@@ -108,7 +108,10 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     {
                         _logger.LogInformation("Extracting icon to the destination storage {DestinationUri}", destinationUri);
                         var iconData = await GetStreamBytesAsync(iconStream, cancellationToken);
-                        var contentType = DetermineContentType(iconData);
+                        // files with embedded icons are expected to only contain image types Gallery allows in
+                        // (jpeg and png). Others are still going to be saved for correctness sake, but we won't
+                        // try to determine their type (they shouldn't have made this far anyway).
+                        var contentType = DetermineContentType(iconData, onlyGallerySupported: true); 
                         _logger.LogInformation("Content type for {PackageId} {PackageVersion} {ContentType}", packageId, normalizedPackageVersion, contentType);
                         var iconContent = new ByteArrayStorageContent(iconData, contentType, DefaultCacheControl);
                         await destinationStorage.SaveAsync(destinationUri, iconContent, cancellationToken);
@@ -200,7 +203,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
         /// </remarks>
         private static readonly byte[] IcoHeader = new byte[] { 0x00, 0x00, 0x01, 0x00 };
 
-        private static string DetermineContentType(byte[] imageData, bool onlyGallerySupported = false)
+        private static string DetermineContentType(byte[] imageData, bool onlyGallerySupported)
         {
             // checks are ordered by format popularity among external icons for existing packages
 
