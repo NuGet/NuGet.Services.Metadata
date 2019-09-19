@@ -4,13 +4,14 @@
 using System;
 using System.Threading;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Moq;
 using Xunit;
 using NuGet.Services.Metadata.Catalog.Persistence;
 
 namespace CatalogMetadataTests
 {
-    public class AzureStorageFacts : BaseFacts
+    public class AzureStorageFacts : AzureStorageBaseFacts
     {
         public AzureStorageFacts() : base()
         {
@@ -49,6 +50,14 @@ namespace CatalogMetadataTests
                 sourceBlob.Verify(x => x.GetMetadataAsync(CancellationToken.None), Times.Once);
                 destinationBlob.Verify(x => x.GetMetadataAsync(CancellationToken.None), Times.Once);
 
+                if (!hasSourceBlobSHA512Value)
+                {
+                    sourceBlob.Verify(x => x.Uri, Times.Once);
+                }
+                if (!hasDestinationBlobSHA512Value)
+                {
+                    destinationBlob.Verify(x => x.Uri, Times.Once);
+                }
                 if (hasSourceBlobSHA512Value && hasDestinationBlobSHA512Value)
                 {
                     sourceBlob.Verify(x => x.Uri, Times.Once);
@@ -87,14 +96,42 @@ namespace CatalogMetadataTests
 
             return mockBlob;
         }
+
+        [Theory]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public async void ValidateAreSynchronizedmethodWithNullMetadata(bool isSourceBlobMetadataExisted, bool isDestinationBlobMetadataExists)
+        {
+            // Arrange
+            var sourceBlob = GetMockedBlockBlobWithNullMetadata(isSourceBlobMetadataExisted);
+            var destinationBlob = GetMockedBlockBlobWithNullMetadata(isDestinationBlobMetadataExists);
+
+            // Act and Assert
+            Assert.False(await _storage.AreSynchronized(sourceBlob, destinationBlob));
+        }
+
+        private ICloudBlockBlob GetMockedBlockBlobWithNullMetadata(bool isBlobMetadataExisted)
+        {
+            if (isBlobMetadataExisted)
+            {
+                return Mock.Of<ICloudBlockBlob>(x => x.ExistsAsync(CancellationToken.None) == Task.FromResult(true) &&
+                    x.GetMetadataAsync(CancellationToken.None) == Task.FromResult<IReadOnlyDictionary<string, string>>(new Dictionary<string, string>()));
+            }
+            else
+            {
+                return Mock.Of<ICloudBlockBlob>(x => x.ExistsAsync(CancellationToken.None) == Task.FromResult(true) &&
+                    x.GetMetadataAsync(CancellationToken.None) == Task.FromResult<IReadOnlyDictionary<string, string>>(null));
+            }
+        }
     }
 
-    public abstract class BaseFacts
+    public abstract class AzureStorageBaseFacts
     {
         protected readonly Uri _baseAddress = new Uri("https://test");
         protected readonly AzureStorage _storage;
 
-        public BaseFacts()
+        public AzureStorageBaseFacts()
         {
             var directory = new Mock<ICloudBlobDirectory>();
 
