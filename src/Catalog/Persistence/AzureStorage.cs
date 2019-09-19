@@ -22,7 +22,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
     {
         private readonly bool _compressContent;
         private readonly IThrottle _throttle;
-        private readonly CloudBlobDirectory _directory;
+        private readonly ICloudBlobDirectory _directory;
         private readonly bool _useServerSideCopy;
 
         public const string Sha512HashAlgorithmId = "SHA512";
@@ -41,7 +41,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             bool verbose,
             bool initializeContainer,
             IThrottle throttle) : this(
-                account.CreateCloudBlobClient().GetContainerReference(containerName).GetDirectoryReference(path),
+                new CloudBlobDirectoryWrapper(account.CreateCloudBlobClient().GetContainerReference(containerName).GetDirectoryReference(path)),
                 baseAddress,
                 maxExecutionTime,
                 serverTimeout,
@@ -53,8 +53,8 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             Verbose = verbose;
         }
 
-        private AzureStorage(
-            CloudBlobDirectory directory,
+        internal AzureStorage(
+            ICloudBlobDirectory directory,
             Uri baseAddress,
             TimeSpan maxExecutionTime,
             TimeSpan serverTimeout,
@@ -105,7 +105,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             return new OptimisticConcurrencyControlToken(blob.Properties.ETag);
         }
 
-        private static Uri GetDirectoryUri(CloudBlobDirectory directory)
+        private static Uri GetDirectoryUri(ICloudBlobDirectory directory)
         {
             Uri uri = new UriBuilder(directory.Uri)
             {
@@ -380,18 +380,23 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
 
         public override async Task<bool> AreSynchronized(Uri firstResourceUri, Uri secondResourceUri)
         {
-            var destination = GetBlockBlobReference(GetName(secondResourceUri));
             var source = new CloudBlockBlob(firstResourceUri);
+            var destination = GetBlockBlobReference(GetName(secondResourceUri));
 
             // For interacting with the source, we just use the same blob request options as the destination blob.
             ApplyBlobRequestOptions(source);
 
-            if (await destination.ExistsAsync())
+            return await AreSynchronized(new AzureCloudBlockBlob(source), new AzureCloudBlockBlob(destination));
+        }
+
+        internal async Task<bool> AreSynchronized(ICloudBlockBlob sourceBlockBlob, ICloudBlockBlob destinationBlockBlob)
+        {
+            if (await destinationBlockBlob.ExistsAsync(CancellationToken.None))
             {
-                if (await source.ExistsAsync())
+                if (await sourceBlockBlob.ExistsAsync(CancellationToken.None))
                 {
-                    var sourceBlobMetadata = source.Metadata;
-                    var destinationBlobMetadata = destination.Metadata;
+                    var sourceBlobMetadata = await sourceBlockBlob.GetMetadataAsync(CancellationToken.None);
+                    var destinationBlobMetadata = await destinationBlockBlob.GetMetadataAsync(CancellationToken.None);
                     if (sourceBlobMetadata == null || destinationBlobMetadata == null)
                     {
                         return false;
@@ -401,31 +406,31 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                     var destinationBlobHasSha512Hash = destinationBlobMetadata.TryGetValue(Sha512HashAlgorithmId, out var destinationBlobSha512Hash);
                     if (!sourceBlobHasSha512Hash)
                     {
-                        Trace.TraceWarning(string.Format("The source blob ({0}) doesn't have the SHA512 hash.", source.Uri.ToString()));
+                        Trace.TraceWarning(string.Format("The source blob ({0}) doesn't have the SHA512 hash.", sourceBlockBlob.Uri.ToString()));
                     }
                     if (!destinationBlobHasSha512Hash)
                     {
-                        Trace.TraceWarning(string.Format("The destination blob ({0}) doesn't have the SHA512 hash.", destination.Uri.ToString()));
+                        Trace.TraceWarning(string.Format("The destination blob ({0}) doesn't have the SHA512 hash.", destinationBlockBlob.Uri.ToString()));
                     }
                     if (sourceBlobHasSha512Hash && destinationBlobHasSha512Hash)
                     {
                         if (sourceBlobSha512Hash == destinationBlobSha512Hash)
                         {
                             Trace.WriteLine(string.Format("The source blob ({0}) and destination blob ({1}) have the same SHA512 hash and are synchronized.",
-                                source.Uri.ToString(), destination.Uri.ToString()));
+                                sourceBlockBlob.Uri.ToString(), destinationBlockBlob.Uri.ToString()));
                             return true;
                         }
 
                         Trace.TraceWarning(string.Format("The source blob ({0}) and destination blob ({1}) have the different SHA512 hash and are not synchronized. " +
                             "The source blob hash is {2} while the destination blob hash is {3}",
-                            source.Uri.ToString(), destination.Uri.ToString(), sourceBlobSha512Hash, destinationBlobSha512Hash));
+                            sourceBlockBlob.Uri.ToString(), destinationBlockBlob.Uri.ToString(), sourceBlobSha512Hash, destinationBlobSha512Hash));
                     }
 
                     return false;
                 }
                 return true;
             }
-            return !(await source.ExistsAsync());
+            return !(await sourceBlockBlob.ExistsAsync(CancellationToken.None));
         }
 
         public async Task<ICloudBlockBlob> GetCloudBlockBlobReferenceAsync(Uri blobUri)
