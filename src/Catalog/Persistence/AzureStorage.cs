@@ -53,7 +53,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             Verbose = verbose;
         }
 
-        internal AzureStorage(
+        public AzureStorage(
             ICloudBlobDirectory directory,
             Uri baseAddress,
             TimeSpan maxExecutionTime,
@@ -389,7 +389,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             return await AreSynchronized(new AzureCloudBlockBlob(source), new AzureCloudBlockBlob(destination));
         }
 
-        internal async Task<bool> AreSynchronized(ICloudBlockBlob sourceBlockBlob, ICloudBlockBlob destinationBlockBlob)
+        public async Task<bool> AreSynchronized(ICloudBlockBlob sourceBlockBlob, ICloudBlockBlob destinationBlockBlob)
         {
             if (await destinationBlockBlob.ExistsAsync(CancellationToken.None))
             {
