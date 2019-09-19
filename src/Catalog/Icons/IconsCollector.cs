@@ -64,7 +64,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             bool isLastBatch,
             CancellationToken cancellationToken)
         {
-            await _iconCopyResultCache.InitializeIconUrlCacheAsync(cancellationToken);
+            await _iconCopyResultCache.InitializeAsync(cancellationToken);
 
             var filteredItems = items
                 .GroupBy(i => i.PackageIdentity)                          // if we have multiple commits for the same package (id AND version)
@@ -75,7 +75,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 .Select(_ => ProcessIconsAsync(itemsToProcess, cancellationToken));
             await Task.WhenAll(tasks);
 
-            await _iconCopyResultCache.StoreIconUrlCacheAsync(cancellationToken);
+            await _iconCopyResultCache.SaveAsync(cancellationToken);
 
             return true;
         }
@@ -98,11 +98,11 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                         if (item.IsPackageDetails)
                         {
                             var leaf = await _catalogClient.GetPackageDetailsLeafAsync(item.Uri.AbsoluteUri);
-                            await _catalogLeafDataProcessor.ProcessPackageDetails(storage, item, leaf.IconUrl, leaf.IconFile, cancellationToken);
+                            await _catalogLeafDataProcessor.ProcessPackageDetailsLeafAsync(storage, item, leaf.IconUrl, leaf.IconFile, cancellationToken);
                         }
                         else if (item.IsPackageDelete)
                         {
-                            await _catalogLeafDataProcessor.ProcessPackageDelete(storage, item, cancellationToken);
+                            await _catalogLeafDataProcessor.ProcessPackageDeleteLeafAsync(storage, item, cancellationToken);
                         }
                     }
                 }

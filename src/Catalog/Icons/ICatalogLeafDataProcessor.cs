@@ -9,7 +9,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
 {
     public interface ICatalogLeafDataProcessor
     {
-        Task ProcessPackageDelete(Storage storage, CatalogCommitItem item, CancellationToken cancellationToken);
-        Task ProcessPackageDetails(Storage destinationStorage, CatalogCommitItem item, string iconUrlString, string iconFile, CancellationToken cancellationToken);
+        Task ProcessPackageDeleteLeafAsync(Storage storage, CatalogCommitItem item, CancellationToken cancellationToken);
+        Task ProcessPackageDetailsLeafAsync(Storage destinationStorage, CatalogCommitItem item, string iconUrlString, string iconFile, CancellationToken cancellationToken);
     }
 }

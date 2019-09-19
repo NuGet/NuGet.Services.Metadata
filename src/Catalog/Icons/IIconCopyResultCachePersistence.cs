@@ -8,7 +8,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
 {
     public interface IIconCopyResultCachePersistence
     {
-        Task InitializeIconUrlCacheAsync(CancellationToken cancellationToken);
-        Task StoreIconUrlCacheAsync(CancellationToken cancellationToken);
+        Task InitializeAsync(CancellationToken cancellationToken);
+        Task SaveAsync(CancellationToken cancellationToken);
     }
 }

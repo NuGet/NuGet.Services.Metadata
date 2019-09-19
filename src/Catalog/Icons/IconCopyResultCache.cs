@@ -26,7 +26,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             _auxStorage = auxStorage ?? throw new ArgumentNullException(nameof(auxStorage));
         }
 
-        public async Task InitializeIconUrlCacheAsync(CancellationToken cancellationToken)
+        public async Task InitializeAsync(CancellationToken cancellationToken)
         {
             if (ExternalIconCopyResults != null)
             {
@@ -49,7 +49,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             }
         }
 
-        public async Task StoreIconUrlCacheAsync(CancellationToken cancellationToken)
+        public async Task SaveAsync(CancellationToken cancellationToken)
         {
             var cacheUrl = _auxStorage.ResolveUri(CacheFilename);
             var serialized = JsonConvert.SerializeObject(ExternalIconCopyResults);
@@ -57,7 +57,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             await _auxStorage.SaveAsync(cacheUrl, content, cancellationToken);
         }
 
-        public ExternalIconCopyResult GetCachedResult(Uri iconUrl)
+        public ExternalIconCopyResult Get(Uri iconUrl)
         {
             if (ExternalIconCopyResults.TryGetValue(iconUrl, out var result))
             {
@@ -67,19 +67,19 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             return null;
         }
 
-        public void StoreCachedResult(Uri iconUrl, ExternalIconCopyResult newItem)
+        public void Set(Uri iconUrl, ExternalIconCopyResult newItem)
         {
             ExternalIconCopyResults.AddOrUpdate(iconUrl, newItem, (_, v) => v); // will not overwrite existing entries
         }
 
-        public void ClearCachedResult(Uri externalIconUrl, Uri targetStorageUrl)
+        public void Clear(Uri externalIconUrl, Uri targetStorageUrl)
         {
             if (ExternalIconCopyResults.TryRemove(externalIconUrl, out var removedValue))
             {
                 if (removedValue.StorageUrl != targetStorageUrl)
                 {
                     // if we removed item that does not match the target URL, put it back.
-                    StoreCachedResult(externalIconUrl, removedValue);
+                    Set(externalIconUrl, removedValue);
                 }
             }
         }

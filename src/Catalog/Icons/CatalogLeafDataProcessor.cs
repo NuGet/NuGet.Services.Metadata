@@ -40,7 +40,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task ProcessPackageDelete(Storage storage, CatalogCommitItem item, CancellationToken cancellationToken)
+        public async Task ProcessPackageDeleteLeafAsync(Storage storage, CatalogCommitItem item, CancellationToken cancellationToken)
         {
             var targetStoragePath = GetTargetStorageIconPath(item);
             await _iconProcessor.DeleteIcon(storage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
@@ -48,7 +48,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             // so can't remove anything. Will rely on the copy code to catch the copy failure and cleanup the cache appropriately.
         }
 
-        public async Task ProcessPackageDetails(Storage destinationStorage, CatalogCommitItem item, string iconUrlString, string iconFile, CancellationToken cancellationToken)
+        public async Task ProcessPackageDetailsLeafAsync(Storage destinationStorage, CatalogCommitItem item, string iconUrlString, string iconFile, CancellationToken cancellationToken)
         {
             var hasExternalIconUrl = !string.IsNullOrWhiteSpace(iconUrlString);
             var hasEmbeddedIcon = !string.IsNullOrWhiteSpace(iconFile);
@@ -56,16 +56,16 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             {
                 using (_logger.BeginScope("Processing icon url {IconUrl}", iconUrl))
                 {
-                    await ProcessExternalIconUrl(destinationStorage, item, iconUrl, cancellationToken);
+                    await ProcessExternalIconUrlAsync(destinationStorage, item, iconUrl, cancellationToken);
                 }
             }
             else if (hasEmbeddedIcon)
             {
-                await ProcessEmbeddedIcon(destinationStorage, item, iconFile, cancellationToken);
+                await ProcessEmbeddedIconAsync(destinationStorage, item, iconFile, cancellationToken);
             }
         }
 
-        private async Task ProcessExternalIconUrl(Storage destinationStorage, CatalogCommitItem item, Uri iconUrl, CancellationToken cancellationToken)
+        private async Task ProcessExternalIconUrlAsync(Storage destinationStorage, CatalogCommitItem item, Uri iconUrl, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Found external icon url {IconUrl} for {PackageId} {PackageVersion}",
                 iconUrl,
@@ -76,7 +76,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 _logger.LogInformation("Invalid icon URL {IconUrl}", iconUrl);
                 return;
             }
-            var cachedResult = _iconCopyResultCache.GetCachedResult(iconUrl);
+            var cachedResult = _iconCopyResultCache.Get(iconUrl);
             if (cachedResult != null)
             {
                 if (cachedResult.IsCopySucceeded)
@@ -108,7 +108,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                         _logger.LogWarning(0, e, "Copy from cache failed after {NumRetries} attempts. Falling back to copy from external URL. {StorageUrl}",
                             MaxBlobStorageCopyAttempts,
                             storageUrl);
-                        _iconCopyResultCache.ClearCachedResult(iconUrl, storageUrl);
+                        _iconCopyResultCache.Clear(iconUrl, storageUrl);
                         tryRegularCopy = true;
                     }
 
@@ -146,11 +146,11 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     _telemetryService.TrackExternalIconIngestionFailure(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
                     cacheItem = ExternalIconCopyResult.Fail(iconUrl);
                 }
-                _iconCopyResultCache.StoreCachedResult(iconUrl, cacheItem);
+                _iconCopyResultCache.Set(iconUrl, cacheItem);
             }
         }
 
-        private async Task ProcessEmbeddedIcon(Storage destinationStorage, CatalogCommitItem item, string iconFile, CancellationToken cancellationToken)
+        private async Task ProcessEmbeddedIconAsync(Storage destinationStorage, CatalogCommitItem item, string iconFile, CancellationToken cancellationToken)
         {
             var packageFilename = PackageUtility.GetPackageFileName(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString()).ToLower();
             var packageUri = _packageStorage.ResolveUri(packageFilename);
