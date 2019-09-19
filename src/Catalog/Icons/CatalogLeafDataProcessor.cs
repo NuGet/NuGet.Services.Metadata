@@ -266,7 +266,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             return TryIngestExternalIconAsyncResult.Success(resultUrl);
         }
 
-        private static string GetTargetStorageIconPath(CatalogCommitItem item)
+        public static string GetTargetStorageIconPath(CatalogCommitItem item)
         {
             return $"{item.PackageIdentity.Id.ToLowerInvariant()}/{item.PackageIdentity.Version.ToNormalizedString().ToLowerInvariant()}/icon";
         }
