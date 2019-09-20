@@ -421,6 +421,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
                             return true;
                         }
 
+                        // The SHA512 hash between the source and destination blob should be always same.
                         Trace.TraceWarning(string.Format("The source blob ({0}) and destination blob ({1}) have the different SHA512 hash and are not synchronized. " +
                             "The source blob hash is {2} while the destination blob hash is {3}",
                             sourceBlockBlob.Uri.ToString(), destinationBlockBlob.Uri.ToString(), sourceBlobSha512Hash, destinationBlobSha512Hash));

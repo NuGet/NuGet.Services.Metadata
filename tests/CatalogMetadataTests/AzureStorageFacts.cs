@@ -26,17 +26,17 @@ namespace CatalogMetadataTests
         [InlineData(true, false, null, true, true, "SHA512Value1", false)]
         [InlineData(true, true, "SHA512Value1", true, false, null, false)]
         [InlineData(true, false, null, true, false, null, false)]
-        public async void ValidateAreSynchronizedmethod(bool isSourceBlobExisted,
+        public async void ValidateAreSynchronizedmethod(bool sourceBlobExists,
             bool hasSourceBlobSHA512Value,
             string sourceBlobSHA512Value,
-            bool isDestinationBlobExisted,
+            bool destinationBlobExists,
             bool hasDestinationBlobSHA512Value,
             string destinationBlobSHA512Value,
             bool expected)
         {
             // Arrange
-            var sourceBlob = GetMockedBlockBlob(isSourceBlobExisted, hasSourceBlobSHA512Value, sourceBlobSHA512Value, new Uri("https://blockBlob1"));
-            var destinationBlob = GetMockedBlockBlob(isDestinationBlobExisted, hasDestinationBlobSHA512Value, destinationBlobSHA512Value, new Uri("https://blockBlob2"));
+            var sourceBlob = GetMockedBlockBlob(sourceBlobExists, hasSourceBlobSHA512Value, sourceBlobSHA512Value, new Uri("https://blockBlob1"));
+            var destinationBlob = GetMockedBlockBlob(destinationBlobExists, hasDestinationBlobSHA512Value, destinationBlobSHA512Value, new Uri("https://blockBlob2"));
 
             // Act
             var isSynchronized = await _storage.AreSynchronized(sourceBlob.Object, destinationBlob.Object);
@@ -45,7 +45,7 @@ namespace CatalogMetadataTests
             sourceBlob.Verify(x => x.ExistsAsync(CancellationToken.None), Times.Once);
             destinationBlob.Verify(x => x.ExistsAsync(CancellationToken.None), Times.Once);
 
-            if (isSourceBlobExisted && isDestinationBlobExisted)
+            if (sourceBlobExists && destinationBlobExists)
             {
                 sourceBlob.Verify(x => x.GetMetadataAsync(CancellationToken.None), Times.Once);
                 destinationBlob.Verify(x => x.GetMetadataAsync(CancellationToken.None), Times.Once);
