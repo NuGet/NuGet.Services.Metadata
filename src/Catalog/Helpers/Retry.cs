@@ -6,8 +6,21 @@ using System.Threading.Tasks;
 
 namespace NuGet.Services.Metadata.Catalog.Helpers
 {
+    /// <remarks>
+    /// Can (and probably should) be replaced with Polly library if the project is updated to target .netfx 4.7.2.
+    /// In current state Polly pulls a ton of System.* dependencies which we previously didn't have.
+    /// </remarks>
+    /// <seealso cref="NuGet.Indexing.Retry"/>
     public class Retry
     {
+        /// <summary>
+        /// Retries async operation if it throws with delays between attempts.
+        /// </summary>
+        /// <param name="runLogicAsync">Operation to try.</param>
+        /// <param name="shouldRetryOnException">Exception predicate. If it returns false, the exception will propagate to the caller.</param>
+        /// <param name="maxRetries">Max number of attempts to make.</param>
+        /// <param name="initialWaitInterval">Delay after the first failure.</param>
+        /// <param name="waitIncrement">Delay increment for subsequent attempts.</param>
         public static async Task IncrementalAsync(
             Func<Task> runLogicAsync,
             Func<Exception, bool> shouldRetryOnException,
@@ -29,15 +42,27 @@ namespace NuGet.Services.Metadata.Catalog.Helpers
             }
         }
 
-        public static async Task<T> IncrementalAsync<T>(
-            Func<Task<T>> runLogicAsync,
+        /// <summary>
+        /// Retries async operation if it throws or returns certain result with delays between attempts.
+        /// </summary>
+        /// <typeparam name="TResult">Attempted operation result type.</typeparam>
+        /// <param name="runLogicAsync">Operation to try.</param>
+        /// <param name="shouldRetryOnException">Exception predicate. If it returns false, the exception will propagate to the caller.</param>
+        /// <param name="shouldRetry">Result predicate. If returns true, the result will be discarded and operation retried.</param>
+        /// <param name="maxRetries">Max number of attempts to make.</param>
+        /// <param name="initialWaitInterval">Delay after the first failure.</param>
+        /// <param name="waitIncrement">Delay increment for subsequent attempts.</param>
+        /// <returns>The result of <paramref name="runLogicAsync"/>() call if <paramref name="shouldRetry"/> predicate fails.
+        /// default(<typeparamref name="TResult"/>) if <paramref name="shouldRetry"/> suceeded for all attempts.</returns>
+        public static async Task<TResult> IncrementalAsync<TResult>(
+            Func<Task<TResult>> runLogicAsync,
             Func<Exception, bool> shouldRetryOnException,
-            Func<T, bool> shouldRetry,
+            Func<TResult, bool> shouldRetry,
             int maxRetries,
             TimeSpan initialWaitInterval,
             TimeSpan waitIncrement)
         {
-            var result = default(T);
+            var result = default(TResult);
             for (int currentRetry = 0; currentRetry < maxRetries; ++currentRetry)
             {
                 try
