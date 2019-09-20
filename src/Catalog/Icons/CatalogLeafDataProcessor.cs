@@ -48,7 +48,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             // so can't remove anything. Will rely on the copy code to catch the copy failure and cleanup the cache appropriately.
         }
 
-        public async Task ProcessPackageDetailsLeafAsync(Storage destinationStorage, CatalogCommitItem item, string iconUrlString, string iconFile, CancellationToken cancellationToken)
+        public async Task ProcessPackageDetailsLeafAsync(IStorage destinationStorage, CatalogCommitItem item, string iconUrlString, string iconFile, CancellationToken cancellationToken)
         {
             var hasExternalIconUrl = !string.IsNullOrWhiteSpace(iconUrlString);
             var hasEmbeddedIcon = !string.IsNullOrWhiteSpace(iconFile);
@@ -65,7 +65,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             }
         }
 
-        private async Task ProcessExternalIconUrlAsync(Storage destinationStorage, CatalogCommitItem item, Uri iconUrl, CancellationToken cancellationToken)
+        private async Task ProcessExternalIconUrlAsync(IStorage destinationStorage, CatalogCommitItem item, Uri iconUrl, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Found external icon url {IconUrl} for {PackageId} {PackageVersion}",
                 iconUrl,
@@ -150,7 +150,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             }
         }
 
-        private async Task ProcessEmbeddedIconAsync(Storage destinationStorage, CatalogCommitItem item, string iconFile, CancellationToken cancellationToken)
+        private async Task ProcessEmbeddedIconAsync(IStorage destinationStorage, CatalogCommitItem item, string iconFile, CancellationToken cancellationToken)
         {
             var packageFilename = PackageUtility.GetPackageFileName(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString()).ToLower();
             var packageUri = _packageStorage.ResolveUri(packageFilename);
@@ -202,7 +202,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                 };
         }
 
-        private async Task<TryIngestExternalIconAsyncResult> TryIngestExternalIconAsync(CatalogCommitItem item, Uri iconUrl, Storage destinationStorage, CancellationToken cancellationToken)
+        private async Task<TryIngestExternalIconAsyncResult> TryIngestExternalIconAsync(CatalogCommitItem item, Uri iconUrl, IStorage destinationStorage, CancellationToken cancellationToken)
         {
             bool retry;
             var resultUrl = (Uri)null;

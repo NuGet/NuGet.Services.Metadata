@@ -30,23 +30,22 @@ namespace CatalogTests.Icons
             [InlineData("Package", "01.2.03.4", "package/1.2.3.4/icon")]
             public async Task CallsDeleteIconProperly(string packageId, string packageVersion, string expectedPath)
             {
-                var leaf = new CatalogCommitItem(
-                    new Uri("https://nuget.test/something"),
-                    "somecommitid",
-                    DateTime.UtcNow,
-                    new string[0],
-                    new Uri[0],
-                    new PackageIdentity(packageId, new NuGetVersion(packageVersion)));
+                var leaf = CreateCatalogLeaf(packageId, packageVersion);
 
-                await Target.ProcessPackageDeleteLeafAsync(DestinationStorageMock.Object, leaf, CancellationToken.None);
+                var destinationStorageMock = new Mock<Storage>(new Uri("https://base/storage"));
+
+                await Target.ProcessPackageDeleteLeafAsync(destinationStorageMock.Object, leaf, CancellationToken.None);
 
                 IconProcessorMock
-                    .Verify(ip => ip.DeleteIcon(DestinationStorageMock.Object, expectedPath, CancellationToken.None, It.IsAny<string>(), It.IsAny<string>()));
+                    .Verify(ip => ip.DeleteIcon(destinationStorageMock.Object, expectedPath, CancellationToken.None, It.IsAny<string>(), It.IsAny<string>()));
             }
         }
 
         public class TheProcessPackageDetailsLeafAsyncMethod : TestBase
         {
+            private const string IconUrlString = "https://icon/url";
+            private const string CachedResult = "https://cached/result";
+
             [Theory]
             [InlineData("Package", "1.2.3-Preview", false, "package/1.2.3-preview/icon")]
             [InlineData("PpPpPPpP", "3.2.1+metaData", false, "pppppppp/3.2.1/icon")]
@@ -56,20 +55,14 @@ namespace CatalogTests.Icons
             [InlineData("Package", "01.2.03.4", true, "package/1.2.3.4/icon")]
             public async Task CallsCopyEmbeddedIconFromPackageProperly(string packageId, string packageVersion, bool hasIconUrl, string expectedPath)
             {
-                var leaf = new CatalogCommitItem(
-                    new Uri("https://nuget.test/something"),
-                    "somecommitid",
-                    DateTime.UtcNow,
-                    new string[0],
-                    new Uri[0],
-                    new PackageIdentity(packageId, new NuGetVersion(packageVersion)));
+                var leaf = CreateCatalogLeaf(packageId, packageVersion);
 
                 const string iconFilename = "iconFilename";
 
                 await Target.ProcessPackageDetailsLeafAsync(
                     DestinationStorageMock.Object,
                     leaf,
-                    hasIconUrl ? "https://icon/url" : null,
+                    hasIconUrl ? IconUrlString : null,
                     iconFilename,
                     CancellationToken.None);
 
@@ -92,19 +85,11 @@ namespace CatalogTests.Icons
             [InlineData("Package", "01.2.03.4", "package/1.2.3.4/icon")]
             public async Task CopiesIconFromExternalLocation(string packageId, string packageVersion, string expectedPath)
             {
-                var leaf = new CatalogCommitItem(
-                    new Uri("https://nuget.test/something"),
-                    "somecommitid",
-                    DateTime.UtcNow,
-                    new string[0],
-                    new Uri[0],
-                    new PackageIdentity(packageId, new NuGetVersion(packageVersion)));
-
-                const string iconUrlString = "https://icon/url";
+                var leaf = CreateCatalogLeaf(packageId, packageVersion);
 
                 ExternalIconContentProviderMock
                     .Setup(cp => cp.TryGetResponseAsync(
-                        It.Is<Uri>(u => u.AbsoluteUri == iconUrlString),
+                        It.Is<Uri>(u => u.AbsoluteUri == IconUrlString),
                         CancellationToken.None))
                     .ReturnsAsync(
                         TryGetResponseResult.Success(
@@ -116,7 +101,7 @@ namespace CatalogTests.Icons
                 await Target.ProcessPackageDetailsLeafAsync(
                     DestinationStorageMock.Object,
                     leaf,
-                    iconUrlString,
+                    IconUrlString,
                     null,
                     CancellationToken.None);
 
@@ -135,19 +120,11 @@ namespace CatalogTests.Icons
             [Fact]
             public async Task RetriesExternalLocationFailures()
             {
-                var leaf = new CatalogCommitItem(
-                    new Uri("https://nuget.test/something"),
-                    "somecommitid",
-                    DateTime.UtcNow,
-                    new string[0],
-                    new Uri[0],
-                    new PackageIdentity("theid", new NuGetVersion("3.4.2")));
-
-                const string iconUrlString = "https://icon/url";
+                var leaf = CreateCatalogLeaf();
 
                 ExternalIconContentProviderMock
                     .SetupSequence(cp => cp.TryGetResponseAsync(
-                        It.Is<Uri>(u => u.AbsoluteUri == iconUrlString),
+                        It.Is<Uri>(u => u.AbsoluteUri == IconUrlString),
                         CancellationToken.None))
                     .ReturnsAsync(TryGetResponseResult.FailCanRetry())
                     .ReturnsAsync(
@@ -160,14 +137,14 @@ namespace CatalogTests.Icons
                 await Target.ProcessPackageDetailsLeafAsync(
                     DestinationStorageMock.Object,
                     leaf,
-                    iconUrlString,
+                    IconUrlString,
                     null,
                     CancellationToken.None);
 
                 ExternalIconContentProviderMock
                     .Verify(
                         cp => cp.TryGetResponseAsync(
-                            It.Is<Uri>(u => u.AbsoluteUri == iconUrlString),
+                            It.Is<Uri>(u => u.AbsoluteUri == IconUrlString),
                             CancellationToken.None),
                         Times.AtLeast(2));
 
@@ -186,19 +163,11 @@ namespace CatalogTests.Icons
             [Fact]
             public async Task DoesNotRetrySeriousFailures()
             {
-                var leaf = new CatalogCommitItem(
-                    new Uri("https://nuget.test/something"),
-                    "somecommitid",
-                    DateTime.UtcNow,
-                    new string[0],
-                    new Uri[0],
-                    new PackageIdentity("theid", new NuGetVersion("3.4.2")));
-
-                const string iconUrlString = "https://icon/url";
+                var leaf = CreateCatalogLeaf();
 
                 ExternalIconContentProviderMock
                     .SetupSequence(cp => cp.TryGetResponseAsync(
-                        It.Is<Uri>(u => u.AbsoluteUri == iconUrlString),
+                        It.Is<Uri>(u => u.AbsoluteUri == IconUrlString),
                         CancellationToken.None))
                     .ReturnsAsync(TryGetResponseResult.FailCannotRetry())
                     .ReturnsAsync(
@@ -211,27 +180,175 @@ namespace CatalogTests.Icons
                 await Target.ProcessPackageDetailsLeafAsync(
                     DestinationStorageMock.Object,
                     leaf,
-                    iconUrlString,
+                    IconUrlString,
                     null,
                     CancellationToken.None);
 
                 ExternalIconContentProviderMock
                     .Verify(
                         cp => cp.TryGetResponseAsync(
-                            It.Is<Uri>(u => u.AbsoluteUri == iconUrlString),
+                            It.Is<Uri>(u => u.AbsoluteUri == IconUrlString),
                             CancellationToken.None),
-                        Times.AtMostOnce());
+                        Times.AtMostOnce);
+
+                VerifyNoCopyFromExternalSource();
+            }
+
+            [Fact]
+            public async Task TriesToGetFromCache()
+            {
+                var leaf = CreateCatalogLeaf();
+
+                IconCopyResultCacheMock
+                    .Setup(c => c.Get(It.Is<Uri>(u => u.AbsoluteUri == IconUrlString)))
+                    .Returns(ExternalIconCopyResult.Success(new Uri(IconUrlString), new Uri(CachedResult)));
+
+                await Target.ProcessPackageDetailsLeafAsync(
+                    DestinationStorageMock.Object,
+                    leaf,
+                    IconUrlString,
+                    null,
+                    CancellationToken.None);
+
+                DestinationStorageMock
+                    .Verify(
+                        ds => ds.CopyAsync(
+                            It.Is<Uri>(u => u.AbsoluteUri == CachedResult),
+                            DestinationStorageMock.Object,
+                            It.Is<Uri>(u => u.AbsoluteUri == ResolvedUriString),
+                            It.IsAny<IReadOnlyDictionary<string, string>>(),
+                            CancellationToken.None),
+                        Times.Once);
+
+                VerifyNoCopyFromExternalSource();
+            }
+
+            [Fact]
+            public async Task DoesNotTryToCopyPrevioslyFailedIcons()
+            {
+                var leaf = CreateCatalogLeaf();
+
+                IconCopyResultCacheMock
+                    .Setup(c => c.Get(It.Is<Uri>(u => u.AbsoluteUri == IconUrlString)))
+                    .Returns(ExternalIconCopyResult.Fail(new Uri(IconUrlString)));
+
+                await Target.ProcessPackageDetailsLeafAsync(
+                    DestinationStorageMock.Object,
+                    leaf,
+                    IconUrlString,
+                    null,
+                    CancellationToken.None);
+
+                DestinationStorageMock
+                    .Verify(
+                        ds => ds.CopyAsync(
+                            It.IsAny<Uri>(),
+                            It.IsAny<IStorage>(),
+                            It.IsAny<Uri>(),
+                            It.IsAny<IReadOnlyDictionary<string, string>>(),
+                            It.IsAny<CancellationToken>()),
+                        Times.Never);
+
+                VerifyNoCopyFromExternalSource();
+            }
+
+            [Fact]
+            public async Task RetriesFailedCopyFromOperationsCache()
+            {
+                var leaf = CreateCatalogLeaf();
+
+                IconCopyResultCacheMock
+                    .Setup(c => c.Get(It.Is<Uri>(u => u.AbsoluteUri == IconUrlString)))
+                    .Returns(ExternalIconCopyResult.Success(new Uri(IconUrlString), new Uri(CachedResult)));
+
+                DestinationStorageMock
+                    .SetupSequence(
+                        ds => ds.CopyAsync(
+                            It.Is<Uri>(u => u.AbsoluteUri == CachedResult),
+                            DestinationStorageMock.Object,
+                            It.Is<Uri>(u => u.AbsoluteUri == ResolvedUriString),
+                            It.IsAny<IReadOnlyDictionary<string, string>>(),
+                            CancellationToken.None))
+                    .Throws(new Exception("Core meltdown"))
+                    .Returns(Task.CompletedTask);
+
+                await Target.ProcessPackageDetailsLeafAsync(
+                    DestinationStorageMock.Object,
+                    leaf,
+                    IconUrlString,
+                    null,
+                    CancellationToken.None);
+
+                DestinationStorageMock
+                    .Verify(
+                        ds => ds.CopyAsync(
+                            It.Is<Uri>(u => u.AbsoluteUri == CachedResult),
+                            DestinationStorageMock.Object,
+                            It.Is<Uri>(u => u.AbsoluteUri == ResolvedUriString),
+                            It.IsAny<IReadOnlyDictionary<string, string>>(),
+                            CancellationToken.None),
+                        Times.AtLeast(2));
+
+                VerifyNoCopyFromExternalSource();
+            }
+
+            [Fact]
+            public async Task FallsBackToRetrievingFromExternalStoreIfCopyFromCacheFails()
+            {
+                var leaf = CreateCatalogLeaf();
+
+                IconCopyResultCacheMock
+                    .Setup(c => c.Get(It.Is<Uri>(u => u.AbsoluteUri == IconUrlString)))
+                    .Returns(ExternalIconCopyResult.Success(new Uri(IconUrlString), new Uri(CachedResult)));
+
+                DestinationStorageMock
+                    .Setup(
+                        ds => ds.CopyAsync(
+                            It.Is<Uri>(u => u.AbsoluteUri == CachedResult),
+                            DestinationStorageMock.Object,
+                            It.Is<Uri>(u => u.AbsoluteUri == ResolvedUriString),
+                            It.IsAny<IReadOnlyDictionary<string, string>>(),
+                            CancellationToken.None))
+                    .Throws(new Exception("Core meltdown"));
+
+                ExternalIconContentProviderMock
+                    .Setup(cp => cp.TryGetResponseAsync(
+                        It.Is<Uri>(u => u.AbsoluteUri == IconUrlString),
+                        CancellationToken.None))
+                    .ReturnsAsync(
+                        TryGetResponseResult.Success(
+                            new HttpResponseMessage(HttpStatusCode.OK)
+                            {
+                                Content = ExternalIconContentMock.Object
+                            }));
+                
+                await Target.ProcessPackageDetailsLeafAsync(
+                    DestinationStorageMock.Object,
+                    leaf,
+                    IconUrlString,
+                    null,
+                    CancellationToken.None);
+
+                DestinationStorageMock
+                    .Verify(
+                        ds => ds.CopyAsync(
+                            It.Is<Uri>(u => u.AbsoluteUri == CachedResult),
+                            DestinationStorageMock.Object,
+                            It.Is<Uri>(u => u.AbsoluteUri == ResolvedUriString),
+                            It.IsAny<IReadOnlyDictionary<string, string>>(),
+                            CancellationToken.None),
+                        Times.AtLeast(2));
 
                 IconProcessorMock
                     .Verify(
                         ip => ip.CopyIconFromExternalSource(
-                            It.IsAny<Stream>(),
-                            It.IsAny<IStorage>(),
-                            It.IsAny<string>(),
-                            It.IsAny<CancellationToken>(),
-                            It.IsAny<string>(),
-                            It.IsAny<string>()),
-                        Times.Never);
+                            ExternalIconStream,
+                            DestinationStorageMock.Object,
+                            "theid/3.4.2/icon",
+                            CancellationToken.None,
+                            "theid",
+                            leaf.PackageIdentity.Version.ToNormalizedString()),
+                        Times.Once);
             }
 
             private Mock<ICloudBlockBlob> PackageBlobRerenceMock { get; set; }
@@ -258,17 +375,33 @@ namespace CatalogTests.Icons
 
                 ExternalIconStream = new MemoryStream();
             }
+
+            private void VerifyNoCopyFromExternalSource()
+            {
+                IconProcessorMock
+                    .Verify(
+                        ip => ip.CopyIconFromExternalSource(
+                            It.IsAny<Stream>(),
+                            It.IsAny<IStorage>(),
+                            It.IsAny<string>(),
+                            It.IsAny<CancellationToken>(),
+                            It.IsAny<string>(),
+                            It.IsAny<string>()),
+                        Times.Never);
+            }
         }
 
         public class TestBase
         {
+            protected const string ResolvedUriString = "https://resolved/destination/url";
+
             protected Mock<IAzureStorage> PackageStorageMock { get; set; }
             protected Mock<IIconProcessor> IconProcessorMock { get; set; }
             protected Mock<IExternalIconContentProvider> ExternalIconContentProviderMock { get; set; }
             protected Mock<IIconCopyResultCache> IconCopyResultCacheMock { get; set; }
             protected Mock<ITelemetryService> TelemetryServiceMock { get; set; }
             protected Mock<ILogger<CatalogLeafDataProcessor>> LoggerMock { get; set; }
-            protected Mock<Storage> DestinationStorageMock { get; set; }
+            protected Mock<IStorage> DestinationStorageMock { get; set; }
             protected CatalogLeafDataProcessor Target { get; set; }
 
             public TestBase()
@@ -279,7 +412,7 @@ namespace CatalogTests.Icons
                 IconCopyResultCacheMock = new Mock<IIconCopyResultCache>();
                 TelemetryServiceMock = new Mock<ITelemetryService>();
                 LoggerMock = new Mock<ILogger<CatalogLeafDataProcessor>>();
-                DestinationStorageMock = new Mock<Storage>(new Uri("https://base/storage"));
+                DestinationStorageMock = new Mock<IStorage>();
 
                 TelemetryServiceMock
                     .Setup(ts => ts.TrackEmbeddedIconProcessingDuration(It.IsAny<string>(), It.IsAny<string>()))
@@ -288,6 +421,10 @@ namespace CatalogTests.Icons
                     .Setup(ts => ts.TrackExternalIconProcessingDuration(It.IsAny<string>(), It.IsAny<string>()))
                     .Returns(Mock.Of<IDisposable>());
 
+                DestinationStorageMock
+                    .Setup(ds => ds.ResolveUri(It.IsAny<string>()))
+                    .Returns(new Uri(ResolvedUriString));
+
                 Target = new CatalogLeafDataProcessor(
                     PackageStorageMock.Object,
                     IconProcessorMock.Object,
@@ -295,6 +432,17 @@ namespace CatalogTests.Icons
                     IconCopyResultCacheMock.Object,
                     TelemetryServiceMock.Object,
                     LoggerMock.Object);
+            }
+
+            protected static CatalogCommitItem CreateCatalogLeaf(string packageId = "theid", string packageVersion = "3.4.2")
+            {
+                return new CatalogCommitItem(
+                    new Uri("https://nuget.test/something"),
+                    "somecommitid",
+                    DateTime.UtcNow,
+                    new string[0],
+                    new Uri[0],
+                    new PackageIdentity(packageId, new NuGetVersion(packageVersion)));
             }
         }
 
