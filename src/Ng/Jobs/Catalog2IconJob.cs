@@ -18,7 +18,7 @@ namespace Ng.Jobs
 {
     public class Catalog2IconJob : LoopingNgJob
     {
-        private const int DegreeOfParallelism = 100;
+        private const int DegreeOfParallelism = 120;
         private IconsCollector _collector;
         private DurableCursor _front;
 
@@ -35,7 +35,14 @@ namespace Ng.Jobs
             var packageStorageBase = arguments.GetOrThrow<string>(Arguments.ContentBaseAddress);
             var auxStorageFactory = CreateAuxStorageFactory(arguments, verbose);
             var targetStorageFactory = CreateTargetStorageFactory(arguments, verbose);
-            var packageStorage = new AzureStorage(new Uri(packageStorageBase), TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(10), false, false, true, null);
+            var packageStorage = new AzureStorage(
+                storageBaseUri: new Uri(packageStorageBase),
+                maxExecutionTime: TimeSpan.FromMinutes(15),
+                serverTimeout: TimeSpan.FromMinutes(10),
+                useServerSideCopy: true,
+                compressContent: false,
+                verbose: true,
+                throttle: null);
             var source = arguments.GetOrThrow<string>(Arguments.Source);
             var iconProcessor = new IconProcessor(TelemetryService, LoggerFactory.CreateLogger<IconProcessor>());
             var httpHandlerFactory = CommandHelpers.GetHttpMessageHandlerFactory(TelemetryService, verbose);

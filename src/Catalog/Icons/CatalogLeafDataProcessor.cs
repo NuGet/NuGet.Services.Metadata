@@ -44,7 +44,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
         {
             var targetStoragePath = GetTargetStorageIconPath(item);
             await _iconProcessor.DeleteIcon(storage, targetStoragePath, cancellationToken, item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString());
-            // it would be nice to remove the icon copy result from cache for this item, but we don't have a an icon URL here,
+            // it would be nice to remove the icon copy result from cache for this item, but we don't have an icon URL here,
             // so can't remove anything. Will rely on the copy code to catch the copy failure and cleanup the cache appropriately.
         }
 
