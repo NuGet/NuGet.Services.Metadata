@@ -69,7 +69,7 @@ namespace Ng.Jobs
                 catalogClient,
                 leafProcessor,
                 iconCopyResultCache,
-                () => httpMessageHandler,
+                CommandHelpers.GetHttpMessageHandlerFactory(TelemetryService, verbose),
                 LoggerFactory.CreateLogger<IconsCollector>());
             var cursorStorage = auxStorageFactory.Create();
             _front = new DurableCursor(cursorStorage.ResolveUri("c2icursor.json"), cursorStorage, DateTime.MinValue.ToUniversalTime());
