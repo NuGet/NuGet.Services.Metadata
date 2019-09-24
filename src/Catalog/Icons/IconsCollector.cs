@@ -97,7 +97,16 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                     {
                         if (item.IsPackageDetails)
                         {
-                            var leaf = await _catalogClient.GetPackageDetailsLeafAsync(item.Uri.AbsoluteUri);
+                            PackageDetailsCatalogLeaf leaf;
+                            try
+                            {
+                                leaf = await _catalogClient.GetPackageDetailsLeafAsync(item.Uri.AbsoluteUri);
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.LogError(0, e, "Error while trying to retrieve catalog leaf.");
+                                throw;
+                            }
                             await _catalogLeafDataProcessor.ProcessPackageDetailsLeafAsync(storage, item, leaf.IconUrl, leaf.IconFile, cancellationToken);
                         }
                         else if (item.IsPackageDelete)
