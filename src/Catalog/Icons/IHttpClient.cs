@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NuGet.Services.Metadata.Catalog.Icons
 {
-    public interface IHttpResponseMessageProvider
+    public interface IHttpClient
     {
         Task<HttpResponseMessage> GetAsync(Uri uri, CancellationToken cancellationToken);
     }

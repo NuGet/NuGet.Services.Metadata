@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace NuGet.Services.Metadata.Catalog.Icons
 {
-    public class HttpResponseMessageProvider : IHttpResponseMessageProvider
+    public class HttpClientWrapper : IHttpClient
     {
         private readonly HttpClient _httpClient;
 
-        public HttpResponseMessageProvider(HttpClient httpClient)
+        public HttpClientWrapper(HttpClient httpClient)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }

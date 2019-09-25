@@ -50,7 +50,7 @@ namespace Ng.Jobs
             var httpClient = new HttpClient(httpMessageHandler);
             var simpleHttpClient = new SimpleHttpClient(httpClient, LoggerFactory.CreateLogger<SimpleHttpClient>());
             var catalogClient = new CatalogClient(simpleHttpClient, LoggerFactory.CreateLogger<CatalogClient>());
-            var httpResponseProvider = new HttpResponseMessageProvider(httpClient);
+            var httpResponseProvider = new HttpClientWrapper(httpClient);
             var externalIconProvider = new ExternalIconContentProvider(httpResponseProvider, LoggerFactory.CreateLogger<ExternalIconContentProvider>());
             var iconCopyResultCache = new IconCopyResultCache(auxStorageFactory.Create());
 

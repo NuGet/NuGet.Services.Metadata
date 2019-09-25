@@ -12,11 +12,11 @@ namespace NuGet.Services.Metadata.Catalog.Icons
 {
     public class ExternalIconContentProvider : IExternalIconContentProvider
     {
-        private readonly IHttpResponseMessageProvider _httpResponseMessageProvider;
+        private readonly IHttpClient _httpResponseMessageProvider;
         private readonly ILogger<ExternalIconContentProvider> _logger;
 
         public ExternalIconContentProvider(
-            IHttpResponseMessageProvider httpResponseMessageProvider,
+            IHttpClient httpResponseMessageProvider,
             ILogger<ExternalIconContentProvider> logger)
         {
             _httpResponseMessageProvider = httpResponseMessageProvider ?? throw new ArgumentNullException(nameof(httpResponseMessageProvider));
