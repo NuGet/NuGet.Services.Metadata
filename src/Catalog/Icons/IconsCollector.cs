@@ -104,7 +104,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
                             }
                             catch (Exception e)
                             {
-                                _logger.LogError(0, e, "Error while trying to retrieve catalog leaf.");
+                                _logger.LogError(0, e, "Error while trying to retrieve catalog leaf {LeafUrl}", item.Uri.AbsoluteUri);
                                 throw;
                             }
                             await _catalogLeafDataProcessor.ProcessPackageDetailsLeafAsync(storage, item, leaf.IconUrl, leaf.IconFile, cancellationToken);
