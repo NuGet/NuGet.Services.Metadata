@@ -53,7 +53,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
         {
             var cacheUrl = _auxStorage.ResolveUri(CacheFilename);
             var serialized = JsonConvert.SerializeObject(_externalIconCopyResults);
-            var content = new StringStorageContent(serialized, contentType: "text/json");
+            var content = new StringStorageContent(serialized, contentType: "application/json");
             await _auxStorage.SaveAsync(cacheUrl, content, cancellationToken);
         }
 
