@@ -7,6 +7,7 @@ using System.Linq;
 using Microsoft.Azure.Search.Models;
 using Microsoft.Extensions.Options;
 using NuGet.Protocol.Registration;
+using NuGet.Services.Metadata.Catalog.Registration;
 using NuGet.Versioning;
 
 namespace NuGet.Services.AzureSearch.SearchService
@@ -17,6 +18,8 @@ namespace NuGet.Services.AzureSearch.SearchService
         private static readonly V2SearchDependency[] EmptyDependencies = new V2SearchDependency[0];
         private readonly Lazy<IAuxiliaryData> _lazyAuxiliaryData;
         private readonly IOptionsSnapshot<SearchServiceConfiguration> _options;
+        private readonly FlatContainerPackagePathProvider _pathProvider;
+        private readonly Uri _flatContainerBaseUrl;
 
         public SearchResponseBuilder(
             Lazy<IAuxiliaryData> auxiliaryData,
@@ -27,12 +30,28 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             if (_options.Value.SemVer1RegistrationsBaseUrl == null)
             {
-                throw new ArgumentException($"The {nameof(SearchServiceConfiguration.SemVer1RegistrationsBaseUrl)} need to be set.", nameof(options));
+                throw new ArgumentException($"The {nameof(SearchServiceConfiguration.SemVer1RegistrationsBaseUrl)} needs to be set.", nameof(options));
             }
 
             if (_options.Value.SemVer2RegistrationsBaseUrl == null)
             {
-                throw new ArgumentException($"The {nameof(SearchServiceConfiguration.SemVer2RegistrationsBaseUrl)} need to be set.", nameof(options));
+                throw new ArgumentException($"The {nameof(SearchServiceConfiguration.SemVer2RegistrationsBaseUrl)} needs to be set.", nameof(options));
+            }
+
+            if (_options.Value.AllIconsInFlatContainer)
+            {
+                if (_options.Value.FlatContainerBaseUrl == null)
+                {
+                    throw new ArgumentException($"The {nameof(SearchServiceConfiguration.FlatContainerBaseUrl)} needs to be set.", nameof(options));
+                }
+
+                if (_options.Value.FlatContainerContainerName == null)
+                {
+                    throw new ArgumentException($"The {nameof(SearchServiceConfiguration.FlatContainerContainerName)} needs to be set.", nameof(options));
+                }
+
+                _pathProvider = new FlatContainerPackagePathProvider(_options.Value.FlatContainerContainerName);
+                _flatContainerBaseUrl = _options.Value.ParseFlatContainerBaseUrl();
             }
         }
 
@@ -150,11 +169,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             return new V3SearchResponse
             {
-                Context = new V3SearchContext
-                {
-                    Vocab = "http://schema.nuget.org/schema#",
-                    Base = registrationsBaseUrl,
-                },
+                Context = GetV3SearchContext(registrationsBaseUrl),
                 TotalHits = result.Count.Value,
                 Data = results
                     .Select(x =>
@@ -209,10 +224,7 @@ namespace NuGet.Services.AzureSearch.SearchService
 
             return new AutocompleteResponse
             {
-                Context = new AutocompleteContext
-                {
-                    Vocab = "http://schema.nuget.org/schema#",
-                },
+                Context = GetAutocompleteContext(),
                 TotalHits = result.Count.Value,
                 Data = data,
                 Debug = DebugInformation.CreateFromSearchOrNull(
@@ -348,7 +360,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 Description = result.Description ?? string.Empty,
                 Summary = result.Summary ?? string.Empty,
                 Title = TitleThenId(result),
-                IconUrl = result.IconUrl,
+                IconUrl = GetIconUrl(result),
                 LicenseUrl = result.LicenseUrl,
                 ProjectUrl = result.ProjectUrl,
                 Tags = result.Tags ?? EmptyStringArray,
@@ -370,6 +382,19 @@ namespace NuGet.Services.AzureSearch.SearchService
                     })
                     .ToList(),
             };
+        }
+
+        private string GetIconUrl(IBaseMetadataDocument document)
+        {
+            // If we mandate that all icon URLs come from flat container, generate the URL.
+            if (_options.Value.AllIconsInFlatContainer
+                && !string.IsNullOrWhiteSpace(document.IconUrl))
+            {
+                var iconPath = _pathProvider.GetIconPath(document.PackageId, document.NormalizedVersion, normalize: false);
+                return new Uri(_flatContainerBaseUrl, iconPath).AbsoluteUri;
+            }
+
+            return document.IconUrl;
         }
 
         private V2SearchPackage ToV2SearchPackage(SearchDocument.Full result)
@@ -419,7 +444,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 Tags = document.Tags != null ? string.Join(" ", document.Tags) : string.Empty,
                 ReleaseNotes = document.ReleaseNotes,
                 ProjectUrl = document.ProjectUrl,
-                IconUrl = document.IconUrl,
+                IconUrl = GetIconUrl(document),
                 Created = document.Created.Value,
                 Published = document.Published.Value,
                 LastUpdated = document.Published.Value,
@@ -442,6 +467,57 @@ namespace NuGet.Services.AzureSearch.SearchService
             var url = includeSemVer2 ? _options.Value.SemVer2RegistrationsBaseUrl : _options.Value.SemVer1RegistrationsBaseUrl;
 
             return url.TrimEnd('/') + '/';
+        }
+
+        public V2SearchResponse EmptyV2(V2SearchRequest request)
+        {
+            return new V2SearchResponse
+            {
+                TotalHits = 0,
+                Data = new List<V2SearchPackage>(),
+                Debug = DebugInformation.CreateFromEmptyOrNull(request),
+            };
+        }
+
+        public V3SearchResponse EmptyV3(V3SearchRequest request)
+        {
+            var registrationsBaseUrl = GetRegistrationsBaseUrl(request.IncludeSemVer2);
+
+            return new V3SearchResponse
+            {
+                Context = GetV3SearchContext(registrationsBaseUrl),
+                TotalHits = 0,
+                Data = new List<V3SearchPackage>(),
+                Debug = DebugInformation.CreateFromEmptyOrNull(request),
+            };
+        }
+
+        public AutocompleteResponse EmptyAutocomplete(AutocompleteRequest request)
+        {
+            return new AutocompleteResponse
+            {
+                Context = GetAutocompleteContext(),
+                TotalHits = 0,
+                Data = new List<string>(),
+                Debug = DebugInformation.CreateFromEmptyOrNull(request),
+            };
+        }
+
+        private static V3SearchContext GetV3SearchContext(string registrationsBaseUrl)
+        {
+            return new V3SearchContext
+            {
+                Vocab = "http://schema.nuget.org/schema#",
+                Base = registrationsBaseUrl,
+            };
+        }
+
+        private static AutocompleteContext GetAutocompleteContext()
+        {
+            return new AutocompleteContext
+            {
+                Vocab = "http://schema.nuget.org/schema#",
+            };
         }
     }
 }

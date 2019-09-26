@@ -87,6 +87,8 @@
     <Compile Include="CatalogIndexEntry.cs" />
     <Compile Include="CatalogIndexReader.cs" />
     <Compile Include="CatalogTypeConverter.cs" />
+    <Compile Include="Persistence\CloudBlockBlobClientWrapper.cs" />
+    <Compile Include="Persistence\CloudBlobDirectoryWrapper.cs" />
     <Compile Include="CloudBlobStorageExtensions.cs" />
     <Compile Include="CommitCollector.cs" />
     <Compile Include="CatalogCommitItem.cs" />
@@ -115,6 +117,8 @@
     <Compile Include="Helpers\PackageUtility.cs" />
     <Compile Include="Helpers\Retry.cs" />
     <Compile Include="ICatalogIndexProcessor.cs" />
+    <Compile Include="Persistence\ICloudBlockBlobClient.cs" />
+    <Compile Include="Persistence\ICloudBlobDirectory.cs" />
     <Compile Include="Icons\AttemptResult.cs" />
     <Compile Include="Icons\CatalogLeafDataProcessor.cs" />
     <Compile Include="Icons\ExternalIconContentProvider.cs" />
@@ -283,7 +287,7 @@
       <Version>1.0.8.3533</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Entities">
-      <Version>4.4.5-master-2699519</Version>
+      <Version>4.4.5-dev-2939401</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Sql">
       <Version>2.46.0</Version>

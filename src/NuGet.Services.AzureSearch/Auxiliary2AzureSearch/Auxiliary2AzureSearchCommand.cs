@@ -14,10 +14,11 @@ using NuGet.Services.AzureSearch.AuxiliaryFiles;
 using NuGet.Services.AzureSearch.Wrappers;
 using NuGet.Services.Metadata.Catalog.Helpers;
 using NuGet.Versioning;
+using NuGetGallery;
 
 namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
 {
-    public class Auxiliary2AzureSearchCommand
+    public class Auxiliary2AzureSearchCommand : IAzureSearchCommand
     {
         /// <summary>
         /// A package ID can result in one document per search filter if the there is a version that applies to each
@@ -28,6 +29,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
 
         private readonly IAuxiliaryFileClient _auxiliaryFileClient;
         private readonly IDownloadDataClient _downloadDataClient;
+        private readonly IVerifiedPackagesDataClient _verifiedPackagesDataClient;
         private readonly IDownloadSetComparer _downloadSetComparer;
         private readonly ISearchDocumentBuilder _searchDocumentBuilder;
         private readonly ISearchIndexActionBuilder _indexActionBuilder;
@@ -36,10 +38,12 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
         private readonly IOptionsSnapshot<Auxiliary2AzureSearchConfiguration> _options;
         private readonly IAzureSearchTelemetryService _telemetryService;
         private readonly ILogger<Auxiliary2AzureSearchCommand> _logger;
+        private readonly StringCache _stringCache;
 
         public Auxiliary2AzureSearchCommand(
             IAuxiliaryFileClient auxiliaryFileClient,
             IDownloadDataClient downloadDataClient,
+            IVerifiedPackagesDataClient verifiedPackagesDataClient,
             IDownloadSetComparer downloadSetComparer,
             ISearchDocumentBuilder searchDocumentBuilder,
             ISearchIndexActionBuilder indexActionBuilder,
@@ -51,6 +55,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
         {
             _auxiliaryFileClient = auxiliaryFileClient ?? throw new ArgumentNullException(nameof(auxiliaryFileClient));
             _downloadDataClient = downloadDataClient ?? throw new ArgumentNullException(nameof(downloadDataClient));
+            _verifiedPackagesDataClient = verifiedPackagesDataClient ?? throw new ArgumentNullException(nameof(verifiedPackagesDataClient));
             _downloadSetComparer = downloadSetComparer ?? throw new ArgumentNullException(nameof(downloadSetComparer));
             _searchDocumentBuilder = searchDocumentBuilder ?? throw new ArgumentNullException(nameof(searchDocumentBuilder));
             _indexActionBuilder = indexActionBuilder ?? throw new ArgumentNullException(nameof(indexActionBuilder));
@@ -59,6 +64,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _telemetryService = telemetryService ?? throw new ArgumentNullException(nameof(telemetryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _stringCache = new StringCache();
 
             if (_options.Value.MaxConcurrentBatches <= 0)
             {
@@ -81,46 +87,84 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             var outcome = JobOutcome.Failure;
             try
             {
-                // The "old" data in this case is the download count data that was last indexed by this job (or
-                // initialized by Db2AzureSearch).
-                _logger.LogInformation("Fetching old download count data from blob storage.");
-                var oldResult = await _downloadDataClient.ReadLatestIndexedAsync();
-
-                // The "new" data in this case is from the statistics pipeline.
-                _logger.LogInformation("Fetching new download count data from blob storage.");
-                var newData = await _auxiliaryFileClient.LoadDownloadDataAsync();
-
-                _logger.LogInformation("Removing invalid IDs and versions from the new data.");
-                CleanDownloadData(newData);
-
-                _logger.LogInformation("Detecting download count changes.");
-                var changes = _downloadSetComparer.Compare(oldResult.Result, newData);
-                var idBag = new ConcurrentBag<string>(changes.Keys);
-                _logger.LogInformation("{Count} package IDs have download count changes.", idBag.Count);
-
-                if (!changes.Any())
-                {
-                    outcome = JobOutcome.NoOp;
-                    return;
-                }
-
-                _logger.LogInformation(
-                    "Starting {Count} workers pushing download count changes to Azure Search.",
-                    _options.Value.MaxConcurrentBatches);
-                await ParallelAsync.Repeat(
-                    () => WorkAsync(idBag, changes),
-                    _options.Value.MaxConcurrentBatches);
-                _logger.LogInformation("All of the download count changes have been pushed to Azure Search.");
-
-                _logger.LogInformation("Uploading the new download count data to blob storage.");
-                await _downloadDataClient.ReplaceLatestIndexedAsync(newData, oldResult.AccessCondition);
-                outcome = JobOutcome.Success;
+                var hasVerifiedPackagesChanged = await CopyVerifiedPackagesAsync();
+                var hasIndexChanged = await PushIndexChangesAsync();
+                outcome = hasVerifiedPackagesChanged || hasIndexChanged ? JobOutcome.Success : JobOutcome.NoOp;
             }
             finally
             {
                 stopwatch.Stop();
                 _telemetryService.TrackAuxiliary2AzureSearchCompleted(outcome, stopwatch.Elapsed);
             }
+        }
+
+        private async Task<bool> CopyVerifiedPackagesAsync()
+        {
+            // The "old" data in this case is the latest file that was copied to the region's storage container by this
+            // job (or initialized by Db2AzureSearch).
+            var oldResult = await _verifiedPackagesDataClient.ReadLatestAsync(
+                AccessConditionWrapper.GenerateEmptyCondition(),
+                _stringCache);
+
+            // The "new" data in this case is from the auxiliary data container that is updated by the
+            // Search.GenerateAuxiliaryData job.
+            var newData = await _auxiliaryFileClient.LoadVerifiedPackagesAsync();
+
+            var changes = new HashSet<string>(oldResult.Data, oldResult.Data.Comparer);
+            changes.SymmetricExceptWith(newData);
+            _logger.LogInformation("{Count} package IDs have verified status changes.", changes.Count);
+
+            if (changes.Count == 0)
+            {
+                return false;
+            }
+            else
+            {
+                await _verifiedPackagesDataClient.ReplaceLatestAsync(newData, oldResult.Metadata.GetIfMatchCondition());
+                return true;
+            }
+        }
+
+        private async Task<bool> PushIndexChangesAsync()
+        {
+            // The "old" data in this case is the download count data that was last indexed by this job (or
+            // initialized by Db2AzureSearch).
+            _logger.LogInformation("Fetching old download count data from blob storage.");
+            var oldResult = await _downloadDataClient.ReadLatestIndexedAsync(
+                AccessConditionWrapper.GenerateEmptyCondition(),
+                _stringCache);
+
+            // The "new" data in this case is from the statistics pipeline.
+            _logger.LogInformation("Fetching new download count data from blob storage.");
+            var newData = await _auxiliaryFileClient.LoadDownloadDataAsync();
+
+            _logger.LogInformation("Removing invalid IDs and versions from the old data.");
+            CleanDownloadData(oldResult.Data);
+
+            _logger.LogInformation("Removing invalid IDs and versions from the new data.");
+            CleanDownloadData(newData);
+
+            _logger.LogInformation("Detecting download count changes.");
+            var changes = _downloadSetComparer.Compare(oldResult.Data, newData);
+            var idBag = new ConcurrentBag<string>(changes.Keys);
+            _logger.LogInformation("{Count} package IDs have download count changes.", idBag.Count);
+
+            if (!changes.Any())
+            {
+                return false;
+            }
+
+            _logger.LogInformation(
+                "Starting {Count} workers pushing download count changes to Azure Search.",
+                _options.Value.MaxConcurrentBatches);
+            await ParallelAsync.Repeat(
+                () => WorkAsync(idBag, changes),
+                _options.Value.MaxConcurrentBatches);
+            _logger.LogInformation("All of the download count changes have been pushed to Azure Search.");
+
+            _logger.LogInformation("Uploading the new download count data to blob storage.");
+            await _downloadDataClient.ReplaceLatestIndexedAsync(newData, oldResult.Metadata.GetIfMatchCondition());
+            return true;
         }
 
         private async Task WorkAsync(ConcurrentBag<string> idBag, SortedDictionary<string, long> changes)
@@ -153,6 +197,9 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 // make the batch larger than the maximum batch size, push the index actions we have so far.
                 if (GetBatchSize(indexActionsToPush) + MaxDocumentsPerId > _options.Value.AzureSearchBatchSize)
                 {
+                    _logger.LogInformation(
+                        "Starting to push a batch. There are {IdCount} unprocessed IDs left to index and push.",
+                        idBag.Count);
                     await PushIndexActionsAsync(indexActionsToPush, timeSinceLastPush);
                 }
 

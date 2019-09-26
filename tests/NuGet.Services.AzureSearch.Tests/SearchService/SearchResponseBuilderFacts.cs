@@ -24,7 +24,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 _hijackResult.Results[0].Document.Listed = false;
 
-                var response = _target.V2FromHijack(
+                var response = Target.V2FromHijack(
                     _v2Request,
                     _text,
                     _searchParameters,
@@ -51,7 +51,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 doc.IsLatestStableSemVer2 = isLatestStableSemVer2;
                 doc.IsLatestSemVer2 = isLatestSemVer2;
 
-                var response = _target.V2FromHijack(
+                var response = Target.V2FromHijack(
                     _v2Request,
                     _text,
                     _searchParameters,
@@ -68,7 +68,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 _hijackResult.Results[0].Document.Title = title;
 
-                var response = _target.V2FromHijack(
+                var response = Target.V2FromHijack(
                     _v2Request,
                     _text,
                     _searchParameters,
@@ -89,7 +89,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 doc.Tags = null;
                 doc.RequiresLicenseAcceptance = null;
 
-                var response = _target.V2FromHijack(
+                var response = Target.V2FromHijack(
                     _v2Request,
                     _text,
                     _searchParameters,
@@ -111,7 +111,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 _auxiliaryData.Setup(x => x.GetDownloadCount(It.IsAny<string>(), "7.1.2-alpha")).Returns(4);
 
-                var response = _target.V2FromHijack(
+                var response = Target.V2FromHijack(
                     _v2Request,
                     _text,
                     _searchParameters,
@@ -127,7 +127,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 _v2Request.ShowDebug = true;
                 var docResult = _hijackResult.Results[0];
 
-                var response = _target.V2FromHijack(
+                var response = Target.V2FromHijack(
                     _v2Request,
                     _text,
                     _searchParameters,
@@ -161,16 +161,15 @@ namespace NuGet.Services.AzureSearch.SearchService
   },
   ""QueryDuration"": ""00:00:00.2500000"",
   ""AuxiliaryFilesMetadata"": {
+    ""Loaded"": ""2019-01-03T11:00:00+00:00"",
     ""Downloads"": {
       ""LastModified"": ""2019-01-01T11:00:00+00:00"",
-      ""Loaded"": ""2019-01-01T12:00:00+00:00"",
       ""LoadDuration"": ""00:00:15"",
       ""FileSize"": 1234,
       ""ETag"": ""\""etag-a\""""
     },
     ""VerifiedPackages"": {
       ""LastModified"": ""2019-01-02T11:00:00+00:00"",
-      ""Loaded"": ""2019-01-02T12:00:00+00:00"",
       ""LoadDuration"": ""00:00:30"",
       ""FileSize"": 5678,
       ""ETag"": ""\""etag-b\""""
@@ -183,7 +182,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             [Fact]
             public void ProducesExpectedResponse()
             {
-                var response = _target.V2FromHijack(
+                var response = Target.V2FromHijack(
                     _v2Request,
                     _text,
                     _searchParameters,
@@ -234,6 +233,37 @@ namespace NuGet.Services.AzureSearch.SearchService
   ]
 }", actualJson);
             }
+
+            [Fact]
+            public void UsesFlatContainerUrlWhenConfigured()
+            {
+                _config.AllIconsInFlatContainer = true;
+
+                var response = Target.V2FromHijack(
+                    _v2Request,
+                    _text,
+                    _searchParameters,
+                    _hijackResult,
+                    _duration);
+
+                Assert.Equal(Data.FlatContainerIconUrl, response.Data[0].IconUrl);
+            }
+
+            [Fact]
+            public void LeavesNullIconUrlWithFlatContainerIconsButNullOriginalIconUrl()
+            {
+                _config.AllIconsInFlatContainer = true;
+                _hijackResult.Results[0].Document.IconUrl = null;
+
+                var response = Target.V2FromHijack(
+                    _v2Request,
+                    _text,
+                    _searchParameters,
+                    _hijackResult,
+                    _duration);
+
+                Assert.Null(response.Data[0].IconUrl);
+            }
         }
 
         public class V2FromSearch : BaseFacts
@@ -244,7 +274,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 _searchResult.Results[0].Document.Title = title;
 
-                var response = _target.V2FromSearch(
+                var response = Target.V2FromSearch(
                     _v2Request,
                     _text,
                     _searchParameters,
@@ -265,7 +295,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 doc.Tags = null;
                 doc.RequiresLicenseAcceptance = null;
 
-                var response = _target.V2FromSearch(
+                var response = Target.V2FromSearch(
                     _v2Request,
                     _text,
                     _searchParameters,
@@ -287,7 +317,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 _auxiliaryData.Setup(x => x.GetDownloadCount(It.IsAny<string>(), "7.1.2-alpha")).Returns(4);
 
-                var response = _target.V2FromSearch(
+                var response = Target.V2FromSearch(
                     _v2Request,
                     _text,
                     _searchParameters,
@@ -303,7 +333,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 _v2Request.ShowDebug = true;
                 var docResult = _searchResult.Results[0];
 
-                var response = _target.V2FromSearch(
+                var response = Target.V2FromSearch(
                     _v2Request,
                     _text,
                     _searchParameters,
@@ -337,16 +367,15 @@ namespace NuGet.Services.AzureSearch.SearchService
   },
   ""QueryDuration"": ""00:00:00.2500000"",
   ""AuxiliaryFilesMetadata"": {
+    ""Loaded"": ""2019-01-03T11:00:00+00:00"",
     ""Downloads"": {
       ""LastModified"": ""2019-01-01T11:00:00+00:00"",
-      ""Loaded"": ""2019-01-01T12:00:00+00:00"",
       ""LoadDuration"": ""00:00:15"",
       ""FileSize"": 1234,
       ""ETag"": ""\""etag-a\""""
     },
     ""VerifiedPackages"": {
       ""LastModified"": ""2019-01-02T11:00:00+00:00"",
-      ""Loaded"": ""2019-01-02T12:00:00+00:00"",
       ""LoadDuration"": ""00:00:30"",
       ""FileSize"": 5678,
       ""ETag"": ""\""etag-b\""""
@@ -359,7 +388,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             [Fact]
             public void ProducesExpectedResponse()
             {
-                var response = _target.V2FromSearch(
+                var response = Target.V2FromSearch(
                     _v2Request,
                     _text,
                     _searchParameters,
@@ -413,6 +442,37 @@ namespace NuGet.Services.AzureSearch.SearchService
   ]
 }", actualJson);
             }
+
+            [Fact]
+            public void UsesFlatContainerUrlWhenConfigured()
+            {
+                _config.AllIconsInFlatContainer = true;
+
+                var response = Target.V2FromSearch(
+                    _v2Request,
+                    _text,
+                    _searchParameters,
+                    _searchResult,
+                    _duration);
+
+                Assert.Equal(Data.FlatContainerIconUrl, response.Data[0].IconUrl);
+            }
+
+            [Fact]
+            public void LeavesNullIconUrlWithFlatContainerIconsButNullOriginalIconUrl()
+            {
+                _config.AllIconsInFlatContainer = true;
+                _searchResult.Results[0].Document.IconUrl = null;
+
+                var response = Target.V2FromSearch(
+                    _v2Request,
+                    _text,
+                    _searchParameters,
+                    _searchResult,
+                    _duration);
+
+                Assert.Null(response.Data[0].IconUrl);
+            }
         }
 
         public class V3FromSearch : BaseFacts
@@ -424,7 +484,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 _v3Request.IncludeSemVer2 = includeSemVer2;
 
-                var response = _target.V3FromSearch(
+                var response = Target.V3FromSearch(
                     _v3Request,
                     _text,
                     _searchParameters,
@@ -449,7 +509,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 _searchResult.Results[0].Document.Title = title;
 
-                var response = _target.V3FromSearch(
+                var response = Target.V3FromSearch(
                     _v3Request,
                     _text,
                     _searchParameters,
@@ -468,7 +528,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 doc.Tags = null;
                 doc.Authors = null;
 
-                var response = _target.V3FromSearch(
+                var response = Target.V3FromSearch(
                     _v3Request,
                     _text,
                     _searchParameters,
@@ -490,7 +550,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 _auxiliaryData.Setup(x => x.GetDownloadCount(It.IsAny<string>(), "3.0.0-alpha.1")).Returns(3);
                 _auxiliaryData.Setup(x => x.GetDownloadCount(It.IsAny<string>(), "7.1.2-alpha")).Returns(4);
 
-                var response = _target.V3FromSearch(
+                var response = Target.V3FromSearch(
                     _v3Request,
                     _text,
                     _searchParameters,
@@ -510,7 +570,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 _v3Request.ShowDebug = true;
                 var docResult = _searchResult.Results[0];
 
-                var response = _target.V3FromSearch(
+                var response = Target.V3FromSearch(
                     _v3Request,
                     _text,
                     _searchParameters,
@@ -542,16 +602,15 @@ namespace NuGet.Services.AzureSearch.SearchService
   },
   ""QueryDuration"": ""00:00:00.2500000"",
   ""AuxiliaryFilesMetadata"": {
+    ""Loaded"": ""2019-01-03T11:00:00+00:00"",
     ""Downloads"": {
       ""LastModified"": ""2019-01-01T11:00:00+00:00"",
-      ""Loaded"": ""2019-01-01T12:00:00+00:00"",
       ""LoadDuration"": ""00:00:15"",
       ""FileSize"": 1234,
       ""ETag"": ""\""etag-a\""""
     },
     ""VerifiedPackages"": {
       ""LastModified"": ""2019-01-02T11:00:00+00:00"",
-      ""Loaded"": ""2019-01-02T12:00:00+00:00"",
       ""LoadDuration"": ""00:00:30"",
       ""FileSize"": 5678,
       ""ETag"": ""\""etag-b\""""
@@ -563,7 +622,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             [Fact]
             public void ProducesExpectedResponse()
             {
-                var response = _target.V3FromSearch(
+                var response = Target.V3FromSearch(
                     _v3Request,
                     _text,
                     _searchParameters,
@@ -632,6 +691,37 @@ namespace NuGet.Services.AzureSearch.SearchService
   ]
 }", actualJson);
             }
+
+            [Fact]
+            public void UsesFlatContainerUrlWhenConfigured()
+            {
+                _config.AllIconsInFlatContainer = true;
+
+                var response = Target.V3FromSearch(
+                    _v3Request,
+                    _text,
+                    _searchParameters,
+                    _searchResult,
+                    _duration);
+
+                Assert.Equal(Data.FlatContainerIconUrl, response.Data[0].IconUrl);
+            }
+
+            [Fact]
+            public void LeavesNullIconUrlWithFlatContainerIconsButNullOriginalIconUrl()
+            {
+                _config.AllIconsInFlatContainer = true;
+                _searchResult.Results[0].Document.IconUrl = null;
+
+                var response = Target.V3FromSearch(
+                    _v3Request,
+                    _text,
+                    _searchParameters,
+                    _searchResult,
+                    _duration);
+
+                Assert.Null(response.Data[0].IconUrl);
+            }
         }
 
         public class V3FromSearchDocument : BaseFacts
@@ -642,7 +732,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 _v3Request.ShowDebug = true;
                 var doc = _searchResult.Results[0].Document;
 
-                var response = _target.V3FromSearchDocument(
+                var response = Target.V3FromSearchDocument(
                     _v3Request,
                     doc.Key,
                     doc,
@@ -666,16 +756,15 @@ namespace NuGet.Services.AzureSearch.SearchService
   ""DocumentKey"": ""windowsazure_storage-d2luZG93c2F6dXJlLnN0b3JhZ2U1-IncludePrereleaseAndSemVer2"",
   ""QueryDuration"": ""00:00:00.2500000"",
   ""AuxiliaryFilesMetadata"": {
+    ""Loaded"": ""2019-01-03T11:00:00+00:00"",
     ""Downloads"": {
       ""LastModified"": ""2019-01-01T11:00:00+00:00"",
-      ""Loaded"": ""2019-01-01T12:00:00+00:00"",
       ""LoadDuration"": ""00:00:15"",
       ""FileSize"": 1234,
       ""ETag"": ""\""etag-a\""""
     },
     ""VerifiedPackages"": {
       ""LastModified"": ""2019-01-02T11:00:00+00:00"",
-      ""Loaded"": ""2019-01-02T12:00:00+00:00"",
       ""LoadDuration"": ""00:00:30"",
       ""FileSize"": 5678,
       ""ETag"": ""\""etag-b\""""
@@ -689,7 +778,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 var doc = _searchResult.Results[0].Document;
 
-                var response = _target.V3FromSearchDocument(
+                var response = Target.V3FromSearchDocument(
                     _v3Request,
                     doc.Key,
                     doc,
@@ -757,6 +846,37 @@ namespace NuGet.Services.AzureSearch.SearchService
   ]
 }", actualJson);
             }
+
+            [Fact]
+            public void UsesFlatContainerUrlWhenConfigured()
+            {
+                _config.AllIconsInFlatContainer = true;
+                var doc = _searchResult.Results[0].Document;
+
+                var response = Target.V3FromSearchDocument(
+                    _v3Request,
+                    doc.Key,
+                    doc,
+                    _duration);
+
+                Assert.Equal(Data.FlatContainerIconUrl, response.Data[0].IconUrl);
+            }
+
+            [Fact]
+            public void LeavesNullIconUrlWithFlatContainerIconsButNullOriginalIconUrl()
+            {
+                _config.AllIconsInFlatContainer = true;
+                var doc = _searchResult.Results[0].Document;
+                doc.IconUrl = null;
+
+                var response = Target.V3FromSearchDocument(
+                    _v3Request,
+                    doc.Key,
+                    doc,
+                    _duration);
+
+                Assert.Null(response.Data[0].IconUrl);
+            }
         }
 
         public class AutocompleteFromSearch : BaseFacts
@@ -766,7 +886,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 _autocompleteRequest.ShowDebug = true;
 
-                var response = _target.AutocompleteFromSearch(
+                var response = Target.AutocompleteFromSearch(
                     _autocompleteRequest,
                     _text,
                     _searchParameters,
@@ -804,7 +924,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 _autocompleteRequest.Type = AutocompleteRequestType.PackageIds;
 
-                var response = _target.AutocompleteFromSearch(
+                var response = Target.AutocompleteFromSearch(
                     _autocompleteRequest,
                     _text,
                     _searchParameters,
@@ -821,7 +941,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 _autocompleteRequest.Type = AutocompleteRequestType.PackageVersions;
 
-                var response = _target.AutocompleteFromSearch(
+                var response = Target.AutocompleteFromSearch(
                     _autocompleteRequest,
                     _text,
                     _searchParameters,
@@ -837,7 +957,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 _autocompleteRequest.Type = AutocompleteRequestType.PackageVersions;
 
-                var response = _target.AutocompleteFromSearch(
+                var response = Target.AutocompleteFromSearch(
                     _autocompleteRequest,
                     _text,
                     _searchParameters,
@@ -857,7 +977,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 _autocompleteRequest.Type = AutocompleteRequestType.PackageVersions;
 
-                var exception = Assert.Throws<ArgumentException>(() => _target.AutocompleteFromSearch(
+                var exception = Assert.Throws<ArgumentException>(() => Target.AutocompleteFromSearch(
                     _autocompleteRequest,
                     _text,
                     _searchParameters,
@@ -866,6 +986,126 @@ namespace NuGet.Services.AzureSearch.SearchService
 
                 Assert.Equal("result", exception.ParamName);
                 Assert.Contains("Package version autocomplete queries should have a single document result", exception.Message);
+            }
+        }
+
+        public class EmptyV3 : BaseFacts
+        {
+            [Fact]
+            public void ProducesExpectedResponse()
+            {
+                var response = Target.EmptyV3(_v3Request);
+
+                var actualJson = JsonConvert.SerializeObject(response, _jsonSerializerSettings);
+                Assert.Equal(@"{
+  ""@context"": {
+    ""@vocab"": ""http://schema.nuget.org/schema#"",
+    ""@base"": ""https://example/reg-gz-semver2/""
+  },
+  ""totalHits"": 0,
+  ""data"": []
+}", actualJson);
+            }
+
+            [Fact]
+            public void CanIncludeDebugInformation()
+            {
+                _v3Request.ShowDebug = true;
+
+                var response = Target.EmptyV3(_v3Request);
+
+                Assert.NotNull(response.Debug);
+                var actualJson = JsonConvert.SerializeObject(response.Debug, _jsonSerializerSettings);
+                Assert.Equal(@"{
+  ""SearchRequest"": {
+    ""Skip"": 0,
+    ""Take"": 0,
+    ""IncludePrerelease"": true,
+    ""IncludeSemVer2"": true,
+    ""ShowDebug"": true
+  },
+  ""IndexOperationType"": ""Empty""
+}", actualJson);
+            }
+        }
+
+        public class EmptyV2 : BaseFacts
+        {
+            [Fact]
+            public void ProducesExpectedResponse()
+            {
+                var response = Target.EmptyV2(_v2Request);
+
+                var actualJson = JsonConvert.SerializeObject(response, _jsonSerializerSettings);
+                Assert.Equal(@"{
+  ""totalHits"": 0,
+  ""data"": []
+}", actualJson);
+            }
+
+            [Fact]
+            public void CanIncludeDebugInformation()
+            {
+                _v2Request.ShowDebug = true;
+
+                var response = Target.EmptyV2(_v2Request);
+
+                Assert.NotNull(response.Debug);
+                var actualJson = JsonConvert.SerializeObject(response.Debug, _jsonSerializerSettings);
+                Assert.Equal(@"{
+  ""SearchRequest"": {
+    ""IgnoreFilter"": false,
+    ""CountOnly"": false,
+    ""SortBy"": ""Popularity"",
+    ""LuceneQuery"": false,
+    ""Skip"": 0,
+    ""Take"": 0,
+    ""IncludePrerelease"": true,
+    ""IncludeSemVer2"": true,
+    ""ShowDebug"": true
+  },
+  ""IndexOperationType"": ""Empty""
+}", actualJson);
+            }
+        }
+
+        public class EmptyAutocomplete : BaseFacts
+        {
+            [Fact]
+            public void ProducesExpectedResponse()
+            {
+                var response = Target.EmptyAutocomplete(_autocompleteRequest);
+
+                var actualJson = JsonConvert.SerializeObject(response, _jsonSerializerSettings);
+                Assert.Equal(@"{
+  ""@context"": {
+    ""@vocab"": ""http://schema.nuget.org/schema#""
+  },
+  ""totalHits"": 0,
+  ""data"": []
+}", actualJson);
+            }
+
+            [Fact]
+            public void CanIncludeDebugInformation()
+            {
+                _autocompleteRequest.ShowDebug = true;
+
+                var response = Target.EmptyAutocomplete(_autocompleteRequest);
+
+                Assert.NotNull(response.Debug);
+                var actualJson = JsonConvert.SerializeObject(response.Debug, _jsonSerializerSettings);
+                Assert.Equal(@"{
+  ""SearchRequest"": {
+    ""Type"": ""PackageIds"",
+    ""Skip"": 0,
+    ""Take"": 0,
+    ""IncludePrerelease"": true,
+    ""IncludeSemVer2"": true,
+    ""ShowDebug"": true
+  },
+  ""IndexOperationType"": ""Empty""
+}", actualJson);
             }
         }
 
@@ -885,8 +1125,11 @@ namespace NuGet.Services.AzureSearch.SearchService
             protected readonly DocumentSearchResult<SearchDocument.Full> _manySearchResults;
             protected readonly DocumentSearchResult<HijackDocument.Full> _hijackResult;
             protected readonly JsonSerializerSettings _jsonSerializerSettings;
-            protected readonly SearchResponseBuilder _target;
             protected readonly AuxiliaryFilesMetadata _auxiliaryMetadata;
+
+            public SearchResponseBuilder Target => new SearchResponseBuilder(
+                new Lazy<IAuxiliaryData>(() => _auxiliaryData.Object),
+                _options.Object);
 
             public static IEnumerable<object[]> MissingTitles = new[]
             {
@@ -903,15 +1146,14 @@ namespace NuGet.Services.AzureSearch.SearchService
                 _options = new Mock<IOptionsSnapshot<SearchServiceConfiguration>>();
                 _options.Setup(x => x.Value).Returns(() => _config);
                 _auxiliaryMetadata = new AuxiliaryFilesMetadata(
+                    new DateTimeOffset(2019, 1, 3, 11, 0, 0, TimeSpan.Zero),
                     new AuxiliaryFileMetadata(
                         new DateTimeOffset(2019, 1, 1, 11, 0, 0, TimeSpan.Zero),
-                        new DateTimeOffset(2019, 1, 1, 12, 0, 0, TimeSpan.Zero),
                         TimeSpan.FromSeconds(15),
                         1234,
                         "\"etag-a\""),
                     new AuxiliaryFileMetadata(
                         new DateTimeOffset(2019, 1, 2, 11, 0, 0, TimeSpan.Zero),
-                        new DateTimeOffset(2019, 1, 2, 12, 0, 0, TimeSpan.Zero),
                         TimeSpan.FromSeconds(30),
                         5678,
                         "\"etag-b\""));
@@ -920,6 +1162,8 @@ namespace NuGet.Services.AzureSearch.SearchService
                 _config.HijackIndexName = "hijack-index";
                 _config.SemVer1RegistrationsBaseUrl = "https://example/reg/";
                 _config.SemVer2RegistrationsBaseUrl = "https://example/reg-gz-semver2/";
+                _config.FlatContainerBaseUrl = Data.FlatContainerBaseUrl;
+                _config.FlatContainerContainerName = Data.FlatContainerContainerName;
 
                 _auxiliaryData
                     .Setup(x => x.GetTotalDownloadCount(It.IsAny<string>()))
@@ -1004,12 +1248,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     },
                     Formatting = Formatting.Indented,
                 };
-
-                _target = new SearchResponseBuilder(
-                    new Lazy<IAuxiliaryData>(() => _auxiliaryData.Object),
-                    _options.Object);
             }
         }
-
     }
 }

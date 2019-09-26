@@ -52,17 +52,23 @@
     <Compile Include="Auxiliary2AzureSearch\Auxiliary2AzureSearchConfiguration.cs" />
     <Compile Include="Auxiliary2AzureSearch\DownloadSetComparer.cs" />
     <Compile Include="Auxiliary2AzureSearch\IDownloadSetComparer.cs" />
+    <Compile Include="AuxiliaryFiles\SimpleCloudBlobExtensions.cs" />
     <Compile Include="AuxiliaryFiles\DownloadByVersionData.cs" />
     <Compile Include="AuxiliaryFiles\DownloadData.cs" />
     <Compile Include="AuxiliaryFiles\DownloadDataClient.cs" />
     <Compile Include="AuxiliaryFiles\IAuxiliaryDataStorageConfiguration.cs" />
     <Compile Include="AuxiliaryFiles\IDownloadDataClient.cs" />
+    <Compile Include="AuxiliaryFiles\IVerifiedPackagesDataClient.cs" />
+    <Compile Include="AuxiliaryFiles\StringCache.cs" />
+    <Compile Include="AuxiliaryFiles\VerifiedPackagesDataClient.cs" />
+    <Compile Include="AzureSearchJob.cs" />
     <Compile Include="AzureSearchScoringConfiguration.cs" />
     <Compile Include="BaseDocumentBuilder.cs" />
     <Compile Include="DatabaseOwnerFetcher.cs" />
     <Compile Include="Db2AzureSearch\InitialAuxiliaryData.cs" />
     <Compile Include="IAzureSearchTelemetryService.cs" />
     <Compile Include="IBaseDocumentBuilder.cs" />
+    <Compile Include="IAzureSearchCommand.cs" />
     <Compile Include="IDatabaseOwnerFetcher.cs" />
     <Compile Include="ISearchIndexActionBuilder.cs" />
     <Compile Include="JobOutcome.cs" />
@@ -188,6 +194,7 @@
     <Compile Include="SearchService\SearchTextBuilder.cs" />
     <Compile Include="AzureSearchTelemetryService.cs" />
     <Compile Include="SearchService\SecretRefresher.cs" />
+    <Compile Include="ServiceClientTracingLogger.cs" />
     <Compile Include="VersionList\Guard.cs" />
     <Compile Include="VersionList\HijackIndexChange.cs" />
     <Compile Include="VersionList\HijackIndexChangeType.cs" />
@@ -236,7 +243,7 @@
       <Version>5.0.3</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Validation.Common.Job">
-      <Version>4.1.0-dev-2925650</Version>
+      <Version>4.1.0-dev-2942767</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Build.Tasks.Pack">
       <Version>4.8.0</Version>

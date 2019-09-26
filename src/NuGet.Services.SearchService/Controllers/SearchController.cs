@@ -21,10 +21,12 @@ namespace NuGet.Services.SearchService.Controllers
 
         private static readonly IReadOnlyDictionary<string, V2SortBy> SortBy = new Dictionary<string, V2SortBy>(StringComparer.OrdinalIgnoreCase)
         {
-            { "lastEdited", V2SortBy.LastEditedDescending },
-            { "published", V2SortBy.PublishedDescending },
+            { "lastEdited", V2SortBy.LastEditedDesc },
+            { "published", V2SortBy.PublishedDesc },
             { "title-asc", V2SortBy.SortableTitleAsc },
             { "title-desc", V2SortBy.SortableTitleDesc },
+            { "created-asc", V2SortBy.CreatedAsc },
+            { "created-desc", V2SortBy.CreatedDesc },
         };
 
         private readonly IAuxiliaryDataCache _auxiliaryDataCache;
@@ -69,31 +71,31 @@ namespace NuGet.Services.SearchService.Controllers
 
         [HttpGet]
         public async Task<V2SearchResponse> V2SearchAsync(
-            int skip = DefaultSkip,
-            int take = DefaultTake,
-            bool ignoreFilter = false,
-            bool countOnly = false,
-            bool prerelease = false,
+            int? skip = DefaultSkip,
+            int? take = DefaultTake,
+            bool? ignoreFilter = false,
+            bool? countOnly = false,
+            bool? prerelease = false,
             string semVerLevel = null,
             string q = null,
             string sortBy = null,
-            bool luceneQuery = true,
-            bool debug = false)
+            bool? luceneQuery = true,
+            bool? debug = false)
         {
             await EnsureInitializedAsync();
 
             var request = new V2SearchRequest
             {
-                Skip = skip,
-                Take = take,
-                IgnoreFilter = ignoreFilter,
-                CountOnly = countOnly,
-                IncludePrerelease = prerelease,
+                Skip = skip ?? DefaultSkip,
+                Take = take ?? DefaultTake,
+                IgnoreFilter = ignoreFilter ?? false,
+                CountOnly = countOnly ?? false,
+                IncludePrerelease = prerelease ?? false,
                 IncludeSemVer2 = GetIncludeSemVer2(semVerLevel),
                 Query = q,
                 SortBy = GetSortBy(sortBy),
-                LuceneQuery = luceneQuery,
-                ShowDebug = debug,
+                LuceneQuery = luceneQuery ?? true,
+                ShowDebug = debug ?? false,
             };
 
             return await _searchService.V2SearchAsync(request);
@@ -101,23 +103,23 @@ namespace NuGet.Services.SearchService.Controllers
 
         [HttpGet]
         public async Task<V3SearchResponse> V3SearchAsync(
-            int skip = DefaultSkip,
-            int take = DefaultTake,
-            bool prerelease = false,
+            int? skip = DefaultSkip,
+            int? take = DefaultTake,
+            bool? prerelease = false,
             string semVerLevel = null,
             string q = null,
-            bool debug = false)
+            bool? debug = false)
         {
             await EnsureInitializedAsync();
 
             var request = new V3SearchRequest
             {
-                Skip = skip,
-                Take = take,
-                IncludePrerelease = prerelease,
+                Skip = skip ?? DefaultSkip,
+                Take = take ?? DefaultTake,
+                IncludePrerelease = prerelease ?? false,
                 IncludeSemVer2 = GetIncludeSemVer2(semVerLevel),
                 Query = q,
-                ShowDebug = debug,
+                ShowDebug = debug ?? false,
             };
 
             return await _searchService.V3SearchAsync(request);
@@ -125,13 +127,13 @@ namespace NuGet.Services.SearchService.Controllers
 
         [HttpGet]
         public async Task<AutocompleteResponse> AutocompleteAsync(
-            int skip = DefaultSkip,
-            int take = DefaultTake,
-            bool prerelease = false,
+            int? skip = DefaultSkip,
+            int? take = DefaultTake,
+            bool? prerelease = false,
             string semVerLevel = null,
             string q = null,
             string id = null,
-            bool debug = false)
+            bool? debug = false)
         {
             await EnsureInitializedAsync();
 
@@ -142,13 +144,13 @@ namespace NuGet.Services.SearchService.Controllers
 
             var request = new AutocompleteRequest
             {
-                Skip = skip,
-                Take = take,
-                IncludePrerelease = prerelease,
+                Skip = skip ?? DefaultSkip,
+                Take = take ?? DefaultTake,
+                IncludePrerelease = prerelease ?? false,
                 IncludeSemVer2 = GetIncludeSemVer2(semVerLevel),
                 Query = q ?? id,
                 Type = type,
-                ShowDebug = debug,
+                ShowDebug = debug ?? false,
             };
 
             return await _searchService.AutocompleteAsync(request);

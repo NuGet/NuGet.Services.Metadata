@@ -43,8 +43,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             var ranges = await GetPackageRegistrationRangesAsync();
 
             // Fetch exclude packages list from auxiliary files.
-            var excludedPackagesResult = await _auxiliaryFileClient.LoadExcludedPackagesAsync(etag: null);
-            var excludedPackages = excludedPackagesResult.Data;
+            var excludedPackages = await _auxiliaryFileClient.LoadExcludedPackagesAsync();
 
             Guard.Assert(
                 excludedPackages.Comparer == StringComparer.OrdinalIgnoreCase,
@@ -54,6 +53,11 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             // counts in the search service. The gallery DB and the downloads data file have different download count
             // numbers we don't use the gallery DB values.
             var downloads = await _auxiliaryFileClient.LoadDownloadDataAsync();
+
+            // Fetch the verified packages file. This is not used inside the index but is used at query-time in the
+            // Azure Search service. We want to copy this file to the local region's storage container to improve
+            // availability and start-up of the service.
+            var verifiedPackages = await _auxiliaryFileClient.LoadVerifiedPackagesAsync();
 
             // Build a list of the owners data as we collect package registrations from the database.
             var ownersBuilder = new PackageIdToOwnersBuilder(_logger);
@@ -104,7 +108,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             return new InitialAuxiliaryData(
                 ownersBuilder.GetResult(),
                 downloads,
-                excludedPackages);
+                excludedPackages,
+                verifiedPackages);
         }
 
         private bool ShouldWait(ConcurrentBag<NewPackageRegistration> allWork, bool log)

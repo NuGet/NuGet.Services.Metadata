@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Options;
 using NuGet.Indexing;
+using NuGet.Packaging;
 using NuGet.Services.Metadata.Catalog;
 using NuGet.Versioning;
 
@@ -13,7 +14,8 @@ namespace NuGet.Services.AzureSearch.SearchService
 {
     public partial class SearchTextBuilder : ISearchTextBuilder
     {
-        public static string MatchAllDocumentsQuery = "*";
+        public const string MatchAllDocumentsQuery = "*";
+        private static readonly char[] PackageIdSeparators = new[] { '.', '-', '_' };
 
         private static readonly IReadOnlyDictionary<QueryField, string> FieldNames = new Dictionary<QueryField, string>
         {
@@ -137,24 +139,22 @@ namespace NuGet.Services.AzureSearch.SearchService
 
                 // Generate a clause to favor results that match all unscoped terms.
                 // We don't need to include scoped terms as these are already required.
-                if (unscopedTerms.Count == 1)
-                {
-                    // If there is a single unscoped term, split it on "." characters and favor results
-                    // that match all resulting fragments.
-                    var unscopedTerm = unscopedTerms[0];
-                    if (unscopedTerm.IndexOf('.') > 0)
-                    {
-                        var fragments = unscopedTerm.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries);
-                        if (fragments.Length > 1)
-                        {
-                            builder.AppendBoostIfMatchAllTerms(fragments, _options.Value.MatchAllTermsBoost);
-                        }
-                    }
-                }
-                else if (unscopedTerms.Count > 1)
+                if (unscopedTerms.Count > 1)
                 {
                     builder.AppendBoostIfMatchAllTerms(unscopedTerms, _options.Value.MatchAllTermsBoost);
                 }
+            }
+
+            // Handle the exact match case. If the search query is a single unscoped term is also a valid package
+            // ID, mega boost the document that has this package ID. Only consider the query to be a package ID has
+            // symbols (a.k.a. separators) in it.
+            if (scopedTerms.Count == 0
+                && unscopedTerms.Count == 1
+                && unscopedTerms[0].Length <= PackageIdValidator.MaxPackageIdLength
+                && unscopedTerms[0].IndexOfAny(PackageIdSeparators) >= 0
+                && PackageIdValidator.IsValidPackageId(unscopedTerms[0]))
+            {
+                builder.AppendExactMatchPackageIdBoost(unscopedTerms[0], _options.Value.ExactMatchBoost);
             }
 
             var result = builder.ToString();
