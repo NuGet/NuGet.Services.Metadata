@@ -16,7 +16,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
     {
         private const string CacheFilename = "c2i_cache.json";
 
-        private static ConcurrentDictionary<Uri, ExternalIconCopyResult> ExternalIconCopyResults = null;
+        private ConcurrentDictionary<Uri, ExternalIconCopyResult> _externalIconCopyResults = null;
 
         private readonly IStorage _auxStorage;
 
@@ -28,7 +28,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
 
         public async Task InitializeAsync(CancellationToken cancellationToken)
         {
-            if (ExternalIconCopyResults != null)
+            if (_externalIconCopyResults != null)
             {
                 return;
             }
@@ -37,7 +37,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             var content = await _auxStorage.LoadAsync(cacheUrl, cancellationToken);
             if (content == null)
             {
-                ExternalIconCopyResults = new ConcurrentDictionary<Uri, ExternalIconCopyResult>();
+                _externalIconCopyResults = new ConcurrentDictionary<Uri, ExternalIconCopyResult>();
                 return;
             }
             using (var contentStream = content.GetContentStream())
@@ -45,21 +45,26 @@ namespace NuGet.Services.Metadata.Catalog.Icons
             {
                 var serializer = new JsonSerializer();
                 var dictionary = (Dictionary<Uri, ExternalIconCopyResult>)serializer.Deserialize(reader, typeof(Dictionary<Uri, ExternalIconCopyResult>));
-                ExternalIconCopyResults = new ConcurrentDictionary<Uri, ExternalIconCopyResult>(dictionary);
+                _externalIconCopyResults = new ConcurrentDictionary<Uri, ExternalIconCopyResult>(dictionary);
             }
         }
 
         public async Task SaveAsync(CancellationToken cancellationToken)
         {
             var cacheUrl = _auxStorage.ResolveUri(CacheFilename);
-            var serialized = JsonConvert.SerializeObject(ExternalIconCopyResults);
+            var serialized = JsonConvert.SerializeObject(_externalIconCopyResults);
             var content = new StringStorageContent(serialized, contentType: "text/json");
             await _auxStorage.SaveAsync(cacheUrl, content, cancellationToken);
         }
 
         public ExternalIconCopyResult Get(Uri iconUrl)
         {
-            if (ExternalIconCopyResults.TryGetValue(iconUrl, out var result))
+            if (_externalIconCopyResults == null)
+            {
+                throw new InvalidOperationException("Object was not initialized");
+            }
+
+            if (_externalIconCopyResults.TryGetValue(iconUrl, out var result))
             {
                 return result;
             }
@@ -69,12 +74,22 @@ namespace NuGet.Services.Metadata.Catalog.Icons
 
         public void Set(Uri iconUrl, ExternalIconCopyResult newItem)
         {
-            ExternalIconCopyResults.AddOrUpdate(iconUrl, newItem, (_, v) => v); // will not overwrite existing entries
+            if (_externalIconCopyResults == null)
+            {
+                throw new InvalidOperationException("Object was not initialized");
+            }
+
+            _externalIconCopyResults.AddOrUpdate(iconUrl, newItem, (_, v) => v); // will not overwrite existing entries
         }
 
         public void Clear(Uri externalIconUrl, Uri targetStorageUrl)
         {
-            if (ExternalIconCopyResults.TryRemove(externalIconUrl, out var removedValue))
+            if (_externalIconCopyResults == null)
+            {
+                throw new InvalidOperationException("Object was not initialized");
+            }
+
+            if (_externalIconCopyResults.TryRemove(externalIconUrl, out var removedValue))
             {
                 if (removedValue.StorageUrl != targetStorageUrl)
                 {
