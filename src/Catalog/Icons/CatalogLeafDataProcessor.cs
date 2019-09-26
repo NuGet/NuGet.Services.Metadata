@@ -156,7 +156,7 @@ namespace NuGet.Services.Metadata.Catalog.Icons
 
         private async Task ProcessEmbeddedIconAsync(IStorage destinationStorage, CatalogCommitItem item, string iconFile, CancellationToken cancellationToken)
         {
-            var packageFilename = PackageUtility.GetPackageFileName(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString()).ToLower();
+            var packageFilename = PackageUtility.GetPackageFileName(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString()).ToLowerInvariant();
             var packageUri = _packageStorage.ResolveUri(packageFilename);
             var packageBlobReference = await _packageStorage.GetCloudBlockBlobReferenceAsync(packageUri);
             using (_telemetryService.TrackEmbeddedIconProcessingDuration(item.PackageIdentity.Id, item.PackageIdentity.Version.ToNormalizedString()))
