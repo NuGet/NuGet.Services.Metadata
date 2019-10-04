@@ -191,5 +191,10 @@ namespace NgTests.Infrastructure
                 return false;
             }
         }
+
+        public override Task<bool> ExistsAsync(string fileName, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(Exists(fileName));
+        }
     }
 }

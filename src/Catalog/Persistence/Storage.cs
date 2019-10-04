@@ -167,6 +167,7 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
         public abstract Task<IEnumerable<StorageListItem>> ListAsync(CancellationToken cancellationToken);
 
         public abstract bool Exists(string fileName);
+        public abstract Task<bool> ExistsAsync(string fileName, CancellationToken cancellationToken);
 
         public Uri ResolveUri(string relativeUri)
         {

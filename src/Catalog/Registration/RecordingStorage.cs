@@ -81,5 +81,10 @@ namespace NuGet.Services.Metadata.Catalog.Registration
         {
             return _innerStorage.ListAsync(cancellationToken);
         }
+
+        public Task<bool> ExistsAsync(string fileName, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

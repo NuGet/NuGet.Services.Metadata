@@ -37,6 +37,11 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             return File.Exists(fileName);
         }
 
+        public override Task<bool> ExistsAsync(string filename, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(Exists(filename));
+        }
+
         public override Task<IEnumerable<StorageListItem>> ListAsync(CancellationToken cancellationToken)
         {
             DirectoryInfo directoryInfo = new DirectoryInfo(Path);

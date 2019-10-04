@@ -179,6 +179,23 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             return false;
         }
 
+        public override async Task<bool> ExistsAsync(string fileName, CancellationToken cancellationToken)
+        {
+            var packageRegistrationUri = ResolveUri(fileName);
+            string blobName = GetName(packageRegistrationUri);
+            var blob = GetBlockBlobReference(blobName);
+
+            if (await blob.ExistsAsync(cancellationToken))
+            {
+                return true;
+            }
+            if (Verbose)
+            {
+                Trace.WriteLine(string.Format("The blob {0} does not exist.", packageRegistrationUri));
+            }
+            return false;
+        }
+
         public override async Task<IEnumerable<StorageListItem>> ListAsync(CancellationToken cancellationToken)
         {
             var files = await _directory.ListBlobsAsync(cancellationToken);

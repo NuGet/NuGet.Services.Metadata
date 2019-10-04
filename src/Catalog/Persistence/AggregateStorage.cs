@@ -94,6 +94,11 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
             return _primaryStorage.Exists(fileName);
         }
 
+        public override async Task<bool> ExistsAsync(string filename, CancellationToken cancellationToken)
+        {
+            return await _primaryStorage.ExistsAsync(filename, cancellationToken);
+        }
+
         public override Task<IEnumerable<StorageListItem>> ListAsync(CancellationToken cancellationToken)
         {
             return _primaryStorage.ListAsync(cancellationToken);

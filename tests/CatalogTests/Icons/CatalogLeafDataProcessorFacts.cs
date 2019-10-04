@@ -518,6 +518,11 @@ namespace CatalogTests.Icons
             {
                 throw new NotImplementedException();
             }
+
+            public override Task<bool> ExistsAsync(string fileName, CancellationToken cancellationToken)
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }

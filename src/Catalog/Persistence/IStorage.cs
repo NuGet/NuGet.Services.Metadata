@@ -27,5 +27,6 @@ namespace NuGet.Services.Metadata.Catalog.Persistence
         Task<string> LoadStringAsync(Uri resourceUri, CancellationToken cancellationToken);
         Uri ResolveUri(string relativeUri);
         Task SaveAsync(Uri resourceUri, StorageContent content, CancellationToken cancellationToken);
+        Task<bool> ExistsAsync(string fileName, CancellationToken cancellationToken);
     }
 }

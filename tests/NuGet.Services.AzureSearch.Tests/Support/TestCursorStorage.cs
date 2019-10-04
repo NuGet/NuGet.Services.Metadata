@@ -61,5 +61,10 @@ namespace NuGet.Services.AzureSearch.Support
             Uri resourceUri, 
             DeleteRequestOptions deleteRequestOptions,
             CancellationToken cancellationToken) => throw new NotImplementedException();
+
+        public override Task<bool> ExistsAsync(string fileName, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
