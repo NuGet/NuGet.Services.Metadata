@@ -197,6 +197,15 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 Assert.Equal(10, downloadData.GetDownloadCount("ValidId"));
                 Assert.Contains("There were 1 invalid IDs, 2 invalid versions, and 1 non-normalized IDs.", Logger.Messages);
             }
+
+            [Fact]
+            public async Task OverridesDownloadCounts()
+            {
+                var downloadData = NewDownloadData["OverriddenPackageId"];
+
+
+                DownloadOverrides["packageId"]
+            }
         }
 
         public abstract class Facts
@@ -231,6 +240,10 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                     .ReturnsAsync(() => OldDownloadResult);
                 NewDownloadData = new DownloadData();
                 AuxiliaryFileClient.Setup(x => x.LoadDownloadDataAsync()).ReturnsAsync(() => NewDownloadData);
+                DownloadOverrides = new Dictionary<string, long>();
+                AuxiliaryFileClient
+                    .Setup(x => x.LoadDownloadOverridesAsync())
+                    .ReturnsAsync(() => new DownloadOverrideData(DownloadOverrides));
 
                 OldVerifiedPackagesData = new HashSet<string>();
                 OldVerifiedPackagesResult = Data.GetAuxiliaryFileResult(OldVerifiedPackagesData, "verified-packages-etag");
@@ -310,6 +323,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             public DownloadData OldDownloadData { get; }
             public AuxiliaryFileResult<DownloadData> OldDownloadResult { get; }
             public DownloadData NewDownloadData { get; }
+            public Dictionary<string, long> DownloadOverrides { get; }
             public SortedDictionary<string, long> Changes { get; }
             public Auxiliary2AzureSearchCommand Target { get; }
             public IndexActions IndexActions { get; set; }
