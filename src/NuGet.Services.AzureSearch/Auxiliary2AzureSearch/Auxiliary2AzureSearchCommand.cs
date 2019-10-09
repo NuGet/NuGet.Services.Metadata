@@ -144,6 +144,10 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             _logger.LogInformation("Removing invalid IDs and versions from the new data.");
             CleanDownloadData(newData);
 
+            _logger.LogInformation("Overriding download count data.");
+            var overrideData = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
+            overrideData.Update(newData);
+
             _logger.LogInformation("Detecting download count changes.");
             var changes = _downloadSetComparer.Compare(oldResult.Data, newData);
             var idBag = new ConcurrentBag<string>(changes.Keys);

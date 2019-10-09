@@ -54,6 +54,11 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             // numbers we don't use the gallery DB values.
             var downloads = await _auxiliaryFileClient.LoadDownloadDataAsync();
 
+            // Fetch the download overrides from the auxiliary file, and apply overrides on the downloads.
+            // This is used to manually modify a package's download counts and boost its results.
+            var downloadOverrides = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
+            downloadOverrides.Update(downloads);
+
             // Fetch the verified packages file. This is not used inside the index but is used at query-time in the
             // Azure Search service. We want to copy this file to the local region's storage container to improve
             // availability and start-up of the service.
