@@ -201,10 +201,45 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             [Fact]
             public async Task OverridesDownloadCounts()
             {
-                var downloadData = NewDownloadData["OverriddenPackageId"];
+                NewDownloadData.SetDownloadCount("PackageId1", "1.0.0", 12);
+                NewDownloadData.SetDownloadCount("PackageId1", "2.0.0", 34);
 
+                NewDownloadData.SetDownloadCount("PackageId2", "1.0.0", 5);
+                NewDownloadData.SetDownloadCount("PackageId2", "2.0.0", 4);
 
-                DownloadOverrides["packageId"]
+                DownloadOverrides["PackageId1"] = 55;
+
+                await Target.ExecuteAsync();
+
+                Assert.Equal(55, NewDownloadData["PackageId1"].Total);
+                Assert.Equal(55, NewDownloadData["PackageId1"]["1.0.0"]);
+                Assert.DoesNotContain("2.0.0", NewDownloadData["PackageId1"].Keys);
+
+                Assert.Equal(9, NewDownloadData["PackageId2"].Total);
+                Assert.Equal(5, NewDownloadData["PackageId2"]["1.0.0"]);
+                Assert.Equal(4, NewDownloadData["PackageId2"]["2.0.0"]);
+            }
+
+            [Fact]
+            public async Task DoesNotOverrideIfDownloadsGreater()
+            {
+                NewDownloadData.SetDownloadCount("PackageId1", "1.0.0", 100);
+                NewDownloadData.SetDownloadCount("PackageId1", "2.0.0", 200);
+
+                NewDownloadData.SetDownloadCount("PackageId2", "1.0.0", 5);
+                NewDownloadData.SetDownloadCount("PackageId2", "2.0.0", 4);
+
+                DownloadOverrides["PackageId1"] = 55;
+
+                await Target.ExecuteAsync();
+
+                Assert.Equal(300, NewDownloadData["PackageId1"].Total);
+                Assert.Equal(100, NewDownloadData["PackageId1"]["1.0.0"]);
+                Assert.Equal(200, NewDownloadData["PackageId1"]["2.0.0"]);
+
+                Assert.Equal(9, NewDownloadData["PackageId2"].Total);
+                Assert.Equal(5, NewDownloadData["PackageId2"]["1.0.0"]);
+                Assert.Equal(4, NewDownloadData["PackageId2"]["2.0.0"]);
             }
         }
 
