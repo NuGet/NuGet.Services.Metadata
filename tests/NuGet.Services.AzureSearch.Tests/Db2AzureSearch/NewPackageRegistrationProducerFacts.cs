@@ -37,6 +37,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             private readonly NewPackageRegistrationProducer _target;
             private readonly Mock<IAuxiliaryFileClient> _auxiliaryFileClient;
             private readonly DownloadData _downloads;
+            private readonly Dictionary<string, long> _downloadOverrides;
             private readonly HashSet<string> _verifiedPackages;
             private HashSet<string> _excludedPackages;
 
@@ -64,6 +65,10 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 _auxiliaryFileClient
                     .Setup(x => x.LoadDownloadDataAsync())
                     .ReturnsAsync(() => _downloads);
+                _downloadOverrides = new Dictionary<string, long>();
+                _auxiliaryFileClient
+                    .Setup(x => x.LoadDownloadOverridesAsync())
+                    .ReturnsAsync(() => new DownloadOverrideData(_downloadOverrides));
                 _verifiedPackages = new HashSet<string>();
                 _auxiliaryFileClient
                     .Setup(x => x.LoadVerifiedPackagesAsync())
@@ -362,6 +367,128 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         inner: null));
 
                 await Assert.ThrowsAsync<StorageException>(async () => await _target.ProduceWorkAsync(_work, _token));
+            }
+
+            [Fact]
+            public async Task OverridesDownloadCounts()
+            {
+                _packageRegistrations.Add(new PackageRegistration
+                {
+                    Key = 1,
+                    Id = "A",
+                    Owners = new[] { new User { Username = "OwnerA" } },
+                    Packages = new[]
+                    {
+                        new Package { Version = "1.0.0" },
+                        new Package { Version = "2.0.0" },
+                    },
+                });
+                _downloads.SetDownloadCount("A", "1.0.0", 12);
+                _downloads.SetDownloadCount("A", "2.0.0", 23);
+                _packageRegistrations.Add(new PackageRegistration
+                {
+                    Key = 2,
+                    Id = "B",
+                    Owners = new[] { new User { Username = "OwnerB" } },
+                    Packages = new[]
+                    {
+                        new Package { Version = "3.0.0" },
+                        new Package { Version = "4.0.0" },
+                    },
+                });
+                _downloads.SetDownloadCount("B", "3.0.0", 34);
+                _downloads.SetDownloadCount("B", "4.0.0", 45);
+
+                InitializePackagesFromPackageRegistrations();
+
+                _downloadOverrides["A"] = 55;
+
+                await _target.ProduceWorkAsync(_work, _token);
+
+                var work = _work.Reverse().ToList();
+                Assert.Equal(2, work.Count);
+
+                Assert.Equal("A", work[0].PackageId);
+                Assert.Equal("1.0.0", work[0].Packages[0].Version);
+                Assert.Equal("2.0.0", work[0].Packages[1].Version);
+                Assert.Equal(new[] { "OwnerA" }, work[0].Owners);
+                Assert.Equal(55, work[0].TotalDownloadCount);
+
+                Assert.Equal("B", work[1].PackageId);
+                Assert.Equal("3.0.0", work[1].Packages[0].Version);
+                Assert.Equal("4.0.0", work[1].Packages[1].Version);
+                Assert.Equal(new[] { "OwnerB" }, work[1].Owners);
+                Assert.Equal(79, work[1].TotalDownloadCount);
+            }
+
+            [Fact]
+            public async Task DoesNotOverrideIfDownloadsGreaterOrPackageHasNoDownloads()
+            {
+                _packageRegistrations.Add(new PackageRegistration
+                {
+                    Key = 1,
+                    Id = "A",
+                    Owners = new[] { new User { Username = "OwnerA" } },
+                    Packages = new[]
+                    {
+                        new Package { Version = "1.0.0" },
+                        new Package { Version = "2.0.0" },
+                    },
+                });
+                _downloads.SetDownloadCount("A", "1.0.0", 100);
+                _downloads.SetDownloadCount("A", "2.0.0", 200);
+                _packageRegistrations.Add(new PackageRegistration
+                {
+                    Key = 2,
+                    Id = "B",
+                    Owners = new[] { new User { Username = "OwnerB" } },
+                    Packages = new[]
+                    {
+                        new Package { Version = "3.0.0" },
+                        new Package { Version = "4.0.0" },
+                    },
+                });
+                _downloads.SetDownloadCount("B", "3.0.0", 5);
+                _downloads.SetDownloadCount("B", "4.0.0", 4);
+                _packageRegistrations.Add(new PackageRegistration
+                {
+                    Key = 3,
+                    Id = "C",
+                    Owners = new[] { new User { Username = "OwnerC" }, new User { Username = "OwnerD" } },
+                    Packages = new[]
+                    {
+                        new Package { Version = "5.0.0" },
+                    },
+                });
+                _downloads.SetDownloadCount("C", "5.0.0", 0);
+
+                InitializePackagesFromPackageRegistrations();
+
+                _downloadOverrides["A"] = 55;
+                _downloadOverrides["C"] = 66;
+                _downloadOverrides["D"] = 77;
+
+                await _target.ProduceWorkAsync(_work, _token);
+
+                var work = _work.Reverse().ToList();
+                Assert.Equal(3, work.Count);
+
+                Assert.Equal("A", work[0].PackageId);
+                Assert.Equal("1.0.0", work[0].Packages[0].Version);
+                Assert.Equal("2.0.0", work[0].Packages[1].Version);
+                Assert.Equal(new[] { "OwnerA" }, work[0].Owners);
+                Assert.Equal(300, work[0].TotalDownloadCount);
+
+                Assert.Equal("B", work[1].PackageId);
+                Assert.Equal("3.0.0", work[1].Packages[0].Version);
+                Assert.Equal("4.0.0", work[1].Packages[1].Version);
+                Assert.Equal(new[] { "OwnerB" }, work[1].Owners);
+                Assert.Equal(9, work[1].TotalDownloadCount);
+
+                Assert.Equal("C", work[2].PackageId);
+                Assert.Equal("5.0.0", work[2].Packages[0].Version);
+                Assert.Equal(new[] { "OwnerC", "OwnerD" }, work[2].Owners);
+                Assert.Equal(0, work[2].TotalDownloadCount);
             }
 
             private void InitializePackagesFromPackageRegistrations()

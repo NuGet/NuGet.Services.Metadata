@@ -201,45 +201,98 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             [Fact]
             public async Task OverridesDownloadCounts()
             {
-                NewDownloadData.SetDownloadCount("PackageId1", "1.0.0", 12);
-                NewDownloadData.SetDownloadCount("PackageId1", "2.0.0", 34);
+                DownloadSetComparer
+                    .Setup(c => c.Compare(It.IsAny<DownloadData>(), It.IsAny<DownloadData>()))
+                    .Returns<DownloadData, DownloadData>((oldData, newData) =>
+                    {
+                        return new SortedDictionary<string, long>(
+                            newData.ToDictionary(d => d.Key, d => d.Value.Total));
+                    });
 
-                NewDownloadData.SetDownloadCount("PackageId2", "1.0.0", 5);
-                NewDownloadData.SetDownloadCount("PackageId2", "2.0.0", 4);
+                NewDownloadData.SetDownloadCount("A", "1.0.0", 12);
+                NewDownloadData.SetDownloadCount("A", "2.0.0", 34);
 
-                DownloadOverrides["PackageId1"] = 55;
+                NewDownloadData.SetDownloadCount("B", "3.0.0", 5);
+                NewDownloadData.SetDownloadCount("B", "4.0.0", 4);
+
+                DownloadOverrides["A"] = 55;
 
                 await Target.ExecuteAsync();
 
-                Assert.Equal(55, NewDownloadData["PackageId1"].Total);
-                Assert.Equal(55, NewDownloadData["PackageId1"]["1.0.0"]);
-                Assert.DoesNotContain("2.0.0", NewDownloadData["PackageId1"].Keys);
+                Assert.Equal(55, NewDownloadData["A"].Total);
+                Assert.Equal(55, NewDownloadData["A"]["1.0.0"]);
+                Assert.DoesNotContain("2.0.0", NewDownloadData["A"].Keys);
 
-                Assert.Equal(9, NewDownloadData["PackageId2"].Total);
-                Assert.Equal(5, NewDownloadData["PackageId2"]["1.0.0"]);
-                Assert.Equal(4, NewDownloadData["PackageId2"]["2.0.0"]);
+                Assert.Equal(9, NewDownloadData["B"].Total);
+                Assert.Equal(5, NewDownloadData["B"]["3.0.0"]);
+                Assert.Equal(4, NewDownloadData["B"]["4.0.0"]);
+
+                SearchDocumentBuilder
+                    .Verify(
+                        b => b.UpdateDownloadCount("A", SearchFilters.IncludePrereleaseAndSemVer2, 55),
+                        Times.Once);
+                SearchDocumentBuilder
+                    .Verify(
+                        b => b.UpdateDownloadCount("B", SearchFilters.IncludePrereleaseAndSemVer2, 9),
+                        Times.Once);
             }
 
             [Fact]
-            public async Task DoesNotOverrideIfDownloadsGreater()
+            public async Task DoesNotOverrideIfDownloadsGreaterOrPackageHasNoDownloads()
             {
-                NewDownloadData.SetDownloadCount("PackageId1", "1.0.0", 100);
-                NewDownloadData.SetDownloadCount("PackageId1", "2.0.0", 200);
+                DownloadSetComparer
+                    .Setup(c => c.Compare(It.IsAny<DownloadData>(), It.IsAny<DownloadData>()))
+                    .Returns<DownloadData, DownloadData>((oldData, newData) =>
+                    {
+                        return new SortedDictionary<string, long>(
+                            newData.ToDictionary(d => d.Key, d => d.Value.Total));
+                    });
 
-                NewDownloadData.SetDownloadCount("PackageId2", "1.0.0", 5);
-                NewDownloadData.SetDownloadCount("PackageId2", "2.0.0", 4);
+                NewDownloadData.SetDownloadCount("A", "1.0.0", 100);
+                NewDownloadData.SetDownloadCount("A", "2.0.0", 200);
 
-                DownloadOverrides["PackageId1"] = 55;
+                NewDownloadData.SetDownloadCount("B", "3.0.0", 5);
+                NewDownloadData.SetDownloadCount("B", "4.0.0", 4);
+
+                NewDownloadData.SetDownloadCount("C", "5.0.0", 0);
+
+                DownloadOverrides["A"] = 55;
+                DownloadOverrides["C"] = 66;
+                DownloadOverrides["D"] = 77;
 
                 await Target.ExecuteAsync();
 
-                Assert.Equal(300, NewDownloadData["PackageId1"].Total);
-                Assert.Equal(100, NewDownloadData["PackageId1"]["1.0.0"]);
-                Assert.Equal(200, NewDownloadData["PackageId1"]["2.0.0"]);
+                Assert.Equal(300, NewDownloadData["A"].Total);
+                Assert.Equal(100, NewDownloadData["A"]["1.0.0"]);
+                Assert.Equal(200, NewDownloadData["A"]["2.0.0"]);
 
-                Assert.Equal(9, NewDownloadData["PackageId2"].Total);
-                Assert.Equal(5, NewDownloadData["PackageId2"]["1.0.0"]);
-                Assert.Equal(4, NewDownloadData["PackageId2"]["2.0.0"]);
+                Assert.Equal(9, NewDownloadData["B"].Total);
+                Assert.Equal(5, NewDownloadData["B"]["3.0.0"]);
+                Assert.Equal(4, NewDownloadData["B"]["4.0.0"]);
+
+                Assert.DoesNotContain("C", NewDownloadData.Keys);
+                Assert.DoesNotContain("D", NewDownloadData.Keys);
+
+                SearchDocumentBuilder
+                    .Verify(
+                        b => b.UpdateDownloadCount("A", SearchFilters.IncludePrereleaseAndSemVer2, 300),
+                        Times.Once);
+                SearchDocumentBuilder
+                    .Verify(
+                        b => b.UpdateDownloadCount("B", SearchFilters.IncludePrereleaseAndSemVer2, 9),
+                        Times.Once);
+                SearchDocumentBuilder
+                    .Verify(
+                        b => b.UpdateDownloadCount("B", SearchFilters.IncludePrereleaseAndSemVer2, 9),
+                        Times.Once);
+                SearchDocumentBuilder
+                    .Verify(
+                        b => b.UpdateDownloadCount("C", It.IsAny<SearchFilters>(), It.IsAny<long>()),
+                        Times.Never);
+                SearchDocumentBuilder
+                    .Verify(
+                        b => b.UpdateDownloadCount("D", It.IsAny<SearchFilters>(), It.IsAny<long>()),
+                        Times.Never);
             }
         }
 
