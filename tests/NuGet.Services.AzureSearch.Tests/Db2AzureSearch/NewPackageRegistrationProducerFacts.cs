@@ -396,17 +396,31 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                         new Package { Version = "4.0.0" },
                     },
                 });
-                _downloads.SetDownloadCount("B", "3.0.0", 34);
-                _downloads.SetDownloadCount("B", "4.0.0", 45);
+                _downloads.SetDownloadCount("B", "3.0.0", 5);
+                _downloads.SetDownloadCount("B", "4.0.0", 4);
+                _packageRegistrations.Add(new PackageRegistration
+                {
+                    Key = 3,
+                    Id = "C",
+                    Owners = new[] { new User { Username = "OwnerC" } },
+                    Packages = new[]
+                    {
+                        new Package { Version = "5.0.0" },
+                        new Package { Version = "6.0.0" },
+                    },
+                });
+                _downloads.SetDownloadCount("C", "5.0.0", 2);
+                _downloads.SetDownloadCount("C", "6.0.0", 3);
 
                 InitializePackagesFromPackageRegistrations();
 
                 _downloadOverrides["A"] = 55;
+                _downloadOverrides["b"] = 66;
 
                 await _target.ProduceWorkAsync(_work, _token);
 
                 var work = _work.Reverse().ToList();
-                Assert.Equal(2, work.Count);
+                Assert.Equal(3, work.Count);
 
                 Assert.Equal("A", work[0].PackageId);
                 Assert.Equal("1.0.0", work[0].Packages[0].Version);
@@ -418,7 +432,13 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 Assert.Equal("3.0.0", work[1].Packages[0].Version);
                 Assert.Equal("4.0.0", work[1].Packages[1].Version);
                 Assert.Equal(new[] { "OwnerB" }, work[1].Owners);
-                Assert.Equal(79, work[1].TotalDownloadCount);
+                Assert.Equal(66, work[1].TotalDownloadCount);
+
+                Assert.Equal("C", work[2].PackageId);
+                Assert.Equal("5.0.0", work[2].Packages[0].Version);
+                Assert.Equal("6.0.0", work[2].Packages[1].Version);
+                Assert.Equal(new[] { "OwnerC" }, work[2].Owners);
+                Assert.Equal(5, work[2].TotalDownloadCount);
             }
 
             [Fact]

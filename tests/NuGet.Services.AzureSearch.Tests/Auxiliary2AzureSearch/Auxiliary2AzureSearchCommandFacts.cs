@@ -215,7 +215,11 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 NewDownloadData.SetDownloadCount("B", "3.0.0", 5);
                 NewDownloadData.SetDownloadCount("B", "4.0.0", 4);
 
+                NewDownloadData.SetDownloadCount("C", "5.0.0", 2);
+                NewDownloadData.SetDownloadCount("C", "6.0.0", 3);
+
                 DownloadOverrides["A"] = 55;
+                DownloadOverrides["b"] = 66;
 
                 await Target.ExecuteAsync();
 
@@ -223,9 +227,13 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 Assert.Equal(55, NewDownloadData["A"]["1.0.0"]);
                 Assert.DoesNotContain("2.0.0", NewDownloadData["A"].Keys);
 
-                Assert.Equal(9, NewDownloadData["B"].Total);
-                Assert.Equal(5, NewDownloadData["B"]["3.0.0"]);
-                Assert.Equal(4, NewDownloadData["B"]["4.0.0"]);
+                Assert.Equal(66, NewDownloadData["B"].Total);
+                Assert.Equal(66, NewDownloadData["B"]["3.0.0"]);
+                Assert.DoesNotContain("4.0.0", NewDownloadData["A"].Keys);
+
+                Assert.Equal(5, NewDownloadData["C"].Total);
+                Assert.Equal(2, NewDownloadData["C"]["5.0.0"]);
+                Assert.Equal(3, NewDownloadData["C"]["6.0.0"]);
 
                 SearchDocumentBuilder
                     .Verify(
@@ -233,7 +241,11 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                         Times.Once);
                 SearchDocumentBuilder
                     .Verify(
-                        b => b.UpdateDownloadCount("B", SearchFilters.IncludePrereleaseAndSemVer2, 9),
+                        b => b.UpdateDownloadCount("B", SearchFilters.IncludePrereleaseAndSemVer2, 66),
+                        Times.Once);
+                SearchDocumentBuilder
+                    .Verify(
+                        b => b.UpdateDownloadCount("C", SearchFilters.IncludePrereleaseAndSemVer2, 5),
                         Times.Once);
             }
 
