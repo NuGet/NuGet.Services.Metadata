@@ -294,6 +294,12 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
                 if (ShouldOverrideDownloads(packageId))
                 {
+                    _logger.LogInformation(
+                        "Overriding downloads of package {PackageId} from {Downloads} to {DownloadsOverride}",
+                        packageId,
+                        originalData.GetDownloadCount(packageId),
+                        downloadOverrides[packageId]);
+
                     var versions = downloadData.Value.Keys;
 
                     result.SetDownloadCount(

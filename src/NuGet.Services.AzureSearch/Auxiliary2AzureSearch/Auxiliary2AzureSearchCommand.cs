@@ -365,11 +365,13 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 nonNormalizedVersionCount);
         }
 
-        private void ApplyDownloadOverrides(SortedDictionary<string, long> changes, IReadOnlyDictionary<string, long> overrides)
+        private void ApplyDownloadOverrides(
+            SortedDictionary<string, long> downloadChanges,
+            IReadOnlyDictionary<string, long> downloadOverrides)
         {
-            foreach (var downloadOverride in overrides)
+            foreach (var downloadOverride in downloadOverrides)
             {
-                if (!changes.TryGetValue(downloadOverride.Key, out var downloadCount))
+                if (!downloadChanges.TryGetValue(downloadOverride.Key, out var downloadCount))
                 {
                     _logger.LogInformation(
                         "Skipping download override for package {PackageId} as its downloads haven't changed",
@@ -390,7 +392,13 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                     continue;
                 }
 
-                changes[downloadOverride.Key] = downloadOverride.Value;
+                _logger.LogInformation(
+                    "Overriding downloads of package {PackageId} from {Downloads} to {DownloadsOverride}",
+                    downloadOverride.Key,
+                    downloadCount,
+                    downloadOverride.Value);
+
+                downloadChanges[downloadOverride.Key] = downloadOverride.Value;
             }
         }
     }
