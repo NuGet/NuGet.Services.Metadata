@@ -144,10 +144,6 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             _logger.LogInformation("Removing invalid IDs and versions from the new data.");
             CleanDownloadData(newData);
 
-            _logger.LogInformation("Overriding download count data.");
-            var overrideData = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
-            overrideData.Update(newData);
-
             _logger.LogInformation("Detecting download count changes.");
             var changes = _downloadSetComparer.Compare(oldResult.Data, newData);
             var idBag = new ConcurrentBag<string>(changes.Keys);
@@ -157,6 +153,12 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             {
                 return false;
             }
+
+            // Apply download overrides to the changed downloads. Note that this means that download
+            // overrides aren't applied until a package's downloads change.
+            _logger.LogInformation("Overriding download count data.");
+            var overrides = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
+            ApplyDownloadOverrides(changes, overrides);
 
             _logger.LogInformation(
                 "Starting {Count} workers pushing download count changes to Azure Search.",
@@ -361,6 +363,35 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 invalidIdCount,
                 invalidVersionCount,
                 nonNormalizedVersionCount);
+        }
+
+        private void ApplyDownloadOverrides(SortedDictionary<string, long> changes, IReadOnlyDictionary<string, long> overrides)
+        {
+            foreach (var downloadOverride in overrides)
+            {
+                if (!changes.TryGetValue(downloadOverride.Key, out var downloadCount))
+                {
+                    _logger.LogInformation(
+                        "Skipping download override for package {PackageId} as its downloads haven't changed",
+                        downloadOverride.Key);
+                    continue;
+                }
+
+                // Apply the downloads override only if the package has fewer total downloads.
+                // In effect, this removes a package's manual boost once its total downloads exceed the override.
+                if (downloadCount >= downloadOverride.Value)
+                {
+                    _logger.LogInformation(
+                        "Skipping download override for package {PackageId} as its downloads of {Downloads} are " +
+                        "greater than its override of {DownloadsOverride}",
+                        downloadOverride.Key,
+                        downloadCount,
+                        downloadOverride.Value);
+                    continue;
+                }
+
+                changes[downloadOverride.Key] = downloadOverride.Value;
+            }
         }
     }
 }

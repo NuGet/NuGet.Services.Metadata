@@ -65,10 +65,10 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 _auxiliaryFileClient
                     .Setup(x => x.LoadDownloadDataAsync())
                     .ReturnsAsync(() => _downloads);
-                _downloadOverrides = new Dictionary<string, long>();
+                _downloadOverrides = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
                 _auxiliaryFileClient
                     .Setup(x => x.LoadDownloadOverridesAsync())
-                    .ReturnsAsync(() => new DownloadOverrideData(_downloadOverrides));
+                    .ReturnsAsync(() => _downloadOverrides);
                 _verifiedPackages = new HashSet<string>();
                 _auxiliaryFileClient
                     .Setup(x => x.LoadVerifiedPackagesAsync())
@@ -376,7 +376,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 {
                     Key = 1,
                     Id = "A",
-                    Owners = new[] { new User { Username = "OwnerA" } },
                     Packages = new[]
                     {
                         new Package { Version = "1.0.0" },
@@ -389,7 +388,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 {
                     Key = 2,
                     Id = "B",
-                    Owners = new[] { new User { Username = "OwnerB" } },
                     Packages = new[]
                     {
                         new Package { Version = "3.0.0" },
@@ -402,7 +400,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 {
                     Key = 3,
                     Id = "C",
-                    Owners = new[] { new User { Username = "OwnerC" } },
                     Packages = new[]
                     {
                         new Package { Version = "5.0.0" },
@@ -417,28 +414,34 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 _downloadOverrides["A"] = 55;
                 _downloadOverrides["b"] = 66;
 
-                await _target.ProduceWorkAsync(_work, _token);
+                var result = await _target.ProduceWorkAsync(_work, _token);
 
+                // Documents should have overriden downloads.
                 var work = _work.Reverse().ToList();
                 Assert.Equal(3, work.Count);
 
                 Assert.Equal("A", work[0].PackageId);
                 Assert.Equal("1.0.0", work[0].Packages[0].Version);
                 Assert.Equal("2.0.0", work[0].Packages[1].Version);
-                Assert.Equal(new[] { "OwnerA" }, work[0].Owners);
                 Assert.Equal(55, work[0].TotalDownloadCount);
 
                 Assert.Equal("B", work[1].PackageId);
                 Assert.Equal("3.0.0", work[1].Packages[0].Version);
                 Assert.Equal("4.0.0", work[1].Packages[1].Version);
-                Assert.Equal(new[] { "OwnerB" }, work[1].Owners);
                 Assert.Equal(66, work[1].TotalDownloadCount);
 
                 Assert.Equal("C", work[2].PackageId);
                 Assert.Equal("5.0.0", work[2].Packages[0].Version);
                 Assert.Equal("6.0.0", work[2].Packages[1].Version);
-                Assert.Equal(new[] { "OwnerC" }, work[2].Owners);
                 Assert.Equal(5, work[2].TotalDownloadCount);
+
+                // Downloads auxiliary file should have original downloads.
+                Assert.Equal(12, result.Downloads["A"]["1.0.0"]);
+                Assert.Equal(23, result.Downloads["A"]["2.0.0"]);
+                Assert.Equal(5, result.Downloads["B"]["3.0.0"]);
+                Assert.Equal(4, result.Downloads["B"]["4.0.0"]);
+                Assert.Equal(2, result.Downloads["C"]["5.0.0"]);
+                Assert.Equal(3, result.Downloads["C"]["6.0.0"]);
             }
 
             [Fact]
@@ -448,7 +451,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 {
                     Key = 1,
                     Id = "A",
-                    Owners = new[] { new User { Username = "OwnerA" } },
                     Packages = new[]
                     {
                         new Package { Version = "1.0.0" },
@@ -461,7 +463,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 {
                     Key = 2,
                     Id = "B",
-                    Owners = new[] { new User { Username = "OwnerB" } },
                     Packages = new[]
                     {
                         new Package { Version = "3.0.0" },
@@ -474,7 +475,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 {
                     Key = 3,
                     Id = "C",
-                    Owners = new[] { new User { Username = "OwnerC" }, new User { Username = "OwnerD" } },
                     Packages = new[]
                     {
                         new Package { Version = "5.0.0" },
@@ -488,27 +488,33 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 _downloadOverrides["C"] = 66;
                 _downloadOverrides["D"] = 77;
 
-                await _target.ProduceWorkAsync(_work, _token);
+                var result = await _target.ProduceWorkAsync(_work, _token);
 
+                // Documents should have overriden downloads.
                 var work = _work.Reverse().ToList();
                 Assert.Equal(3, work.Count);
 
                 Assert.Equal("A", work[0].PackageId);
                 Assert.Equal("1.0.0", work[0].Packages[0].Version);
                 Assert.Equal("2.0.0", work[0].Packages[1].Version);
-                Assert.Equal(new[] { "OwnerA" }, work[0].Owners);
                 Assert.Equal(300, work[0].TotalDownloadCount);
 
                 Assert.Equal("B", work[1].PackageId);
                 Assert.Equal("3.0.0", work[1].Packages[0].Version);
                 Assert.Equal("4.0.0", work[1].Packages[1].Version);
-                Assert.Equal(new[] { "OwnerB" }, work[1].Owners);
                 Assert.Equal(9, work[1].TotalDownloadCount);
 
                 Assert.Equal("C", work[2].PackageId);
                 Assert.Equal("5.0.0", work[2].Packages[0].Version);
-                Assert.Equal(new[] { "OwnerC", "OwnerD" }, work[2].Owners);
                 Assert.Equal(0, work[2].TotalDownloadCount);
+
+                // Downloads auxiliary file should have original downloads.
+                Assert.Equal(100, result.Downloads["A"]["1.0.0"]);
+                Assert.Equal(200, result.Downloads["A"]["2.0.0"]);
+                Assert.Equal(5, result.Downloads["B"]["3.0.0"]);
+                Assert.Equal(4, result.Downloads["B"]["4.0.0"]);
+                Assert.DoesNotContain("C", result.Downloads.Keys);
+                Assert.DoesNotContain("D", result.Downloads.Keys);
             }
 
             private void InitializePackagesFromPackageRegistrations()

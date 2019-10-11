@@ -10,7 +10,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
     {
         private static readonly JsonSerializer Serializer = new JsonSerializer();
 
-        public static DownloadOverrideData Load(string fileName, ILoader loader, ILogger logger)
+        public static IReadOnlyDictionary<string, long> Load(string fileName, ILoader loader, ILogger logger)
         {
             try
             {
@@ -18,7 +18,9 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                 {
                     var downloadOverrides = Serializer.Deserialize<Dictionary<string, long>>(reader);
 
-                    return new DownloadOverrideData(downloadOverrides);
+                    return new Dictionary<string, long>(
+                        downloadOverrides,
+                        StringComparer.OrdinalIgnoreCase);
                 }
             }
             catch (Exception ex)

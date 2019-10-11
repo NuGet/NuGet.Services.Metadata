@@ -77,7 +77,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     logger: _logger));
         }
 
-        public async Task<DownloadOverrideData> LoadDownloadOverridesAsync()
+        public async Task<IReadOnlyDictionary<string, long>> LoadDownloadOverridesAsync()
         {
             return await LoadAuxiliaryFileAsync(
                 _options.Value.AuxiliaryDataStorageDownloadOverridesPath,
