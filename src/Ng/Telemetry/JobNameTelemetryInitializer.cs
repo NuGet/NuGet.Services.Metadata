@@ -23,8 +23,8 @@ namespace Ng
 
         public void Initialize(ITelemetry telemetry)
         {
-            telemetry.Context.Properties[JobNameKey] = _jobName;
-            telemetry.Context.Properties[InstanceNameKey] = _instanceName;
+            telemetry.Context.GlobalProperties[JobNameKey] = _jobName;
+            telemetry.Context.GlobalProperties[InstanceNameKey] = _instanceName;
         }
     }
 }

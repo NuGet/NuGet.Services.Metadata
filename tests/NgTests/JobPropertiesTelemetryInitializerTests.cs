@@ -49,7 +49,7 @@ namespace NgTests
 
             initializer.Initialize(_telemetry.Object);
 
-            Assert.Empty(_telemetryContext.Properties);
+            Assert.Empty(_telemetryContext.GlobalProperties);
         }
 
         [Fact]
@@ -62,7 +62,7 @@ namespace NgTests
 
             initializer.Initialize(_telemetry.Object);
 
-            Assert.Empty(_telemetryContext.Properties);
+            Assert.Empty(_telemetryContext.GlobalProperties);
         }
 
         [Fact]
@@ -87,9 +87,9 @@ namespace NgTests
 
             initializer.Initialize(telemetry.Object);
 
-            Assert.Equal(2, telemetryContext.Properties.Count);
-            Assert.Equal("b", telemetryContext.Properties["a"]);
-            Assert.Equal("d", telemetryContext.Properties["c"]);
+            Assert.Equal(2, telemetryContext.GlobalProperties.Count);
+            Assert.Equal("b", telemetryContext.GlobalProperties["a"]);
+            Assert.Equal("d", telemetryContext.GlobalProperties["c"]);
         }
     }
 }

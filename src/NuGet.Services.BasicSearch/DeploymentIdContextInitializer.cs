@@ -14,7 +14,7 @@ namespace NuGet.Services.BasicSearch
         {
             if (SafeRoleEnvironment.TryGetDeploymentId(out var id))
             {
-                telemetry.Context.Properties[DeploymentId] = id;
+                telemetry.Context.GlobalProperties[DeploymentId] = id;
             }
         }
     }

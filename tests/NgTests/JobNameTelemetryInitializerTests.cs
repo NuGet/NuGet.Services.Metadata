@@ -43,9 +43,9 @@ namespace NgTests
 
             initializer.Initialize(telemetry.Object);
 
-            Assert.Equal(2, telemetryContext.Properties.Count);
-            Assert.Equal("a", telemetryContext.Properties["JobName"]);
-            Assert.Equal("b", telemetryContext.Properties["InstanceName"]);
+            Assert.Equal(2, telemetryContext.GlobalProperties.Count);
+            Assert.Equal("a", telemetryContext.GlobalProperties["JobName"]);
+            Assert.Equal("b", telemetryContext.GlobalProperties["InstanceName"]);
         }
     }
 }

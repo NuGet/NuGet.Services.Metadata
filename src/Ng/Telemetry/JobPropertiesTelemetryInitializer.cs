@@ -23,7 +23,7 @@ namespace Ng
             {
                 foreach (var dimension in _telemetryService.GlobalDimensions)
                 {
-                    telemetry.Context.Properties[dimension.Key] = dimension.Value;
+                    telemetry.Context.GlobalProperties[dimension.Key] = dimension.Value;
                 }
             }
         }
