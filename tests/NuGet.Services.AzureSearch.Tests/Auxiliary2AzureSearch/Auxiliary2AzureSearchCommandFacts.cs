@@ -6,7 +6,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Castle.Core.Logging;
 using Microsoft.Azure.Search.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using NuGet.Services.AzureSearch.AuxiliaryFiles;
@@ -253,6 +255,47 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                             d["C"].Total == 5 &&
                             d["C"]["5.0.0"] == 2 &&
                             d["C"]["6.0.0"] == 3),
+                        It.IsAny<IAccessCondition>()),
+                    Times.Once);
+            }
+
+            [Fact]
+            public async Task AlwaysAppliesDownloadOverrides()
+            {
+                DownloadSetComparer
+                    .Setup(c => c.Compare(It.IsAny<DownloadData>(), It.IsAny<DownloadData>()))
+                    .Returns<DownloadData, DownloadData>((oldData, newData) =>
+                    {
+                        var config = new Auxiliary2AzureSearchConfiguration();
+                        var telemetry = Mock.Of<IAzureSearchTelemetryService>();
+                        var logger = Mock.Of<ILogger<DownloadSetComparer>>();
+                        var options = new Mock<IOptionsSnapshot<Auxiliary2AzureSearchConfiguration>>();
+
+                        options.Setup(o => o.Value).Returns(config);
+
+                        return new DownloadSetComparer(telemetry, options.Object, logger)
+                            .Compare(oldData, newData);
+                    });
+
+                // Download override should be applied even if the package's downloads haven't changed.
+                OldDownloadData.SetDownloadCount("A", "1.0.0", 1);
+                NewDownloadData.SetDownloadCount("A", "1.0.0", 1);
+                DownloadOverrides["A"] = 2;
+
+                await Target.ExecuteAsync();
+
+                // Documents should have new data with overriden downloads.
+                SearchDocumentBuilder
+                    .Verify(
+                        b => b.UpdateDownloadCount("A", SearchFilters.IncludePrereleaseAndSemVer2, 2),
+                        Times.Once);
+
+                // Downloads auxiliary file should have new data without overriden downloads.
+                DownloadDataClient.Verify(
+                    c => c.ReplaceLatestIndexedAsync(
+                        It.Is<DownloadData>(d =>
+                            d["A"].Total == 1 &&
+                            d["A"]["1.0.0"] == 1),
                         It.IsAny<IAccessCondition>()),
                     Times.Once);
             }

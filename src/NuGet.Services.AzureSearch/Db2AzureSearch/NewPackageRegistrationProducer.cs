@@ -58,7 +58,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             // separate from downloads data as the original data will be persisted to auxiliary data, whereas the
             // overriden data will be persisted to Azure Search.
             var downloadOverrides = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
-            var overridenDownloads = ApplyDownloadOverrides(downloads, downloadOverrides);
+            var overridenDownloads = downloads.ApplyDownloadOverrides(downloadOverrides, _logger);
 
             // Fetch the verified packages file. This is not used inside the index but is used at query-time in the
             // Azure Search service. We want to copy this file to the local region's storage container to improve
@@ -281,65 +281,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         private async Task<IEntitiesContext> CreateContextAsync()
         {
             return await _contextFactory.CreateAsync(readOnly: true);
-        }
-
-        private DownloadData ApplyDownloadOverrides(DownloadData originalData, IReadOnlyDictionary<string, long> downloadOverrides)
-        {
-            // Create a copy of the original data and apply overrides as we copy.
-            var result = new DownloadData();
-
-            foreach (var downloadData in originalData)
-            {
-                var packageId = downloadData.Key;
-
-                if (ShouldOverrideDownloads(packageId))
-                {
-                    _logger.LogInformation(
-                        "Overriding downloads of package {PackageId} from {Downloads} to {DownloadsOverride}",
-                        packageId,
-                        originalData.GetDownloadCount(packageId),
-                        downloadOverrides[packageId]);
-
-                    var versions = downloadData.Value.Keys;
-
-                    result.SetDownloadCount(
-                        packageId,
-                        versions.First(),
-                        downloadOverrides[packageId]);
-                }
-                else
-                {
-                    foreach (var versionData in downloadData.Value)
-                    {
-                        result.SetDownloadCount(downloadData.Key, versionData.Key, versionData.Value);
-                    }
-                }
-            }
-
-            bool ShouldOverrideDownloads(string packageId)
-            {
-                if (!downloadOverrides.TryGetValue(packageId, out var downloadOverride))
-                {
-                    return false;
-                }
-
-                // Apply the downloads override only if the package has fewer total downloads.
-                // In effect, this removes a package's manual boost once its total downloads exceed the override.
-                if (originalData[packageId].Total >= downloadOverride)
-                {
-                    _logger.LogInformation(
-                        "Skipping download override for package {PackageId} as its downloads of {Downloads} are " +
-                        "greater than its override of {DownloadsOverride}",
-                        packageId,
-                        originalData[packageId].Total,
-                        downloadOverride);
-                    return false;
-                }
-
-                return true;
-            }
-
-            return result;
         }
 
         private class PackageRegistrationRange
