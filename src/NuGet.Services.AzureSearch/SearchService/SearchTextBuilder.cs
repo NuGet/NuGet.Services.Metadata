@@ -145,15 +145,16 @@ namespace NuGet.Services.AzureSearch.SearchService
                 }
             }
 
-            // Handle the exact match case. If the search query is a single unscoped term is also a valid package
-            // ID, mega boost the document that has this package ID. Only consider the query to be a package ID has
-            // symbols (a.k.a. separators) in it.
+            // Handle the exact match and partial match case. If the search query is a single unscoped term that is
+            // also a valid package ID, mega boost the document that has this package ID. Also, boost documents that
+            // match all tokens. Only consider the query to be a package ID if it has symbols (a.k.a. separators) in it.
             if (scopedTerms.Count == 0
                 && unscopedTerms.Count == 1
                 && unscopedTerms[0].Length <= PackageIdValidator.MaxPackageIdLength
                 && unscopedTerms[0].IndexOfAny(PackageIdSeparators) >= 0
                 && PackageIdValidator.IsValidPackageId(unscopedTerms[0]))
             {
+                builder.AppendBoostIfMatchAllTerms(unscopedTerms[0].Split(PackageIdSeparators), _options.Value.MatchAllTermsBoost);
                 builder.AppendExactMatchPackageIdBoost(unscopedTerms[0], _options.Value.ExactMatchBoost);
             }
 
