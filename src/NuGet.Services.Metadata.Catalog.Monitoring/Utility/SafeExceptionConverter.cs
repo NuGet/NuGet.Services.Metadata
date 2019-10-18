@@ -42,7 +42,7 @@ namespace NuGet.Services.Metadata.Catalog.Monitoring
 
         ///<remarks>
         /// This class needs to exist because System.Exception is not marked with as Serializable attribute
-        ///  and old JSON.NET behaviour was incorrectly treating all ISerializable as Serializable
+        /// and old JSON.NET behaviour was incorrectly treating all ISerializable as Serializable
         /// This was changed between 10.x and 11.x. See https://github.com/JamesNK/Newtonsoft.Json/issues/1622 for more details
         /// For our purposes, passing through the GetObjectData call from a custom class marked as serialable is sufficient
         ///</remarks>
