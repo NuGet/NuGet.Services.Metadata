@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using NuGet.Indexing;
 using NuGet.Packaging;
@@ -16,6 +17,10 @@ namespace NuGet.Services.AzureSearch.SearchService
     {
         public const string MatchAllDocumentsQuery = "*";
         private static readonly char[] PackageIdSeparators = new[] { '.', '-', '_' };
+        private static readonly Regex TokenizePackageIdRegex = new Regex(
+            @"((?<=[a-z])(?=[A-Z])|((?<=[0-9])(?=[A-Za-z]))|((?<=[A-Za-z])(?=[0-9]))|[.\-_,;:'*#!~+()\[\]{}\s])",
+            RegexOptions.None,
+            matchTimeout: TimeSpan.FromSeconds(10));
 
         private static readonly IReadOnlyDictionary<QueryField, string> FieldNames = new Dictionary<QueryField, string>
         {
@@ -170,11 +175,19 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 builder.AppendTerms(unscopedTerms);
 
-                // Generate a clause to favor results that match all unscoped terms.
-                // We don't need to include scoped terms as these are already required.
+                // Favor results that match all unscoped terms.
+                // We don't need to include scoped terms as these are required.
                 if (unscopedTerms.Count > 1)
                 {
                     builder.AppendBoostIfMatchAllTerms(unscopedTerms, _options.Value.MatchAllTermsBoost);
+                }
+
+                // Try to favor results that match all unscoped terms after tokenization.
+                // TODO: Consider merging "match all unscoped term" clauses after shingling is added.
+                var tokenizedUnscopedTerms = unscopedTerms.SelectMany(Tokenize).ToList();
+                if (tokenizedUnscopedTerms.Count > unscopedTerms.Count)
+                {
+                    builder.AppendBoostIfMatchAllTerms(tokenizedUnscopedTerms, _options.Value.MatchAllTermsBoost);
                 }
             }
 
@@ -231,6 +244,25 @@ namespace NuGet.Services.AzureSearch.SearchService
         private static bool IsIdWithSeparator(string query)
         {
             return query.IndexOfAny(PackageIdSeparators) >= 0 && IsId(query);
+        }
+
+        private static IReadOnlyList<string> Tokenize(string term)
+        {
+            return TokenizePackageIdRegex
+                .Split(term)
+                .Where(t => !string.IsNullOrEmpty(t))
+                .Where(t => !IsPackageIdSeparator(t))
+                .ToList();
+        }
+
+        private static bool IsPackageIdSeparator(string input)
+        {
+            if (input.Length != 1)
+            {
+                return false;
+            }
+
+            return PackageIdSeparators.Any(separator => input[0] == separator);
         }
     }
 }
