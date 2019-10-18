@@ -92,6 +92,7 @@
     <Compile Include="StuckIndexWriter.cs" />
     <Compile Include="Infrastructure\TestLoggerFactory.cs" />
     <Compile Include="Infrastructure\TestLogger.cs" />
+    <Compile Include="TestableTelemetry.cs" />
     <Compile Include="UriUtilsTests.cs" />
     <Compile Include="PackageTimestampMetadataTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
