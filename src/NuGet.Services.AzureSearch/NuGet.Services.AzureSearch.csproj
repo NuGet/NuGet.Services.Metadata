@@ -246,7 +246,7 @@
       <Version>5.0.3</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Services.Validation.Common.Job">
-      <Version>4.3.0-ryuyu-update-extensions-3142787</Version>
+      <Version>4.3.0-dev-3159955</Version>
     </PackageReference>
     <PackageReference Include="NuGet.Build.Tasks.Pack">
       <Version>4.8.0</Version>
