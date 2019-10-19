@@ -217,6 +217,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 
                 _configStorage.AuxiliaryDataStorageContainer = "my-container";
                 _configStorage.AuxiliaryDataStorageDownloadsPath = "my-downloads.json";
+                _configStorage.AuxiliaryDataStorageDownloadOverridesPath = "my-download-overrides.json";
                 _configStorage.AuxiliaryDataStorageVerifiedPackagesPath = "my-verified-packages.json";
                 _configStorage.AuxiliaryDataStorageExcludedPackagesPath = "my-excluded-packages.json";
                 _optionsStorage.Setup(x => x.Value).Returns(() => _configStorage);
