@@ -143,6 +143,16 @@ namespace NuGet.Services.AzureSearch.SearchService
                 {
                     builder.AppendBoostIfMatchAllTerms(unscopedTerms, _options.Value.MatchAllTermsBoost);
                 }
+
+                var tokenizedTerms = unscopedTerms
+                    .SelectMany(term => term.Split(PackageIdSeparators))
+                    .Where(term => !string.IsNullOrEmpty(term))
+                    .ToList();
+
+                if (tokenizedTerms.Count > unscopedTerms.Count)
+                {
+                    builder.AppendBoostIfMatchAllTerms(tokenizedTerms, _options.Value.MatchAllTermsBoost);
+                }
             }
 
             // Handle the exact match and partial match case. If the search query is a single unscoped term that is
@@ -154,7 +164,6 @@ namespace NuGet.Services.AzureSearch.SearchService
                 && unscopedTerms[0].IndexOfAny(PackageIdSeparators) >= 0
                 && PackageIdValidator.IsValidPackageId(unscopedTerms[0]))
             {
-                builder.AppendBoostIfMatchAllTerms(unscopedTerms[0].Split(PackageIdSeparators), _options.Value.MatchAllTermsBoost);
                 builder.AppendExactMatchPackageIdBoost(unscopedTerms[0], _options.Value.ExactMatchBoost);
             }
 
