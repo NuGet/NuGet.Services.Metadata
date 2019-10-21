@@ -177,10 +177,10 @@ namespace NuGet.Services.AzureSearch.SearchService
 
                 // Favor results that match all unscoped terms.
                 // We don't need to include scoped terms as these are required.
-                if (unscopedTerms.Count > 1)
-                {
-                    builder.AppendBoostIfMatchAllTerms(unscopedTerms, _options.Value.MatchAllTermsBoost);
-                }
+                //if (unscopedTerms.Count > 1)
+                //{
+                //    builder.AppendBoostIfMatchAllTerms(unscopedTerms, _options.Value.MatchAllTermsBoost);
+                //}
 
                 // Try to favor results that match all unscoped terms after tokenization.
                 // TODO: Consider merging "match all unscoped term" clauses after shingling is added.
