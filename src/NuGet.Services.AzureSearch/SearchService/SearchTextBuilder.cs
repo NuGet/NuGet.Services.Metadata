@@ -17,8 +17,9 @@ namespace NuGet.Services.AzureSearch.SearchService
     {
         public const string MatchAllDocumentsQuery = "*";
         private static readonly char[] PackageIdSeparators = new[] { '.', '-', '_' };
+        private static readonly char[] TokenizationSeparators = new[] { '.', '-', '_', ',', ';' };
         private static readonly Regex TokenizePackageIdRegex = new Regex(
-            @"((?<=[a-z])(?=[A-Z])|((?<=[0-9])(?=[A-Za-z]))|((?<=[A-Za-z])(?=[0-9]))|[.\-_])",
+            @"((?<=[a-z])(?=[A-Z])|((?<=[0-9])(?=[A-Za-z]))|((?<=[A-Za-z])(?=[0-9]))|[.\-_,;])",
             RegexOptions.None,
             matchTimeout: TimeSpan.FromSeconds(10));
 
@@ -250,7 +251,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         /// Tokenizes terms. This is similar to <see cref="PackageIdCustomAnalyzer"/> with the following differences:
         /// 
         /// 1. Does not split terms on whitespace
-        /// 2. Does not split terms on the following characters: , ; : ' * # ! ~ + ( ) [ ] { }
+        /// 2. Does not split terms on the following characters: ' : * # ! ~ + ( ) [ ] { }
         /// </summary>
         /// <param name="term"></param>
         /// <returns></returns>
@@ -265,7 +266,7 @@ namespace NuGet.Services.AzureSearch.SearchService
             return TokenizePackageIdRegex
                 .Split(term)
                 .Where(t => !string.IsNullOrEmpty(t))
-                .Where(t => !IsPackageIdSeparator(t))
+                .Where(t => !IsTokenizationSeparator(t))
                 .ToList();
         }
 
@@ -277,6 +278,16 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
 
             return PackageIdSeparators.Any(separator => input[0] == separator);
+        }
+
+        private static bool IsTokenizationSeparator(string input)
+        {
+            if (input.Length != 1)
+            {
+                return false;
+            }
+
+            return TokenizationSeparators.Any(separator => input[0] == separator);
         }
     }
 }
