@@ -18,7 +18,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         public const string MatchAllDocumentsQuery = "*";
         private static readonly char[] PackageIdSeparators = new[] { '.', '-', '_' };
         private static readonly Regex TokenizePackageIdRegex = new Regex(
-            @"((?<=[a-z])(?=[A-Z])|((?<=[0-9])(?=[A-Za-z]))|((?<=[A-Za-z])(?=[0-9]))|[.\-_,;:'*#!~+()\[\]{}\s])",
+            @"((?<=[a-z])(?=[A-Z])|((?<=[0-9])(?=[A-Za-z]))|((?<=[A-Za-z])(?=[0-9]))|[.\-_])",
             RegexOptions.None,
             matchTimeout: TimeSpan.FromSeconds(10));
 
@@ -183,11 +183,11 @@ namespace NuGet.Services.AzureSearch.SearchService
                 }
 
                 // Try to favor results that match all unscoped terms after tokenization.
-                // TODO: Consider merging "match all unscoped term" clauses after shingling is added.
-                var tokenizedUnscopedTerms = unscopedTerms.SelectMany(Tokenize).ToList();
-                if (tokenizedUnscopedTerms.Count > unscopedTerms.Count)
+                // Don't generate this clause if it is equal to or a subset of the "match all unscoped terms" clause.
+                var tokenizedUnscopedTerms = new HashSet<string>(unscopedTerms.SelectMany(Tokenize));
+                if (tokenizedUnscopedTerms.Count > unscopedTerms.Count || !tokenizedUnscopedTerms.All(unscopedTerms.Contains))
                 {
-                    builder.AppendBoostIfMatchAllTerms(tokenizedUnscopedTerms, _options.Value.MatchAllTermsBoost);
+                    builder.AppendBoostIfMatchAllTerms(tokenizedUnscopedTerms.ToList(), _options.Value.MatchAllTermsBoost);
                 }
             }
 
@@ -246,8 +246,22 @@ namespace NuGet.Services.AzureSearch.SearchService
             return query.IndexOfAny(PackageIdSeparators) >= 0 && IsId(query);
         }
 
+        /// <summary>
+        /// Tokenizes terms. This is similar to <see cref="PackageIdCustomAnalyzer"/> with the following differences:
+        /// 
+        /// 1. Does not split terms on whitespace
+        /// 2. Does not split terms on the following characters: , ; : ' * # ! ~ + ( ) [ ] { }
+        /// </summary>
+        /// <param name="term"></param>
+        /// <returns></returns>
         private static IReadOnlyList<string> Tokenize(string term)
         {
+            // Don't tokenize phrases. These are multiple terms that were wrapped in quotes.
+            if (term.Any(char.IsWhiteSpace))
+            {
+                return new List<string> { term };
+            }
+
             return TokenizePackageIdRegex
                 .Split(term)
                 .Where(t => !string.IsNullOrEmpty(t))
