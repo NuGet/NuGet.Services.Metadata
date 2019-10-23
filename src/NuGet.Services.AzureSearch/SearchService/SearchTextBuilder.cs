@@ -251,7 +251,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         /// Tokenizes terms. This is similar to <see cref="PackageIdCustomAnalyzer"/> with the following differences:
         /// 
         /// 1. Does not split terms on whitespace
-        /// 2. Does not split terms on the following characters: ' : * # ! ~ + ( ) [ ] { }
+        /// 2. Does not split terms on the following characters: ' ; : * # ! ~ + ( ) [ ] { }
         /// </summary>
         /// <param name="term"></param>
         /// <returns></returns>
