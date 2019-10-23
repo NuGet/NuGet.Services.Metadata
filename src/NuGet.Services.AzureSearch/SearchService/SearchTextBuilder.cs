@@ -17,9 +17,9 @@ namespace NuGet.Services.AzureSearch.SearchService
     {
         public const string MatchAllDocumentsQuery = "*";
         private static readonly char[] PackageIdSeparators = new[] { '.', '-', '_' };
-        private static readonly char[] TokenizationSeparators = new[] { '.', '-', '_', ',', ';' };
+        private static readonly char[] TokenizationSeparators = new[] { '.', '-', '_', ',' };
         private static readonly Regex TokenizePackageIdRegex = new Regex(
-            @"((?<=[a-z])(?=[A-Z])|((?<=[0-9])(?=[A-Za-z]))|((?<=[A-Za-z])(?=[0-9]))|[.\-_,;])",
+            @"((?<=[a-z])(?=[A-Z])|((?<=[0-9])(?=[A-Za-z]))|((?<=[A-Za-z])(?=[0-9]))|[.\-_,])",
             RegexOptions.None,
             matchTimeout: TimeSpan.FromSeconds(10));
 

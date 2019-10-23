@@ -258,7 +258,6 @@ namespace NuGet.Services.AzureSearch.SearchService
                     { "foo_bar buzz", "foo_bar buzz (+foo_bar +buzz)^2 (+foo +bar +buzz)^2" },
                     { "foo-bar buzz", @"foo\-bar buzz (+foo\-bar +buzz)^2 (+foo +bar +buzz)^2" },
                     { "foo,bar, buzz", @"foo,bar, buzz (+foo,bar, +buzz)^2 (+foo +bar +buzz)^2" },
-                    { "foo;bar; buzz", @"foo;bar; buzz (+foo;bar; +buzz)^2 (+foo +bar +buzz)^2" },
                     { "fooBar buzz", "fooBar buzz (+fooBar +buzz)^2 (+foo +Bar +buzz)^2" },
                     { "foo5 buzz", "foo5 buzz (+foo5 +buzz)^2 (+foo +5 +buzz)^2" },
                     { "FOO5 buzz", "FOO5 buzz (+FOO5 +buzz)^2 (+FOO +5 +buzz)^2" },
