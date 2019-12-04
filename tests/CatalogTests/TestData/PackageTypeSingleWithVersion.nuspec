@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+  <metadata>
+    <id>PackageTypeSingleWithVersion</id>
+    <version>0.1.0</version>
+    <title>PackageTypeSingleWithVersion</title>
+    <authors>PackageTypeSingleWithVersion</authors>
+    <description>PackageTypeSingleWithVersion</description>
+    <packageTypes>
+      <packageType name="type1" version="1.0.0" />
+    </packageTypes>
+  </metadata>
+</package>
