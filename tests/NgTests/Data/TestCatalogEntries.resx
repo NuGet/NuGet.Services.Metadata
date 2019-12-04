@@ -327,6 +327,10 @@
 			"@id": "packageEntry",
 			"@container": "@set"
 		},
+		"packageTypes": {
+			"@id": "packageType",
+			"@container": "@set"
+		},
 		"supportedFrameworks": {
 			"@id": "supportedFramework",
 			"@container": "@set"
@@ -387,6 +391,10 @@
 			"@id": "packageEntry",
 			"@container": "@set"
 		},
+		"packageTypes": {
+			"@id": "packageType",
+			"@container": "@set"
+		},
 		"supportedFrameworks": {
 			"@id": "supportedFramework",
 			"@container": "@set"
@@ -445,6 +453,10 @@
 		},
 		"packageEntries": {
 			"@id": "packageEntry",
+			"@container": "@set"
+		},
+		"packageTypes": {
+			"@id": "packageType",
 			"@container": "@set"
 		},
 		"supportedFrameworks": {
@@ -701,6 +713,10 @@
       "@id": "packageEntry",
       "@container": "@set"
     },
+		"packageTypes": {
+			"@id": "packageType",
+			"@container": "@set"
+		},
     "supportedFrameworks": {
       "@id": "supportedFramework",
       "@container": "@set"
@@ -850,6 +866,10 @@
       "@id": "packageEntry",
       "@container": "@set"
     },
+		"packageTypes": {
+			"@id": "packageType",
+			"@container": "@set"
+		},
     "supportedFrameworks": {
       "@id": "supportedFramework",
       "@container": "@set"
@@ -1120,6 +1140,10 @@
       "@id": "packageEntry",
       "@container": "@set"
     },
+		"packageTypes": {
+			"@id": "packageType",
+			"@container": "@set"
+		},
     "supportedFrameworks": {
       "@id": "supportedFramework",
       "@container": "@set"
@@ -1184,6 +1208,10 @@
       "@id": "packageEntry",
       "@container": "@set"
     },
+		"packageTypes": {
+			"@id": "packageType",
+			"@container": "@set"
+		},
     "supportedFrameworks": {
       "@id": "supportedFramework",
       "@container": "@set"
@@ -1349,6 +1377,10 @@
       "@id": "packageEntry",
       "@container": "@set"
     },
+		"packageTypes": {
+			"@id": "packageType",
+			"@container": "@set"
+		},
     "supportedFrameworks": {
       "@id": "supportedFramework",
       "@container": "@set"
@@ -1413,6 +1445,10 @@
       "@id": "packageEntry",
       "@container": "@set"
     },
+		"packageTypes": {
+			"@id": "packageType",
+			"@container": "@set"
+		},
     "supportedFrameworks": {
       "@id": "supportedFramework",
       "@container": "@set"
@@ -1632,6 +1668,10 @@
       "@id": "packageEntry",
       "@container": "@set"
     },
+		"packageTypes": {
+			"@id": "packageType",
+			"@container": "@set"
+		},
     "supportedFrameworks": {
       "@id": "supportedFramework",
       "@container": "@set"
