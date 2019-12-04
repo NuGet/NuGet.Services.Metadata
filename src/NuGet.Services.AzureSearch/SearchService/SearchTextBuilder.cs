@@ -201,7 +201,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     builder.AppendScopedTerm(
                         fieldName: IndexFields.TokenizedPackageId,
                         term: term,
-                        required: true,
+                        required: false,
                         prefixSearch: true);
                 }
             }
