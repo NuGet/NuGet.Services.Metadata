@@ -191,19 +191,11 @@ namespace NuGet.Services.AzureSearch.SearchService
                     builder.AppendBoostIfMatchAllTerms(tokenizedUnscopedTerms.ToList(), _options.Value.MatchAllTermsBoost);
                 }
 
-                foreach (var term in tokenizedUnscopedTerms)
-                {
-                    if (term.StartsWith("*"))
-                    {
-                        continue;
-                    }
-
-                    builder.AppendScopedTerm(
-                        fieldName: IndexFields.TokenizedPackageId,
-                        term: term,
-                        required: false,
-                        prefixSearch: true);
-                }
+                builder.AppendScopedTerm(
+                    fieldName: IndexFields.TokenizedPackageId,
+                    term: unscopedTerms.Last(),
+                    required: false,
+                    prefixSearch: true);
             }
 
             // Handle the exact match case. If the search query is a single unscoped term is also a valid package
