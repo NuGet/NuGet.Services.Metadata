@@ -26,7 +26,7 @@ namespace NuGet.Services.AzureSearch
         string NormalizedVersion { get; set; }
         string OriginalVersion { get; set; }
         string PackageId { get; set; }
-        string TokenizedPackageId { get; set; }
+        string PackageIdPrefixes { get; set; }
         bool? Prerelease { get; set; }
         string ProjectUrl { get; set; }
         DateTimeOffset? Published { get; set; }
@@ -37,5 +37,6 @@ namespace NuGet.Services.AzureSearch
         string Summary { get; set; }
         string[] Tags { get; set; }
         string Title { get; set; }
+        string TokenizedPackageId { get; set; }
     }
 }

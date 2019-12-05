@@ -52,6 +52,13 @@ namespace NuGet.Services.AzureSearch
         [Analyzer(ExactMatchCustomAnalyzer.Name)]
         public string PackageId { get; set; }
 
+        /// <summary>
+        /// The package's identifier. Supports tokenized search for prefix matching.
+        /// </summary>
+        [IsSearchable]
+        [Analyzer(PackageIdCustomAnalyzer.Name)]
+        public string PackageIdPrefixes { get; set; }
+
         [IsFilterable]
         public bool? Prerelease { get; set; }
 

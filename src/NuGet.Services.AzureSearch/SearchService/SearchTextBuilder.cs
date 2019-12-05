@@ -92,7 +92,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     }
 
                     builder.AppendScopedTerm(
-                        fieldName: IndexFields.TokenizedPackageId,
+                        fieldName: IndexFields.PackageIdPrefixes,
                         term: piece,
                         required: true,
                         prefixSearch: true);
@@ -199,7 +199,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     }
 
                     builder.AppendScopedTerm(
-                        fieldName: IndexFields.TokenizedPackageId,
+                        fieldName: IndexFields.PackageIdPrefixes,
                         term: term,
                         required: false,
                         prefixSearch: true);

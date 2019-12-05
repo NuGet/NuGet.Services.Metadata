@@ -21,6 +21,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         public static readonly string LastEdited = Name(nameof(BaseMetadataDocument.LastEdited));
         public static readonly string NormalizedVersion = Name(nameof(BaseMetadataDocument.NormalizedVersion));
         public static readonly string PackageId = Name(nameof(BaseMetadataDocument.PackageId));
+        public static readonly string PackageIdPrefixes = Name(nameof(BaseMetadataDocument.PackageIdPrefixes));
         public static readonly string Published = Name(nameof(BaseMetadataDocument.Published));
         public static readonly string SemVerLevel = Name(nameof(BaseMetadataDocument.SemVerLevel));
         public static readonly string SortableTitle = Name(nameof(BaseMetadataDocument.SortableTitle));

@@ -100,6 +100,7 @@ namespace NuGet.Services.AzureSearch
             document.NormalizedVersion = package.NormalizedVersion;
             document.OriginalVersion = package.Version;
             document.PackageId = packageId;
+            document.PackageIdPrefixes = packageId;
             document.Prerelease = package.IsPrerelease;
             document.ProjectUrl = package.ProjectUrl;
             document.Published = package.Listed ? AssumeUtc(package.Published) : UnlistedPublished;
