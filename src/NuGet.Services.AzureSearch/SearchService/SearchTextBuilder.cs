@@ -191,7 +191,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     builder.AppendBoostIfMatchAllTerms(tokenizedUnscopedTerms.ToList(), _options.Value.MatchAllTermsBoost);
                 }
 
-                foreach (var term in tokenizedUnscopedTerms)
+                foreach (var term in unscopedTerms)
                 {
                     if (term.StartsWith("*"))
                     {
