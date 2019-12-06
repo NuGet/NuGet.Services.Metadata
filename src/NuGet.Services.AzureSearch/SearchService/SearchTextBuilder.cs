@@ -201,15 +201,6 @@ namespace NuGet.Services.AzureSearch.SearchService
                         prefixSearch: true,
                         boost: 20);
                 }
-                else
-                {
-                    builder.AppendScopedTerm(
-                        fieldName: IndexFields.TokenizedPackageId,
-                        term: lastUnscopedTerm,
-                        required: false,
-                        prefixSearch: true,
-                        boost: lastUnscopedTerm.Length < 4 ? 20 : 1);
-                }
             }
 
             // Handle the exact match case. If the search query is a single unscoped term is also a valid package
