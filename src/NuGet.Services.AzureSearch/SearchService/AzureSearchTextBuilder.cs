@@ -133,11 +133,41 @@ namespace NuGet.Services.AzureSearch.SearchService
             /// <param name="term">The term to search.</param>
             /// <param name="required">Whether search results MUST match these terms.</param>
             /// <param name="prefixSearch">If true, prefix matches are allowed for the terms.</param>
+            //public void AppendScopedTerm(
+            //    string fieldName,
+            //    string term,
+            //    bool required = false,
+            //    bool prefixSearch = false)
+            //{
+            //    // We will generate a single clause.
+            //    ValidateAdditionalClausesOrThrow(1);
+            //    ValidateTermOrThrow(term);
+
+            //    AppendSpaceIfNotEmpty();
+
+            //    if (required)
+            //    {
+            //        _result.Append('+');
+            //    }
+
+            //    _result.Append(fieldName);
+            //    _result.Append(':');
+
+            //    // Don't escape whitespace with quotes if this is prefix matching.
+            //    AppendEscapedString(term.Trim(), quoteWhiteSpace: !prefixSearch);
+
+            //    if (prefixSearch)
+            //    {
+            //        _result.Append('*');
+            //    }
+            //}
+
             public void AppendScopedTerm(
                 string fieldName,
                 string term,
                 bool required = false,
-                bool prefixSearch = false)
+                bool prefixSearch = false,
+                double boost = 1.0)
             {
                 // We will generate a single clause.
                 ValidateAdditionalClausesOrThrow(1);
@@ -159,6 +189,12 @@ namespace NuGet.Services.AzureSearch.SearchService
                 if (prefixSearch)
                 {
                     _result.Append('*');
+                }
+
+                if (boost > 1)
+                {
+                    _result.Append("^");
+                    _result.Append(boost);
                 }
             }
 
