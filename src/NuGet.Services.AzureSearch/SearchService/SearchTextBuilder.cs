@@ -198,7 +198,8 @@ namespace NuGet.Services.AzureSearch.SearchService
                         fieldName: IndexFields.PackageId,
                         term: lastUnscopedTerm,
                         required: false,
-                        prefixSearch: true);
+                        prefixSearch: true,
+                        boost: 20);
                 }
                 else
                 {
