@@ -192,23 +192,14 @@ namespace NuGet.Services.AzureSearch.SearchService
                 }
 
                 var lastUnscopedTerm = unscopedTerms.Last();
-                if (IsIdWithSeparator(lastUnscopedTerm))
-                {
-                    builder.AppendScopedTerm(
-                        fieldName: IndexFields.PackageId,
-                        term: lastUnscopedTerm,
-                        required: false,
-                        prefixSearch: true,
-                        boost: 20);
-                }
-                else
+                if (lastUnscopedTerm.Length < 4)
                 {
                     builder.AppendScopedTerm(
                         fieldName: IndexFields.TokenizedPackageId,
                         term: lastUnscopedTerm,
                         required: false,
                         prefixSearch: true,
-                        boost: lastUnscopedTerm.Length < 4 ? 20 : 1);
+                        boost: 20);
                 }
             }
 
