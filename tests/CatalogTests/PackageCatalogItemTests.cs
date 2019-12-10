@@ -30,8 +30,13 @@ namespace CatalogTests.Helpers
         [InlineData("PackageTypeCollapseDuplicate")]
         [InlineData("PackageTypeMultiple")]
         [InlineData("PackageTypeMultipleTypesNodes")]
-        [InlineData("PackageTypeSingle")] 
+        [InlineData("PackageTypeSingle")]
         [InlineData("PackageTypeSingleWithVersion")]
+        [InlineData("PackageTypeSameTypeDifferentCase")]
+        [InlineData("PackageTypeSameTypeDifferentVersionType")]
+        [InlineData("PackageTypeSameTypeTwoVersion")]
+        [InlineData("PackageTypeWhiteSpace")]
+        [InlineData("PackageTypeWhiteSpaceVersion")]
         public void CreateContent_ProducesExpectedJson(string packageName)
         {
             // Arrange
