@@ -249,28 +249,27 @@
 
         <xsl:choose>
           <xsl:when test="@version">
-            <xsl:variable name="fragment" select="concat($parent_fragment, '/', @name, '/', @version)" />
+            <xsl:variable name="fragment" select="concat(normalize-space(@name), '/', normalize-space(@version))" />
             <xsl:attribute name="rdf:about">
-              <xsl:value-of select="obj:LowerCase(concat($base, $path, $extension, $fragment))" />
+              <xsl:value-of select="concat(obj:LowerCase(concat($base, $path, $extension, $parent_fragment, '/')), $fragment)" />
             </xsl:attribute>
           </xsl:when>
           <xsl:otherwise>
-            <xsl:variable name="fragment" select="concat($parent_fragment, '/', @name)" />
             <xsl:attribute name="rdf:about">
-              <xsl:value-of select="obj:LowerCase(concat($base, $path, $extension, $fragment))" />
+              <xsl:value-of select="concat(obj:LowerCase(concat($base, $path, $extension, $parent_fragment, '/')), normalize-space(@name))" />
             </xsl:attribute>
           </xsl:otherwise>
         </xsl:choose>
 
         <xsl:if test="@name">
           <ng:name>
-            <xsl:value-of select="@name"/>
+            <xsl:value-of select="normalize-space(@name)"/>
           </ng:name>
         </xsl:if>
 
         <xsl:if test="@version">
           <ng:version>
-            <xsl:value-of select="@version" />
+            <xsl:value-of select="normalize-space(@version)" />
           </ng:version>
         </xsl:if>
 
