@@ -379,12 +379,18 @@ namespace NuGet.Services.AzureSearch
         ""azure-sdk""
       ],
       ""searchFilters"": """ + expected + @""",
+      ""filterablePackageTypes"": [
+        ""dependency""
+      ],
       ""fullVersion"": ""7.1.2-alpha+git"",
       ""versions"": [
         ""1.0.0"",
         ""2.0.0+git"",
         ""3.0.0-alpha.1"",
         ""7.1.2-alpha+git""
+      ],
+      ""packageTypes"": [
+        ""Dependency""
       ],
       ""isLatestStable"": false,
       ""isLatest"": true,
@@ -677,12 +683,18 @@ namespace NuGet.Services.AzureSearch
         ""azure-sdk""
       ],
       ""searchFilters"": """ + expected + @""",
+      ""filterablePackageTypes"": [
+        ""dependency""
+      ],
       ""fullVersion"": ""7.1.2-alpha+git"",
       ""versions"": [
         ""1.0.0"",
         ""2.0.0+git"",
         ""3.0.0-alpha.1"",
         ""7.1.2-alpha+git""
+      ],
+      ""packageTypes"": [
+        ""Dependency""
       ],
       ""isLatestStable"": false,
       ""isLatest"": true,
@@ -729,6 +741,102 @@ namespace NuGet.Services.AzureSearch
       ""lastDocumentType"": ""NuGet.Services.AzureSearch.SearchDocument+Full"",
       ""lastUpdatedFromCatalog"": false,
       ""key"": ""windowsazure_storage-d2luZG93c2F6dXJlLnN0b3JhZ2U1-" + expected + @"""
+    }
+  ]
+}", json);
+            }
+
+            [Theory]
+            [MemberData(nameof(PackageTypesData))]
+            public async Task SetsExpectedPackageTypes(List<PackageType> packageTypes, string expectedFilterable, string expectedDisplay)
+            {
+                var package = Data.PackageEntity;
+                package.PackageTypes = packageTypes;
+
+                var document = _target.FullFromDb(
+                    Data.PackageId,
+                    SearchFilters.Default,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    fullVersion: Data.FullVersion,
+                    package: package,
+                    owners: Data.Owners,
+                    totalDownloadCount: Data.TotalDownloadCount,
+                    isExcludedByDefault: false);
+
+                SetDocumentLastUpdated(document);
+                var json = await SerializationUtilities.SerializeToJsonAsync(document);
+                Assert.Equal(@"{
+  ""value"": [
+    {
+      ""@search.action"": ""upload"",
+      ""totalDownloadCount"": 1001,
+      ""downloadScore"": 0.14381174563233068,
+      ""isExcludedByDefault"": false,
+      ""owners"": [
+        ""Microsoft"",
+        ""azure-sdk""
+      ],
+      ""searchFilters"": ""Default"",
+      ""filterablePackageTypes"": [
+        " + expectedFilterable + @"
+      ],
+      ""fullVersion"": ""7.1.2-alpha+git"",
+      ""versions"": [
+        ""1.0.0"",
+        ""2.0.0+git"",
+        ""3.0.0-alpha.1"",
+        ""7.1.2-alpha+git""
+      ],
+      ""packageTypes"": [
+        "+ expectedDisplay + @"
+      ],
+      ""isLatestStable"": false,
+      ""isLatest"": true,
+      ""semVerLevel"": 2,
+      ""authors"": ""Microsoft"",
+      ""copyright"": ""© Microsoft Corporation. All rights reserved."",
+      ""created"": ""2017-01-01T00:00:00+00:00"",
+      ""description"": ""Description."",
+      ""fileSize"": 3039254,
+      ""flattenedDependencies"": ""Microsoft.Data.OData:5.6.4:net40-client|Newtonsoft.Json:6.0.8:net40-client"",
+      ""hash"": ""oMs9XKzRTsbnIpITcqZ5XAv1h2z6oyJ33+Z/PJx36iVikge/8wm5AORqAv7soKND3v5/0QWW9PQ0ktQuQu9aQQ=="",
+      ""hashAlgorithm"": ""SHA512"",
+      ""iconUrl"": ""http://go.microsoft.com/fwlink/?LinkID=288890"",
+      ""language"": ""en-US"",
+      ""lastEdited"": ""2017-01-02T00:00:00+00:00"",
+      ""licenseUrl"": ""http://go.microsoft.com/fwlink/?LinkId=331471"",
+      ""minClientVersion"": ""2.12"",
+      ""normalizedVersion"": ""7.1.2-alpha"",
+      ""originalVersion"": ""7.1.2.0-alpha+git"",
+      ""packageId"": ""WindowsAzure.Storage"",
+      ""prerelease"": true,
+      ""projectUrl"": ""https://github.com/Azure/azure-storage-net"",
+      ""published"": ""2017-01-03T00:00:00+00:00"",
+      ""releaseNotes"": ""Release notes."",
+      ""requiresLicenseAcceptance"": true,
+      ""sortableTitle"": ""windows azure storage"",
+      ""summary"": ""Summary."",
+      ""tags"": [
+        ""Microsoft"",
+        ""Azure"",
+        ""Storage"",
+        ""Table"",
+        ""Blob"",
+        ""File"",
+        ""Queue"",
+        ""Scalable"",
+        ""windowsazureofficial""
+      ],
+      ""title"": ""Windows Azure Storage"",
+      ""tokenizedPackageId"": ""WindowsAzure.Storage"",
+      ""lastCommitTimestamp"": null,
+      ""lastCommitId"": null,
+      ""lastUpdatedDocument"": ""2018-12-14T09:30:00+00:00"",
+      ""lastDocumentType"": ""NuGet.Services.AzureSearch.SearchDocument+Full"",
+      ""lastUpdatedFromCatalog"": false,
+      ""key"": ""windowsazure_storage-d2luZG93c2F6dXJlLnN0b3JhZ2U1-Default""
     }
   ]
 }", json);
@@ -822,6 +930,59 @@ namespace NuGet.Services.AzureSearch
                 new object[] { SearchFilters.IncludePrerelease, "IncludePrerelease" },
                 new object[] { SearchFilters.IncludeSemVer2, "IncludeSemVer2" },
                 new object[] { SearchFilters.IncludePrereleaseAndSemVer2, "IncludePrereleaseAndSemVer2" },
+            };
+
+            public static IEnumerable<object[]> PackageTypesData => new[]
+            {
+                new object[] {
+                    new List<PackageType> {
+                        new PackageType
+                        {
+                            Name = "DotNetCliTool"
+                        }
+                    },
+                    @"""dotnetclitool""",
+                    @"""DotNetCliTool"""
+                },
+
+                new object[] {
+                    null,
+                    @"""dependency""",
+                    @"""Dependency"""
+                },
+
+                new object[] {
+                    new List<PackageType>(),
+                    @"""dependency""",
+                    @"""Dependency"""
+                },
+
+                new object[] {
+                    new List<PackageType> {
+                        new PackageType
+                        {
+                            Name = "DotNetCliTool"
+                        },
+                        new PackageType
+                        {
+                            Name = "Dependency"
+                        }
+                    },
+                    "\"dotnetclitool\",\r\n        \"dependency\"",
+                    "\"DotNetCliTool\",\r\n        \"Dependency\"",
+                },
+
+                new object[] {
+                    new List<PackageType> {
+                        new PackageType
+                        {
+                            Name = "DotNetCliTool",
+                            Version = "1.0.0"
+                        }
+                    },
+                    @"""dotnetclitool""",
+                    @"""DotNetCliTool"""
+                },
             };
 
             [Fact]
