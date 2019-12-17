@@ -442,6 +442,36 @@ namespace NuGet.Services.AzureSearch
 }", json);
             }
 
+            [Theory]
+            [MemberData(nameof(CatalogPackageTypesData))]
+            public async Task SetsExpectedPackageTypes(List<NuGet.Protocol.Catalog.PackageType> packageTypes, string expectedFilterable, string expectedDisplay)
+            {
+                var leaf = Data.Leaf;
+                leaf.PackageTypes = packageTypes;
+
+                var document = _target.UpdateLatestFromCatalog(
+                    SearchFilters.Default,
+                    Data.Versions,
+                    isLatestStable: false,
+                    isLatest: true,
+                    normalizedVersion: Data.NormalizedVersion,
+                    fullVersion: Data.FullVersion,
+                    leaf: leaf,
+                    owners: Data.Owners);
+
+                SetDocumentLastUpdated(document);
+                var json = await SerializationUtilities.SerializeToJsonAsync(document);
+                Assert.Contains(@"
+      ""filterablePackageTypes"": [
+        " + expectedFilterable + @"
+      ],", json);
+
+                Assert.Contains(@"
+      ""packageTypes"": [
+        " + expectedDisplay + @"
+      ],", json);
+            }
+
             [Fact]
             public void LeavesNullRequiresLicenseAcceptanceAsNull()
             {
@@ -747,7 +777,7 @@ namespace NuGet.Services.AzureSearch
             }
 
             [Theory]
-            [MemberData(nameof(PackageTypesData))]
+            [MemberData(nameof(DBPackageTypesData))]
             public async Task SetsExpectedPackageTypes(List<PackageType> packageTypes, string expectedFilterable, string expectedDisplay)
             {
                 var package = Data.PackageEntity;
@@ -868,7 +898,60 @@ namespace NuGet.Services.AzureSearch
                 new object[] { SearchFilters.IncludePrereleaseAndSemVer2, "IncludePrereleaseAndSemVer2" },
             };
 
-            public static IEnumerable<object[]> PackageTypesData => new[]
+            public static IEnumerable<object[]> CatalogPackageTypesData => new[]
+{
+                new object[] {
+                    new List<NuGet.Protocol.Catalog.PackageType> {
+                        new NuGet.Protocol.Catalog.PackageType
+                        {
+                            Name = "DotNetCliTool"
+                        }
+                    },
+                    @"""dotnetclitool""",
+                    @"""DotNetCliTool"""
+                },
+
+                new object[] {
+                    null,
+                    @"""dependency""",
+                    @"""Dependency"""
+                },
+
+                new object[] {
+                    new List<NuGet.Protocol.Catalog.PackageType>(),
+                    @"""dependency""",
+                    @"""Dependency"""
+                },
+
+                new object[] {
+                    new List<NuGet.Protocol.Catalog.PackageType> {
+                        new NuGet.Protocol.Catalog.PackageType
+                        {
+                            Name = "DotNetCliTool"
+                        },
+                        new NuGet.Protocol.Catalog.PackageType
+                        {
+                            Name = "Dependency"
+                        }
+                    },
+                    "\"dotnetclitool\",\r\n        \"dependency\"",
+                    "\"DotNetCliTool\",\r\n        \"Dependency\"",
+                },
+
+                new object[] {
+                    new List<NuGet.Protocol.Catalog.PackageType> {
+                        new NuGet.Protocol.Catalog.PackageType
+                        {
+                            Name = "DotNetCliTool",
+                            Version = "1.0.0"
+                        }
+                    },
+                    @"""dotnetclitool""",
+                    @"""DotNetCliTool"""
+                },
+            };
+
+            public static IEnumerable<object[]> DBPackageTypesData => new[]
             {
                 new object[] {
                     new List<PackageType> {
