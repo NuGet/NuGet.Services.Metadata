@@ -461,14 +461,8 @@ namespace NuGet.Services.AzureSearch
 
                 SetDocumentLastUpdated(document);
                 Assert.Equal(document.FilterablePackageTypes.Length, document.PackageTypes.Length);
-                Assert.Equal(expectedFilterable.Length, document.FilterablePackageTypes.Length);
-                Assert.Equal(expectedDisplay.Length, document.PackageTypes.Length);
-
-                for (var i = 0; i < expectedFilterable.Length; i++)
-                {
-                    Assert.Equal(expectedFilterable[i], document.FilterablePackageTypes[i]);
-                    Assert.Equal(expectedDisplay[i], document.PackageTypes[i]);
-                }
+                Assert.Equal(expectedFilterable, document.FilterablePackageTypes);
+                Assert.Equal(expectedDisplay, document.PackageTypes);
             }
 
             [Fact]
@@ -796,14 +790,8 @@ namespace NuGet.Services.AzureSearch
 
                 SetDocumentLastUpdated(document);
                 Assert.Equal(document.FilterablePackageTypes.Length, document.PackageTypes.Length);
-                Assert.Equal(expectedFilterable.Length, document.FilterablePackageTypes.Length);
-                Assert.Equal(expectedDisplay.Length, document.PackageTypes.Length);
-
-                for (var i = 0; i < expectedFilterable.Length; i++)
-                {
-                    Assert.Equal(expectedFilterable[i], document.FilterablePackageTypes[i]);
-                    Assert.Equal(expectedDisplay[i], document.PackageTypes[i]);
-                }
+                Assert.Equal(expectedFilterable, document.FilterablePackageTypes);
+                Assert.Equal(expectedDisplay, document.PackageTypes);
             }
 
             [Fact]
