@@ -444,7 +444,7 @@ namespace NuGet.Services.AzureSearch
 
             [Theory]
             [MemberData(nameof(CatalogPackageTypesData))]
-            public async Task SetsExpectedPackageTypes(List<NuGet.Protocol.Catalog.PackageType> packageTypes, string expectedFilterable, string expectedDisplay)
+            public void SetsExpectedPackageTypes(List<NuGet.Protocol.Catalog.PackageType> packageTypes, string[] expectedFilterable, string[] expectedDisplay)
             {
                 var leaf = Data.Leaf;
                 leaf.PackageTypes = packageTypes;
@@ -460,16 +460,15 @@ namespace NuGet.Services.AzureSearch
                     owners: Data.Owners);
 
                 SetDocumentLastUpdated(document);
-                var json = await SerializationUtilities.SerializeToJsonAsync(document);
-                Assert.Contains(@"
-      ""filterablePackageTypes"": [
-        " + expectedFilterable + @"
-      ],", json);
+                Assert.Equal(document.FilterablePackageTypes.Length, document.PackageTypes.Length);
+                Assert.Equal(expectedFilterable.Length, document.FilterablePackageTypes.Length);
+                Assert.Equal(expectedDisplay.Length, document.PackageTypes.Length);
 
-                Assert.Contains(@"
-      ""packageTypes"": [
-        " + expectedDisplay + @"
-      ],", json);
+                for (var i = 0; i < expectedFilterable.Length; i++)
+                {
+                    Assert.Equal(expectedFilterable[i], document.FilterablePackageTypes[i]);
+                    Assert.Equal(expectedDisplay[i], document.PackageTypes[i]);
+                }
             }
 
             [Fact]
@@ -778,7 +777,7 @@ namespace NuGet.Services.AzureSearch
 
             [Theory]
             [MemberData(nameof(DBPackageTypesData))]
-            public async Task SetsExpectedPackageTypes(List<PackageType> packageTypes, string expectedFilterable, string expectedDisplay)
+            public void SetsExpectedPackageTypes(List<PackageType> packageTypes, string[] expectedFilterable, string[] expectedDisplay)
             {
                 var package = Data.PackageEntity;
                 package.PackageTypes = packageTypes;
@@ -796,16 +795,15 @@ namespace NuGet.Services.AzureSearch
                     isExcludedByDefault: false);
 
                 SetDocumentLastUpdated(document);
-                var json = await SerializationUtilities.SerializeToJsonAsync(document);
-                Assert.Contains(@"
-      ""filterablePackageTypes"": [
-        " + expectedFilterable + @"
-      ],", json);
+                Assert.Equal(document.FilterablePackageTypes.Length, document.PackageTypes.Length);
+                Assert.Equal(expectedFilterable.Length, document.FilterablePackageTypes.Length);
+                Assert.Equal(expectedDisplay.Length, document.PackageTypes.Length);
 
-                Assert.Contains(@"
-      ""packageTypes"": [
-        " + expectedDisplay + @"
-      ],", json);
+                for (var i = 0; i < expectedFilterable.Length; i++)
+                {
+                    Assert.Equal(expectedFilterable[i], document.FilterablePackageTypes[i]);
+                    Assert.Equal(expectedDisplay[i], document.PackageTypes[i]);
+                }
             }
 
             [Fact]
@@ -899,7 +897,7 @@ namespace NuGet.Services.AzureSearch
             };
 
             public static IEnumerable<object[]> CatalogPackageTypesData => new[]
-{
+            {
                 new object[] {
                     new List<NuGet.Protocol.Catalog.PackageType> {
                         new NuGet.Protocol.Catalog.PackageType
@@ -907,20 +905,20 @@ namespace NuGet.Services.AzureSearch
                             Name = "DotNetCliTool"
                         }
                     },
-                    @"""dotnetclitool""",
-                    @"""DotNetCliTool"""
+                    new string[] { "dotnetclitool" },
+                    new string[] { "DotNetCliTool" }
                 },
 
                 new object[] {
                     null,
-                    @"""dependency""",
-                    @"""Dependency"""
+                    new string[] { "dependency" },
+                    new string[] { "Dependency" }
                 },
 
                 new object[] {
                     new List<NuGet.Protocol.Catalog.PackageType>(),
-                    @"""dependency""",
-                    @"""Dependency"""
+                    new string[] { "dependency" },
+                    new string[] { "Dependency" }
                 },
 
                 new object[] {
@@ -934,8 +932,8 @@ namespace NuGet.Services.AzureSearch
                             Name = "Dependency"
                         }
                     },
-                    "\"dotnetclitool\",\r\n        \"dependency\"",
-                    "\"DotNetCliTool\",\r\n        \"Dependency\"",
+                    new string[] { "dotnetclitool", "dependency" },
+                    new string[] { "DotNetCliTool", "Dependency" },
                 },
 
                 new object[] {
@@ -946,8 +944,8 @@ namespace NuGet.Services.AzureSearch
                             Version = "1.0.0"
                         }
                     },
-                    @"""dotnetclitool""",
-                    @"""DotNetCliTool"""
+                    new string[] { "dotnetclitool" },
+                    new string[] { "DotNetCliTool" }
                 },
             };
 
@@ -960,20 +958,20 @@ namespace NuGet.Services.AzureSearch
                             Name = "DotNetCliTool"
                         }
                     },
-                    @"""dotnetclitool""",
-                    @"""DotNetCliTool"""
+                    new string[] { "dotnetclitool" },
+                    new string[] { "DotNetCliTool" }
                 },
 
                 new object[] {
                     null,
-                    @"""dependency""",
-                    @"""Dependency"""
+                    new string[] { "dependency" },
+                    new string[] { "Dependency" }
                 },
 
                 new object[] {
                     new List<PackageType>(),
-                    @"""dependency""",
-                    @"""Dependency"""
+                    new string[] { "dependency" },
+                    new string[] { "Dependency" }
                 },
 
                 new object[] {
@@ -987,8 +985,8 @@ namespace NuGet.Services.AzureSearch
                             Name = "Dependency"
                         }
                     },
-                    "\"dotnetclitool\",\r\n        \"dependency\"",
-                    "\"DotNetCliTool\",\r\n        \"Dependency\"",
+                    new string[] { "dotnetclitool", "dependency" },
+                    new string[] { "DotNetCliTool", "Dependency" },
                 },
 
                 new object[] {
@@ -999,8 +997,8 @@ namespace NuGet.Services.AzureSearch
                             Version = "1.0.0"
                         }
                     },
-                    @"""dotnetclitool""",
-                    @"""DotNetCliTool"""
+                    new string[] { "dotnetclitool" },
+                    new string[] { "DotNetCliTool" }
                 },
             };
 
