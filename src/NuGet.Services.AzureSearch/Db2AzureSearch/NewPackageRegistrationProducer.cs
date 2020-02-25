@@ -228,7 +228,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             {
                 if (packageRegistration.Id.StartsWith(skippedPackagePrefix, StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.LogDebug("Skipping package {PackageId}", packageRegistration.Id);
                     return true;
                 }
             }
