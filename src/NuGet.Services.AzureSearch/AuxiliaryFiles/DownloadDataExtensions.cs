@@ -30,6 +30,23 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                 throw new ArgumentNullException(nameof(logger));
             }
 
+            var downloadOverrides2 = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+
+            if (originalData.TryGetValue("WindowsAzure.Storage", out var oldDownloads))
+            {
+                downloadOverrides2["WindowsAzure.Storage"] = (int)(oldDownloads.Total * 0.01);
+                downloadOverrides2["Azure.Storage.Blobs"] = (int)(oldDownloads.Total * 0.99);
+            }
+            else
+            {
+                logger.LogInformation("Couldn't find WindowsAzure.Storage downloads");
+            }
+
+            foreach (var x in downloadOverrides2)
+            {
+                logger.LogInformation("Download override: {Key} {Value}", x.Key, x.Value);
+            }
+
             // Create a copy of the original data and apply overrides as we copy.
             var result = new DownloadData();
 
@@ -43,14 +60,14 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                         "Overriding downloads of package {PackageId} from {Downloads} to {DownloadsOverride}",
                         packageId,
                         originalData.GetDownloadCount(packageId),
-                        downloadOverrides[packageId]);
+                        downloadOverrides2[packageId]);
 
                     var versions = downloadData.Value.Keys;
 
                     result.SetDownloadCount(
                         packageId,
                         versions.First(),
-                        downloadOverrides[packageId]);
+                        downloadOverrides2[packageId]);
                 }
                 else
                 {
@@ -63,23 +80,23 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 
             bool ShouldOverrideDownloads(string packageId)
             {
-                if (!downloadOverrides.TryGetValue(packageId, out var downloadOverride))
+                if (!downloadOverrides2.TryGetValue(packageId, out var downloadOverride))
                 {
                     return false;
                 }
 
                 // Apply the downloads override only if the package has fewer total downloads.
                 // In effect, this removes a package's manual boost once its total downloads exceed the override.
-                if (originalData[packageId].Total >= downloadOverride)
-                {
-                    logger.LogInformation(
-                        "Skipping download override for package {PackageId} as its downloads of {Downloads} are " +
-                        "greater than its override of {DownloadsOverride}",
-                        packageId,
-                        originalData[packageId].Total,
-                        downloadOverride);
-                    return false;
-                }
+                //if (originalData[packageId].Total >= downloadOverride)
+                //{
+                //    logger.LogInformation(
+                //        "Skipping download override for package {PackageId} as its downloads of {Downloads} are " +
+                //        "greater than its override of {DownloadsOverride}",
+                //        packageId,
+                //        originalData[packageId].Total,
+                //        downloadOverride);
+                //    return false;
+                //}
 
                 return true;
             }
