@@ -59,7 +59,12 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             // separate from downloads data as the original data will be persisted to auxiliary data, whereas the
             // overriden data will be persisted to Azure Search.
             var downloadOverrides = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
-            var overridenDownloads = downloads.ApplyDownloadOverrides(downloadOverrides, _logger);
+            var packageReplacements = new Dictionary<string, List<string>>
+            {
+                { "WindowsAzure.Storage", new List<string> { "Azure.Storage.Blobs" } },
+                { "Microsoft.Azure.Storage.Blob", new List<string> { "Azure.Storage.Blobs"} },
+            };
+            var overridenDownloads = downloads.ApplyDownloadOverrides(packageReplacements, _logger);
 
             // Build a list of the owners data and verified IDs as we collect package registrations from the database.
             var ownersBuilder = new PackageIdToOwnersBuilder(_logger);

@@ -10,9 +10,20 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 {
     public static class DownloadDataExtensions
     {
+        private const double PopularityTransfer = 0.99;
+        private const double PopularityKept = 1 - PopularityTransfer;
+
+        /// <summary>
+        /// Override the download data used to score package popularity
+        /// </summary>
+        /// <param name="originalData">TODO</param>
+        /// <param name="replacedPackages">TODO: Old to list of new</param>
+        /// <param name="logger">TODO</param>
+        /// <returns>TODO</returns>
         public static DownloadData ApplyDownloadOverrides(
             this DownloadData originalData,
-            IReadOnlyDictionary<string, long> downloadOverrides,
+            //IReadOnlyDictionary<string, long> downloadOverrides,
+            IReadOnlyDictionary<string, List<string>> replacedPackages,
             ILogger logger)
         {
             if (originalData == null)
@@ -20,9 +31,9 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                 throw new ArgumentNullException(nameof(originalData));
             }
 
-            if (downloadOverrides == null)
+            if (replacedPackages == null)
             {
-                throw new ArgumentNullException(nameof(downloadOverrides));
+                throw new ArgumentNullException(nameof(replacedPackages));
             }
 
             if (logger == null)
@@ -30,78 +41,91 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                 throw new ArgumentNullException(nameof(logger));
             }
 
-            var downloadOverrides2 = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-
-            if (originalData.TryGetValue("WindowsAzure.Storage", out var oldDownloads))
-            {
-                downloadOverrides2["WindowsAzure.Storage"] = (int)(oldDownloads.Total * 0.01);
-                downloadOverrides2["Azure.Storage.Blobs"] = (int)(oldDownloads.Total * 0.99);
-            }
-            else
-            {
-                logger.LogInformation("Couldn't find WindowsAzure.Storage downloads");
-            }
-
-            foreach (var x in downloadOverrides2)
-            {
-                logger.LogInformation("Download override: {Key} {Value}", x.Key, x.Value);
-            }
-
             // Create a copy of the original data and apply overrides as we copy.
             var result = new DownloadData();
+            var downloadTransfers = CalculateDownloadTransfers(originalData, replacedPackages);
 
             foreach (var downloadData in originalData)
             {
                 var packageId = downloadData.Key;
 
-                if (ShouldOverrideDownloads(packageId))
+                if (replacedPackages.ContainsKey(packageId))
                 {
-                    logger.LogInformation(
-                        "Overriding downloads of package {PackageId} from {Downloads} to {DownloadsOverride}",
+                    ApplyDownloadOverride(
+                        originalData,
+                        result,
                         packageId,
-                        originalData.GetDownloadCount(packageId),
-                        downloadOverrides2[packageId]);
+                        (long)(downloadData.Value.Total * PopularityKept),
+                        logger);
+                    continue;
+                }
 
-                    var versions = downloadData.Value.Keys;
+                if (downloadTransfers.TryGetValue(packageId, out var downloadTransfer))
+                {
+                    var downloadOverrides = downloadData.Value.Total + downloadTransfer;
 
-                    result.SetDownloadCount(
+                    ApplyDownloadOverride(
+                        originalData,
+                        result,
                         packageId,
-                        versions.First(),
-                        downloadOverrides2[packageId]);
+                        downloadOverrides,
+                        logger);
+                    continue;
                 }
-                else
+
+                foreach (var versionData in downloadData.Value)
                 {
-                    foreach (var versionData in downloadData.Value)
-                    {
-                        result.SetDownloadCount(downloadData.Key, versionData.Key, versionData.Value);
-                    }
+                    result.SetDownloadCount(downloadData.Key, versionData.Key, versionData.Value);
                 }
-            }
-
-            bool ShouldOverrideDownloads(string packageId)
-            {
-                if (!downloadOverrides2.TryGetValue(packageId, out var downloadOverride))
-                {
-                    return false;
-                }
-
-                // Apply the downloads override only if the package has fewer total downloads.
-                // In effect, this removes a package's manual boost once its total downloads exceed the override.
-                //if (originalData[packageId].Total >= downloadOverride)
-                //{
-                //    logger.LogInformation(
-                //        "Skipping download override for package {PackageId} as its downloads of {Downloads} are " +
-                //        "greater than its override of {DownloadsOverride}",
-                //        packageId,
-                //        originalData[packageId].Total,
-                //        downloadOverride);
-                //    return false;
-                //}
-
-                return true;
             }
 
             return result;
+        }
+
+        private static Dictionary<string, long> CalculateDownloadTransfers(
+            this DownloadData originalData,
+            IReadOnlyDictionary<string, List<string>> replacedPackages)
+        {
+             return replacedPackages
+                .Where(replacedPackage => originalData.ContainsKey(replacedPackage.Key))
+                .SelectMany(replacedPackage =>
+                {
+                    var replacements = replacedPackage.Value;
+                    var replacedPackageDownloads = originalData[replacedPackage.Key];
+
+                    var downloadTransfer = (long)(replacedPackageDownloads.Total * PopularityTransfer / replacements.Count);
+
+                    return replacements.Select(packageId => new
+                    {
+                        PackageId = packageId,
+                        DownloadTransfer = downloadTransfer
+                    });
+                })
+                .GroupBy(x => x.PackageId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(packageReplacement => packageReplacement.DownloadTransfer).Sum());
+        }
+
+        private static void ApplyDownloadOverride(
+            DownloadData originalData,
+            DownloadData overriddenData,
+            string packageId,
+            long downloadOverride,
+            ILogger logger)
+        {
+            logger.LogInformation(
+                "Overriding downloads of package {PackageId} from {Downloads} to {DownloadsOverride}",
+                packageId,
+                originalData.GetDownloadCount(packageId),
+                downloadOverride);
+
+            var versions = originalData[packageId].Keys;
+
+            overriddenData.SetDownloadCount(
+                packageId,
+                versions.First(),
+                downloadOverride);
         }
     }
 }

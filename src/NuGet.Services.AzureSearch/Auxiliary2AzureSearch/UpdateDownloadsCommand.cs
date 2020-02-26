@@ -117,7 +117,13 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             // overriden data will be persisted to Azure Search.
             _logger.LogInformation("Overriding download count data.");
             var downloadOverrides = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
-            var overridenDownloads = newData.ApplyDownloadOverrides(downloadOverrides, _logger);
+            var packageReplacements = new Dictionary<string, List<string>>
+            {
+                { "WindowsAzure.Storage", new List<string> { "Azure.Storage.Blobs" } },
+                { "Microsoft.Azure.Storage.Blob", new List<string> { "Azure.Storage.Blobs"} },
+            };
+
+            var overridenDownloads = newData.ApplyDownloadOverrides(packageReplacements, _logger);
 
             _logger.LogInformation("Detecting download count changes.");
             var changes = _downloadSetComparer.Compare(oldResult.Data, overridenDownloads);

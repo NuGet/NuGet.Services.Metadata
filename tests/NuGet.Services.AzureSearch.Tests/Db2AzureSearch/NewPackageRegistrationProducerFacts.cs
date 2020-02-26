@@ -93,12 +93,17 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             public void Test()
             {
                 var target = new DownloadData();
-                var overrides = new Dictionary<string, long>();
-
+                
                 target.SetDownloadCount("WindowsAzure.Storage", "1.0.0", 123_000_000);
                 target.SetDownloadCount("Azure.Storage.Blobs", "1.0.0", 5_000);
 
-                var x = target.ApplyDownloadOverrides(overrides, NullLogger.Instance);
+                var packageReplacements = new Dictionary<string, List<string>>
+                {
+                    { "WindowsAzure.Storage", new List<string> { "Azure.Storage.Blobs" } },
+                    { "Microsoft.Azure.Storage.Blob", new List<string> { "Azure.Storage.Blobs"} },
+                };
+
+                var x = target.ApplyDownloadOverrides(packageReplacements, NullLogger.Instance);
 
                 var a = x.GetDownloadCount("WindowsAzure.Storage");
                 var b = x.GetDownloadCount("Azure.Storage.Blobs");
