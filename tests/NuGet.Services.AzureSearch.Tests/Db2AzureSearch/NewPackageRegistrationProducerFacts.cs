@@ -103,7 +103,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                     { "Microsoft.Azure.Storage.Blob", new List<string> { "Azure.Storage.Blobs"} },
                 };
 
-                var x = target.ApplyDownloadOverrides(packageReplacements, NullLogger.Instance);
+                var x = target.ApplyPopularityTransfers(packageReplacements, NullLogger.Instance);
 
                 var a = x.GetDownloadCount("WindowsAzure.Storage");
                 var b = x.GetDownloadCount("Azure.Storage.Blobs");

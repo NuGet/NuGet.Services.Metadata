@@ -59,12 +59,25 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             // separate from downloads data as the original data will be persisted to auxiliary data, whereas the
             // overriden data will be persisted to Azure Search.
             var downloadOverrides = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
-            var packageReplacements = new Dictionary<string, List<string>>
+
+            var popularityTransfers = new Dictionary<string, List<string>>
             {
+                { "Microsoft.Azure.CosmosDB.Table", new List<string> { "Microsoft.Azure.Cosmos.Table" } },
+                { "Microsoft.Azure.EventHubs", new List<string> { "Azure.Messaging.EventHubs" } },
+                { "Microsoft.Azure.EventHubs.Processor", new List<string> { "Azure.Messaging.EventHubs.Processor" } },
+                { "Microsoft.Azure.KeyVault", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
+                { "Microsoft.Azure.KeyVault.Core", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
+                { "Microsoft.Azure.KeyVault.Cryptography", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
+                { "Microsoft.Azure.KeyVault.Extensions", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
+                { "Microsoft.Azure.KeyVault.WebKey", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
+                { "Microsoft.Azure.Storage.Blob", new List<string> { "Azure.Storage.Blobs" } },
+                { "Microsoft.Azure.Storage.File", new List<string> { "Azure.Storage.Files.Shares" } },
+                { "Microsoft.Azure.Storage.Queue", new List<string> { "Azure.Storage.Queues" } },
+                { "Microsoft.Net.Compilers", new List<string> { "Microsoft.Net.Compilers.Toolset" } },
                 { "WindowsAzure.Storage", new List<string> { "Azure.Storage.Blobs" } },
-                { "Microsoft.Azure.Storage.Blob", new List<string> { "Azure.Storage.Blobs"} },
             };
-            var overridenDownloads = downloads.ApplyDownloadOverrides(packageReplacements, _logger);
+
+            var overridenDownloads = downloads.ApplyPopularityTransfers(popularityTransfers, _logger);
 
             // Build a list of the owners data and verified IDs as we collect package registrations from the database.
             var ownersBuilder = new PackageIdToOwnersBuilder(_logger);

@@ -17,13 +17,13 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
         /// Override the download data used to score package popularity
         /// </summary>
         /// <param name="originalData">TODO</param>
-        /// <param name="replacedPackages">TODO: Old to list of new</param>
+        /// <param name="popularityTransfers">TODO: Old to list of new</param>
         /// <param name="logger">TODO</param>
         /// <returns>TODO</returns>
-        public static DownloadData ApplyDownloadOverrides(
+        public static DownloadData ApplyPopularityTransfers(
             this DownloadData originalData,
             //IReadOnlyDictionary<string, long> downloadOverrides,
-            IReadOnlyDictionary<string, List<string>> replacedPackages,
+            IReadOnlyDictionary<string, List<string>> popularityTransfers,
             ILogger logger)
         {
             if (originalData == null)
@@ -31,9 +31,9 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                 throw new ArgumentNullException(nameof(originalData));
             }
 
-            if (replacedPackages == null)
+            if (popularityTransfers == null)
             {
-                throw new ArgumentNullException(nameof(replacedPackages));
+                throw new ArgumentNullException(nameof(popularityTransfers));
             }
 
             if (logger == null)
@@ -43,13 +43,15 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 
             // Create a copy of the original data and apply overrides as we copy.
             var result = new DownloadData();
-            var downloadTransfers = CalculateDownloadTransfers(originalData, replacedPackages);
+            var downloadTransfers = CalculateDownloadTransfers(originalData, popularityTransfers);
 
             foreach (var downloadData in originalData)
             {
                 var packageId = downloadData.Key;
 
-                if (replacedPackages.ContainsKey(packageId))
+                // If this package's popularity has been transferred to other packages,
+                // remove the necessary download counts.
+                if (popularityTransfers.ContainsKey(packageId))
                 {
                     ApplyDownloadOverride(
                         originalData,
@@ -60,19 +62,21 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                     continue;
                 }
 
+                // Accept transferred downloads, if any.
                 if (downloadTransfers.TryGetValue(packageId, out var downloadTransfer))
                 {
-                    var downloadOverrides = downloadData.Value.Total + downloadTransfer;
+                    var downloadOverride = downloadData.Value.Total + downloadTransfer;
 
                     ApplyDownloadOverride(
                         originalData,
                         result,
                         packageId,
-                        downloadOverrides,
+                        downloadOverride,
                         logger);
                     continue;
                 }
 
+                // Otherwise, simply copy over the original download data.
                 foreach (var versionData in downloadData.Value)
                 {
                     result.SetDownloadCount(downloadData.Key, versionData.Key, versionData.Value);
@@ -84,27 +88,34 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 
         private static Dictionary<string, long> CalculateDownloadTransfers(
             this DownloadData originalData,
-            IReadOnlyDictionary<string, List<string>> replacedPackages)
+            IReadOnlyDictionary<string, List<string>> downloadTransfers)
         {
-             return replacedPackages
-                .Where(replacedPackage => originalData.ContainsKey(replacedPackage.Key))
-                .SelectMany(replacedPackage =>
+            var result = new Dictionary<string, long>();
+
+            foreach (var transfer in downloadTransfers)
+            {
+                var fromPackageId = transfer.Key;
+                var toPackageIds = transfer.Value;
+
+                if (!originalData.ContainsKey(fromPackageId))
                 {
-                    var replacements = replacedPackage.Value;
-                    var replacedPackageDownloads = originalData[replacedPackage.Key];
+                    continue;
+                }
 
-                    var downloadTransfer = (long)(replacedPackageDownloads.Total * PopularityTransfer / replacements.Count);
+                var downloadTransfer = (long)(originalData[fromPackageId].Total * PopularityTransfer / toPackageIds.Count);
 
-                    return replacements.Select(packageId => new
+                foreach (var toPackageId in toPackageIds)
+                {
+                    if (!result.ContainsKey(toPackageId))
                     {
-                        PackageId = packageId,
-                        DownloadTransfer = downloadTransfer
-                    });
-                })
-                .GroupBy(x => x.PackageId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => g.Select(packageReplacement => packageReplacement.DownloadTransfer).Sum());
+                        result[toPackageId] = 0;
+                    }
+
+                    result[toPackageId] += downloadTransfer;
+                }
+            }
+
+            return result;
         }
 
         private static void ApplyDownloadOverride(

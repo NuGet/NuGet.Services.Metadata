@@ -123,7 +123,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 { "Microsoft.Azure.Storage.Blob", new List<string> { "Azure.Storage.Blobs"} },
             };
 
-            var overridenDownloads = newData.ApplyDownloadOverrides(packageReplacements, _logger);
+            var overridenDownloads = newData.ApplyPopularityTransfers(packageReplacements, _logger);
 
             _logger.LogInformation("Detecting download count changes.");
             var changes = _downloadSetComparer.Compare(oldResult.Data, overridenDownloads);
