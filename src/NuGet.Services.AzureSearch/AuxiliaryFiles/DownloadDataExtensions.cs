@@ -41,6 +41,8 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
                 throw new ArgumentNullException(nameof(logger));
             }
 
+            // TODO: Case sensitivity of download transfers
+
             // Create a copy of the original data and apply overrides as we copy.
             var result = new DownloadData();
             var downloadTransfers = CalculateDownloadTransfers(originalData, popularityTransfers);
@@ -90,7 +92,7 @@ namespace NuGet.Services.AzureSearch.AuxiliaryFiles
             this DownloadData originalData,
             IReadOnlyDictionary<string, List<string>> downloadTransfers)
         {
-            var result = new Dictionary<string, long>();
+            var result = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var transfer in downloadTransfers)
             {

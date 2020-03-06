@@ -60,8 +60,9 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             // overriden data will be persisted to Azure Search.
             var downloadOverrides = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
 
-            var popularityTransfers = new Dictionary<string, List<string>>
+            var popularityTransfers = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
             {
+                // Azure SDK
                 { "Microsoft.Azure.CosmosDB.Table", new List<string> { "Microsoft.Azure.Cosmos.Table" } },
                 { "Microsoft.Azure.EventHubs", new List<string> { "Azure.Messaging.EventHubs" } },
                 { "Microsoft.Azure.EventHubs.Processor", new List<string> { "Azure.Messaging.EventHubs.Processor" } },
@@ -75,6 +76,12 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 { "Microsoft.Azure.Storage.Queue", new List<string> { "Azure.Storage.Queues" } },
                 { "Microsoft.Net.Compilers", new List<string> { "Microsoft.Net.Compilers.Toolset" } },
                 { "WindowsAzure.Storage", new List<string> { "Azure.Storage.Blobs" } },
+
+                // Community
+                { "Microsoft.Net.Compilers", new List<string> { "Microsoft.Net.Compilers.Toolset" } },
+                { "iTextSharp", new List<string> { "itext7" } },
+                { "KendoUIWeb", new List<string> { "KendoUICore" } },
+                { "Optional", new List<string> { "Optional.Collections", "Optional.Utilities" } },
             };
 
             var overridenDownloads = downloads.ApplyPopularityTransfers(popularityTransfers, _logger);

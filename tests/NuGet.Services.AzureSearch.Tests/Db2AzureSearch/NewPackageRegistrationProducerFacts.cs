@@ -94,10 +94,10 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             {
                 var target = new DownloadData();
                 
-                target.SetDownloadCount("WindowsAzure.Storage", "1.0.0", 123_000_000);
-                target.SetDownloadCount("Azure.Storage.Blobs", "1.0.0", 5_000);
+                target.SetDownloadCount("windowsazure.storage", "1.0.0", 123_000_000);
+                target.SetDownloadCount("azure.storage.blobs", "1.0.0", 5_000);
 
-                var packageReplacements = new Dictionary<string, List<string>>
+                var packageReplacements = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
                 {
                     { "WindowsAzure.Storage", new List<string> { "Azure.Storage.Blobs" } },
                     { "Microsoft.Azure.Storage.Blob", new List<string> { "Azure.Storage.Blobs"} },
