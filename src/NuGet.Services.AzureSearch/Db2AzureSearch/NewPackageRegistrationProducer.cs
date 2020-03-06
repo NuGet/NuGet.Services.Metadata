@@ -74,7 +74,6 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 { "Microsoft.Azure.Storage.Blob", new List<string> { "Azure.Storage.Blobs" } },
                 { "Microsoft.Azure.Storage.File", new List<string> { "Azure.Storage.Files.Shares" } },
                 { "Microsoft.Azure.Storage.Queue", new List<string> { "Azure.Storage.Queues" } },
-                { "Microsoft.Net.Compilers", new List<string> { "Microsoft.Net.Compilers.Toolset" } },
                 { "WindowsAzure.Storage", new List<string> { "Azure.Storage.Blobs" } },
 
                 // Community
