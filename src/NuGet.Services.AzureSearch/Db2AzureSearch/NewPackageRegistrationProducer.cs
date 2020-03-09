@@ -76,6 +76,11 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 { "Microsoft.Azure.Storage.Queue", new List<string> { "Azure.Storage.Queues" } },
                 { "WindowsAzure.Storage", new List<string> { "Azure.Storage.Blobs" } },
 
+                // ASP.NET Core -> Azure migration
+                { "Microsoft.Extensions.Configuration.AzureKeyVault", new List<string> { "Azure.Extensions.Configuration.Secrets" } },
+                { "Microsoft.AspNetCore.DataProtection.AzureKeyVault", new List<string> { "Azure.AspNetCore.DataProtection.Keys" } },
+                { "Microsoft.AspNetCore.DataProtection.AzureStorage", new List<string> { "Azure.AspNetCore.DataProtection.Blobs" } },
+
                 // Community
                 { "Microsoft.Net.Compilers", new List<string> { "Microsoft.Net.Compilers.Toolset" } },
                 { "iTextSharp", new List<string> { "itext7" } },
