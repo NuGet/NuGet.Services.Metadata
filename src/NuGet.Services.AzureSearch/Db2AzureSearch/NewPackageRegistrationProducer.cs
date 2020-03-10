@@ -71,10 +71,12 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 { "Microsoft.Azure.KeyVault.Cryptography", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
                 { "Microsoft.Azure.KeyVault.Extensions", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
                 { "Microsoft.Azure.KeyVault.WebKey", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
+                { "Microsoft.Azure.ServiceBus", new List<string> { "Azure.Messaging.ServiceBus" } },
                 { "Microsoft.Azure.Storage.Blob", new List<string> { "Azure.Storage.Blobs" } },
                 { "Microsoft.Azure.Storage.File", new List<string> { "Azure.Storage.Files.Shares" } },
                 { "Microsoft.Azure.Storage.Queue", new List<string> { "Azure.Storage.Queues" } },
-                { "WindowsAzure.Storage", new List<string> { "Azure.Storage.Blobs" } },
+                { "WindowsAzure.ServiceBus", new List<string> { "Azure.Messaging.ServiceBus", "Azure.Messaging.EventHubs" } },
+                { "WindowsAzure.Storage", new List<string> { "Azure.Storage.Blobs", "Azure.Storage.Queues" } },
 
                 // ASP.NET Core -> Azure migration
                 { "Microsoft.Extensions.Configuration.AzureKeyVault", new List<string> { "Azure.Extensions.Configuration.Secrets" } },
