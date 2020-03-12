@@ -29,13 +29,15 @@ namespace Ng
 {
     public static class CommandHelpers
     {
-        public static IDictionary<string, string> GetArguments(string[] args, int start)
+        public static IDictionary<string, string> GetArguments(string[] args, int start, out ISecretInjector secretInjector)
         {
             var unprocessedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             if ((args.Length - 1) % 2 != 0)
             {
                 Trace.TraceError("Unexpected number of arguments");
+                secretInjector = null;
+
                 return null;
             }
 
@@ -48,7 +50,7 @@ namespace Ng
                 unprocessedArguments.Add(argumentName, argumentValue);
             }
 
-            var secretInjector = GetSecretInjector(unprocessedArguments);
+            secretInjector = GetSecretInjector(unprocessedArguments);
 
             return new SecretDictionary(secretInjector, unprocessedArguments);
         }
