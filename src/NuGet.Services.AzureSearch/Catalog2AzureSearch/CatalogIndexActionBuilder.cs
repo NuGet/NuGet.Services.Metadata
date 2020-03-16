@@ -255,7 +255,7 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                     //      search documents get the benefit instead of having to reflow the latest version of each
                     //      search filter.
                     //
-                    indexAction = IndexAction.Merge<KeyedDocument>(_search.UpdateVersionListAndOwnersFromCatalog(
+                    indexAction = IndexAction.MergeOrUpload<KeyedDocument>(_search.UpdateVersionListAndOwnersFromCatalog(
                        context.PackageId,
                        searchFilters,
                        lastCommitTimestamp: context.LastCommitTimestamp,
@@ -267,7 +267,7 @@ namespace NuGet.Services.AzureSearch.Catalog2AzureSearch
                 }
                 else
                 {
-                    indexAction = IndexAction.Merge<KeyedDocument>(_search.UpdateVersionListFromCatalog(
+                    indexAction = IndexAction.MergeOrUpload<KeyedDocument>(_search.UpdateVersionListFromCatalog(
                        context.PackageId,
                        searchFilters,
                        lastCommitTimestamp: context.LastCommitTimestamp,
