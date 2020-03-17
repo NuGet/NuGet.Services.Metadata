@@ -30,9 +30,10 @@ namespace Ng
     public static class CommandHelpers
     {
         private static readonly int DefaultKeyVaultSecretCachingTimeout = 60 * 60 * 6; // 6 hours;
-        private static readonly HashSet<string> NotInjectedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
+        private static readonly HashSet<string> NotInjectedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
             "connectionString",
-            };
+        };
 
         public static IDictionary<string, string> GetArguments(string[] args, int start, out ISecretInjector secretInjector)
         {
