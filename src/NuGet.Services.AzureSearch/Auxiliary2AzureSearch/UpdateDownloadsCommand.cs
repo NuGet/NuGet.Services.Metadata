@@ -165,20 +165,6 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             return true;
         }
 
-        private SortedDictionary<string, long> ApplyDownloadTransferChanges(
-            SortedDictionary<string, long> downloadChanges,
-            Dictionary<string, long> downloadTransferChanges)
-        {
-            var result = new SortedDictionary<string, long>(downloadChanges);
-
-            foreach (var downloadTransferChange in downloadTransferChanges)
-            {
-                result[downloadTransferChange.Key] = downloadTransferChange.Value;
-            }
-
-            return result;
-        }
-
         private async Task WorkAsync(ConcurrentBag<string> idBag, SortedDictionary<string, long> changes)
         {
             // Perform two batching mechanisms:
