@@ -21,6 +21,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
     {
         private readonly IEntitiesContextFactory _contextFactory;
         private readonly IAuxiliaryFileClient _auxiliaryFileClient;
+        private readonly IDownloadTransferrer _downloadTransferrer;
         private readonly IOptionsSnapshot<Db2AzureSearchConfiguration> _options;
         private readonly IOptionsSnapshot<Db2AzureSearchDevelopmentConfiguration> _developmentOptions;
         private readonly ILogger<NewPackageRegistrationProducer> _logger;
@@ -28,6 +29,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
         public NewPackageRegistrationProducer(
             IEntitiesContextFactory contextFactory,
             IAuxiliaryFileClient auxiliaryFileClient,
+            IDownloadTransferrer downloadTransferrer,
             IOptionsSnapshot<Db2AzureSearchConfiguration> options,
             IOptionsSnapshot<Db2AzureSearchDevelopmentConfiguration> developmentOptions,
             ILogger<NewPackageRegistrationProducer> logger)
@@ -36,6 +38,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _developmentOptions = developmentOptions ?? throw new ArgumentNullException(nameof(developmentOptions));
             _auxiliaryFileClient = auxiliaryFileClient ?? throw new ArgumentNullException(nameof(auxiliaryFileClient));
+            _downloadTransferrer = downloadTransferrer ?? throw new ArgumentNullException(nameof(downloadTransferrer));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -61,8 +64,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             // Fetch the download overrides from the auxiliary file. Note that the overriden downloads are kept
             // separate from downloads data as the original data will be persisted to auxiliary data, whereas the
             // overriden data will be persisted to Azure Search.
-            var downloadOverrides = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
-            var overridenDownloads = downloads.ApplyDownloadOverrides(downloadOverrides, _logger);
+            var transferResult = await _downloadTransferrer.GetTransferChangesAsync(downloads);
+            var packageToDownloads = GetPackageToDownloads(downloads, transferResult.DownloadChanges);
 
             // Build a list of the owners data and verified IDs as we collect package registrations from the database.
             var ownersBuilder = new PackageIdToOwnersBuilder(_logger);
@@ -100,7 +103,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
                     allWork.Add(new NewPackageRegistration(
                         pr.Id,
-                        overridenDownloads.GetDownloadCount(pr.Id),
+                        packageToDownloads[pr.Id],
                         pr.Owners,
                         packages,
                         isExcludedByDefault));
@@ -120,7 +123,8 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 ownersBuilder.GetResult(),
                 downloads,
                 excludedPackages,
-                verifiedPackages);
+                verifiedPackages,
+                transferResult.LatestPopularityTransfers);
         }
 
         private bool ShouldWait(ConcurrentBag<NewPackageRegistration> allWork, bool log)
@@ -143,6 +147,25 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             }
 
             return false;
+        }
+
+        private Dictionary<string, long> GetPackageToDownloads(
+            DownloadData downloads,
+            Dictionary<string, long> downloadChanges)
+        {
+            var result = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var packageDownload in downloads)
+            {
+                result[packageDownload.Key] = packageDownload.Value.Total;
+            }
+
+            foreach (var downloadChange in downloadChanges)
+            {
+                result[downloadChange.Key] = downloadChange.Value;
+            }
+
+            return result;
         }
 
         private async Task<IReadOnlyList<Package>> GetPackagesAsync(PackageRegistrationRange range)

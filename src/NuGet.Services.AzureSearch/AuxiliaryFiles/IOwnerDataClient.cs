@@ -8,7 +8,7 @@ using NuGetGallery;
 namespace NuGet.Services.AzureSearch.AuxiliaryFiles
 {
     /// <summary>
-    /// The purpose of this interface is allow reading and writing owner information from storage. The Catalog2Owners
+    /// The purpose of this interface is allow reading and writing owner information from storage. The Auxiliary2AzureSearch
     /// job does a comparison of latest owner data from the database with a snapshot of information stored in Azure
     /// Blob Storage. This interface handles the reading and writing of that snapshot from storage.
     /// </summary>

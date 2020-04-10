@@ -30,6 +30,8 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
         private readonly IAuxiliaryFileClient _auxiliaryFileClient;
         private readonly IDownloadDataClient _downloadDataClient;
         private readonly IDownloadSetComparer _downloadSetComparer;
+        private readonly IDownloadTransferrer _downloadTransferrer;
+        private readonly IPopularityTransferDataClient _popularityTransferDataClient;
         private readonly ISearchDocumentBuilder _searchDocumentBuilder;
         private readonly ISearchIndexActionBuilder _indexActionBuilder;
         private readonly Func<IBatchPusher> _batchPusherFactory;
@@ -43,6 +45,8 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             IAuxiliaryFileClient auxiliaryFileClient,
             IDownloadDataClient downloadDataClient,
             IDownloadSetComparer downloadSetComparer,
+            IDownloadTransferrer downloadTransferrer,
+            IPopularityTransferDataClient popularityTransferDataClient,
             ISearchDocumentBuilder searchDocumentBuilder,
             ISearchIndexActionBuilder indexActionBuilder,
             Func<IBatchPusher> batchPusherFactory,
@@ -54,6 +58,8 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             _auxiliaryFileClient = auxiliaryFileClient ?? throw new ArgumentException(nameof(auxiliaryFileClient));
             _downloadDataClient = downloadDataClient ?? throw new ArgumentNullException(nameof(downloadDataClient));
             _downloadSetComparer = downloadSetComparer ?? throw new ArgumentNullException(nameof(downloadSetComparer));
+            _downloadTransferrer = downloadTransferrer ?? throw new ArgumentNullException(nameof(downloadTransferrer));
+            _popularityTransferDataClient = popularityTransferDataClient ?? throw new ArgumentNullException(nameof(popularityTransferDataClient));
             _searchDocumentBuilder = searchDocumentBuilder ?? throw new ArgumentNullException(nameof(searchDocumentBuilder));
             _indexActionBuilder = indexActionBuilder ?? throw new ArgumentNullException(nameof(indexActionBuilder));
             _batchPusherFactory = batchPusherFactory ?? throw new ArgumentNullException(nameof(batchPusherFactory));
@@ -106,23 +112,35 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             _logger.LogInformation("Fetching new download count data from blob storage.");
             var newData = await _auxiliaryFileClient.LoadDownloadDataAsync();
 
-            _logger.LogInformation("Removing invalid IDs and versions from the old data.");
+            _logger.LogInformation("Removing invalid IDs and versions from the old downloads data.");
             CleanDownloadData(oldResult.Data);
 
-            _logger.LogInformation("Removing invalid IDs and versions from the new data.");
+            _logger.LogInformation("Removing invalid IDs and versions from the new downloads data.");
             CleanDownloadData(newData);
 
-            // Fetch the download overrides from the auxiliary file. Note that the overriden downloads are kept
-            // separate from downloads data as the original data will be persisted to auxiliary data, whereas the
-            // overriden data will be persisted to Azure Search.
-            _logger.LogInformation("Overriding download count data.");
-            var downloadOverrides = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
-            var overridenDownloads = newData.ApplyDownloadOverrides(downloadOverrides, _logger);
-
             _logger.LogInformation("Detecting download count changes.");
-            var changes = _downloadSetComparer.Compare(oldResult.Data, overridenDownloads);
+            var changes = _downloadSetComparer.Compare(oldResult.Data, newData);
+            _logger.LogInformation("{Count} package IDs have download count changes.", changes.Count);
+
+            // The "old" data in this case is the popularity transfers data that was last indexed by this job (or
+            // initialized by Db2AzureSearch).
+            _logger.LogInformation("Fetching old popularity transfer data from blob storage.");
+            var oldTransfers = await _popularityTransferDataClient.ReadLatestAsync();
+
+            _logger.LogInformation("Finding download changes from popularity transfers and download overrides.");
+            var transferResult = await _downloadTransferrer.GetTransferChangesAsync(newData, changes, oldTransfers.Result);
+            _logger.LogInformation(
+                "{Count} package IDs have download count changes from popularity transfers and download overrides.",
+                transferResult.DownloadChanges.Count);
+
+            // Apply the download changes from popularity transfers to the overall changes.
+            foreach (var transferChange in transferResult.DownloadChanges)
+            {
+                changes[transferChange.Key] = transferChange.Value;
+            }
+
             var idBag = new ConcurrentBag<string>(changes.Keys);
-            _logger.LogInformation("{Count} package IDs have download count changes.", idBag.Count);
+            _logger.LogInformation("{Count} package IDs need to be updated.", idBag.Count);
 
             if (!changes.Any())
             {
@@ -139,7 +157,26 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
 
             _logger.LogInformation("Uploading the new download count data to blob storage.");
             await _downloadDataClient.ReplaceLatestIndexedAsync(newData, oldResult.Metadata.GetIfMatchCondition());
+
+            _logger.LogInformation("Uploading the new popularity transfer data to blob storage.");
+            await _popularityTransferDataClient.ReplaceLatestAsync(
+                transferResult.LatestPopularityTransfers,
+                oldTransfers.AccessCondition);
             return true;
+        }
+
+        private SortedDictionary<string, long> ApplyDownloadTransferChanges(
+            SortedDictionary<string, long> downloadChanges,
+            Dictionary<string, long> downloadTransferChanges)
+        {
+            var result = new SortedDictionary<string, long>(downloadChanges);
+
+            foreach (var downloadTransferChange in downloadTransferChanges)
+            {
+                result[downloadTransferChange.Key] = downloadTransferChange.Value;
+            }
+
+            return result;
         }
 
         private async Task WorkAsync(ConcurrentBag<string> idBag, SortedDictionary<string, long> changes)

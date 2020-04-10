@@ -24,7 +24,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 var newData = Data("NuGet.Core: NuGet, Microsoft",
                                    "NuGet.Versioning: NuGet, Microsoft");
 
-                var changes = Target.Compare(oldData, newData);
+                var changes = Target.CompareOwners(oldData, newData);
 
                 var pair = Assert.Single(changes);
                 Assert.Equal("NuGet.Versioning", pair.Key);
@@ -39,7 +39,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                                    "NuGet.Versioning: NuGet, Microsoft");
                 var newData = Data("NuGet.Core: NuGet, Microsoft");
 
-                var changes = Target.Compare(oldData, newData);
+                var changes = Target.CompareOwners(oldData, newData);
 
                 var pair = Assert.Single(changes);
                 Assert.Equal("NuGet.Versioning", pair.Key);
@@ -52,7 +52,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 var oldData = Data("NuGet.Core: NuGet");
                 var newData = Data("NuGet.Core: NuGet, Microsoft");
 
-                var changes = Target.Compare(oldData, newData);
+                var changes = Target.CompareOwners(oldData, newData);
 
                 var pair = Assert.Single(changes);
                 Assert.Equal("NuGet.Core", pair.Key);
@@ -65,7 +65,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 var oldData = Data("NuGet.Core: NuGet, Microsoft");
                 var newData = Data("NuGet.Core: NuGet");
 
-                var changes = Target.Compare(oldData, newData);
+                var changes = Target.CompareOwners(oldData, newData);
 
                 var pair = Assert.Single(changes);
                 Assert.Equal("NuGet.Core", pair.Key);
@@ -78,7 +78,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 var oldData = Data("NuGet.Core: NuGet, Microsoft");
                 var newData = Data("NuGet.Core: NuGet, microsoft");
 
-                var changes = Target.Compare(oldData, newData);
+                var changes = Target.CompareOwners(oldData, newData);
 
                 var pair = Assert.Single(changes);
                 Assert.Equal("NuGet.Core", pair.Key);
@@ -95,7 +95,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                                    "NuGet.Versioning: NuGet",
                                    "NuGet.Protocol: NuGet");
 
-                var changes = Target.Compare(oldData, newData);
+                var changes = Target.CompareOwners(oldData, newData);
 
                 Assert.Equal(3, changes.Count);
                 Assert.Equal(new[] { "NuGet.Core", "NuGet.Frameworks", "NuGet.Versioning" }, changes.Keys.ToArray());
@@ -112,7 +112,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 var newData = Data("NuGet.Core: NuGet, Microsoft",
                                    "NuGet.Versioning: NuGet, Microsoft");
 
-                var changes = Target.Compare(oldData, newData);
+                var changes = Target.CompareOwners(oldData, newData);
 
                 Assert.Empty(changes);
             }
@@ -123,16 +123,16 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             public Facts(ITestOutputHelper output)
             {
                 TelemetryService = new Mock<IAzureSearchTelemetryService>();
-                Logger = output.GetLogger<OwnerSetComparer>();
+                Logger = output.GetLogger<DataSetComparer>();
 
-                Target = new OwnerSetComparer(
+                Target = new DataSetComparer(
                     TelemetryService.Object,
                     Logger);
             }
 
             public Mock<IAzureSearchTelemetryService> TelemetryService { get; }
-            public RecordingLogger<OwnerSetComparer> Logger { get; }
-            public OwnerSetComparer Target { get; }
+            public RecordingLogger<DataSetComparer> Logger { get; }
+            public DataSetComparer Target { get; }
 
             /// <summary>
             /// A helper to turn lines formatted like this "PackageId: OwnerA, OwnerB" into package ID to owners
