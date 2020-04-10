@@ -74,7 +74,6 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 throw new ArgumentException("The new data should have a case-insensitive comparer.", nameof(newData));
             }
 
-
             // We use a very simplistic algorithm here. Perform one pass on the new data to find the added or changed
             // values. Then perform a second pass on the old data to find removed keys. We can optimize
             // this later if necessary.

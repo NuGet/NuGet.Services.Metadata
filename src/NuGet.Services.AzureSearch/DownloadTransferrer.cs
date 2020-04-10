@@ -55,7 +55,13 @@ namespace NuGet.Services.AzureSearch
             SortedDictionary<string, long> downloadChanges,
             SortedDictionary<string, SortedSet<string>> oldTransfers)
         {
-            // TODO: Guard to check all inputs have proper comparers!
+            Guard.Assert(
+                downloadChanges.Comparer == StringComparer.OrdinalIgnoreCase,
+                $"Download changes should using {nameof(StringComparer.OrdinalIgnoreCase)}");
+
+            Guard.Assert(
+                oldTransfers.Comparer == StringComparer.OrdinalIgnoreCase,
+                $"Old popularity transfer should using {nameof(StringComparer.OrdinalIgnoreCase)}");
 
             // Downloads are transferred from a "from" package to one or more "to" packages.
             // The "outgoingTransfers" maps "from" packages to their corresponding "to" packages.
