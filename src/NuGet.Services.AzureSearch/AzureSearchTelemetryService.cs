@@ -178,6 +178,43 @@ namespace NuGet.Services.AzureSearch
                 });
         }
 
+        public void TrackReadLatestIndexedPopularityTransfers(TimeSpan elapsed)
+        {
+            _telemetryClient.TrackMetric(
+                Prefix + "ReadLatestIndexedPopularityTransfersSeconds",
+                elapsed.TotalSeconds);
+        }
+
+        public IDisposable TrackReplaceLatestIndexPopularityTransfers()
+        {
+            return _telemetryClient.TrackDuration(
+                Prefix + "ReplaceLatestIndexPopularityTransfers");
+        }
+
+        public void TrackReadLatestPopularityTransfersFromDatabase(int transferCount, TimeSpan elapsed)
+        {
+            _telemetryClient.TrackMetric(
+                Prefix + "ReadLatestPopularityTransfersFromDatabaseSeconds",
+                elapsed.TotalSeconds,
+                new Dictionary<string, string>
+                {
+                    { "TransferCount", transferCount.ToString() }
+                });
+        }
+
+        public void TrackPopularityTransfersSetComparison(int oldCount, int newCount, int changeCount, TimeSpan elapsed)
+        {
+            _telemetryClient.TrackMetric(
+                Prefix + "PopularityTransfersSetComparisonSeconds",
+                elapsed.TotalSeconds,
+                new Dictionary<string, string>
+                {
+                    { "OldCount", oldCount.ToString() },
+                    { "NewCount", oldCount.ToString() },
+                    { "ChangeCount", oldCount.ToString() },
+                });
+        }
+
         public IDisposable TrackCatalog2AzureSearchProcessBatch(int catalogLeafCount, int latestCatalogLeafCount, int packageIdCount)
         {
             return _telemetryClient.TrackDuration(

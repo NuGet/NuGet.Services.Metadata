@@ -42,7 +42,7 @@ INNER JOIN Users u (NOLOCK) ON pro.UserKey = u.[Key]
         private const string GetPopularityTransfersSkipParameter = "@skip";
         private const string GetPopularityTransfersTakeParameter = "@take";
         private const string GetPopularityTransfersSql = @"
-SELECT TOP @take
+SELECT TOP (@take)
     fpr.Id AS FromPackageId,
     tpr.Id AS ToPackageId
 FROM PackageRenames r (NOLOCK)

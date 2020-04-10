@@ -37,6 +37,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             private readonly CancellationToken _token;
             private readonly NewPackageRegistrationProducer _target;
             private readonly Mock<IAuxiliaryFileClient> _auxiliaryFileClient;
+            private readonly Mock<IDownloadTransferrer> _downloadTransferrer;
             private readonly DownloadData _downloads;
             private readonly Dictionary<string, long> _downloadOverrides;
             private HashSet<string> _excludedPackages;
@@ -91,6 +92,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
                 _target = new NewPackageRegistrationProducer(
                     _entitiesContextFactory.Object,
                     _auxiliaryFileClient.Object,
+                    _downloadTransferrer.Object,
                     _options.Object,
                     _developmentOptions.Object,
                     _logger);

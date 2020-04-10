@@ -405,6 +405,8 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                     AuxiliaryFileClient.Object,
                     DownloadDataClient.Object,
                     DownloadSetComparer.Object,
+                    DownloadTransferrer.Object,
+                    PopularityTransferDataClient.Object,
                     SearchDocumentBuilder.Object,
                     IndexActionBuilder.Object,
                     () => BatchPusher.Object,
@@ -417,6 +419,8 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             public Mock<IAuxiliaryFileClient> AuxiliaryFileClient { get; }
             public Mock<IDownloadDataClient> DownloadDataClient { get; }
             public Mock<IDownloadSetComparer> DownloadSetComparer { get; }
+            public Mock<IDownloadTransferrer> DownloadTransferrer { get; }
+            public Mock<IPopularityTransferDataClient> PopularityTransferDataClient { get; }
             public Mock<ISearchDocumentBuilder> SearchDocumentBuilder { get; }
             public Mock<ISearchIndexActionBuilder> IndexActionBuilder { get; }
             public Mock<IBatchPusher> BatchPusher { get; }

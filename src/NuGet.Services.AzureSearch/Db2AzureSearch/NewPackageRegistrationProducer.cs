@@ -94,6 +94,11 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
                 foreach (var pr in packageRegistrationInfo)
                 {
+                    if (!packageToDownloads.TryGetValue(pr.Id, out var packageDownloads))
+                    {
+                        packageDownloads = 0;
+                    }
+
                     if (!keyToPackages.TryGetValue(pr.Key, out var packages))
                     {
                         packages = new List<Package>();
@@ -103,7 +108,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
 
                     allWork.Add(new NewPackageRegistration(
                         pr.Id,
-                        packageToDownloads[pr.Id],
+                        packageDownloads,
                         pr.Owners,
                         packages,
                         isExcludedByDefault));

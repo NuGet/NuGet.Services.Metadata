@@ -20,7 +20,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             Downloads = downloads ?? throw new ArgumentNullException(nameof(downloads));
             ExcludedPackages = excludedPackages ?? throw new ArgumentNullException(nameof(excludedPackages));
             VerifiedPackages = verifiedPackages ?? throw new ArgumentNullException(nameof(verifiedPackages));
-            PopularityTransfers = owners ?? throw new ArgumentNullException(nameof(popularityTransfers));
+            PopularityTransfers = popularityTransfers ?? throw new ArgumentNullException(nameof(popularityTransfers));
         }
 
         public SortedDictionary<string, SortedSet<string>> Owners { get; }
