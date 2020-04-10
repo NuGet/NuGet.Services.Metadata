@@ -9,30 +9,27 @@ namespace NuGet.Services.AzureSearch
 {
     public class DownloadTransferrer : IDownloadTransferrer
     {
+        // TODO: Config
         private const double TransferPercentage = 0.99;
 
         private readonly IAuxiliaryFileClient _auxiliaryFileClient;
-        private readonly IPopularityTransferDataClient _popularityTransferDataClient;
         private readonly IDatabaseAuxiliaryDataFetcher _databaseFetcher;
         private readonly IDataSetComparer _dataComparer;
         private readonly ILogger<DownloadTransferrer> _logger;
 
         public DownloadTransferrer(
             IAuxiliaryFileClient auxiliaryFileClient,
-            IPopularityTransferDataClient popularityTransferDataClient,
             IDatabaseAuxiliaryDataFetcher databaseFetcher,
             IDataSetComparer dataComparer,
             ILogger<DownloadTransferrer> logger)
         {
             _auxiliaryFileClient = auxiliaryFileClient ?? throw new ArgumentException(nameof(auxiliaryFileClient));
-            _popularityTransferDataClient = popularityTransferDataClient ?? throw new ArgumentNullException(nameof(popularityTransferDataClient));
             _databaseFetcher = databaseFetcher ?? throw new ArgumentNullException(nameof(databaseFetcher));
             _dataComparer = dataComparer ?? throw new ArgumentNullException(nameof(dataComparer));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<DownloadTransferResult> GetTransferChangesAsync(
-            DownloadData downloads)
+        public async Task<DownloadTransferResult> GetTransferChangesAsync(DownloadData downloads)
         {
             // Downloads are transferred from a "from" package to one or more "to" packages.
             // The "outgoingTransfers" maps "from" packages to their corresponding "to" packages.
