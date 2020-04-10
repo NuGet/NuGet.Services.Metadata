@@ -38,25 +38,16 @@ namespace NuGet.Services.AzureSearch
             var outgoingTransfers = await _databaseFetcher.GetPackageIdToPopularityTransfersAsync();
             var incomingTransfers = GetIncomingTransfers(outgoingTransfers);
 
-            var affectedPackageIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            affectedPackageIds.UnionWith(outgoingTransfers.Keys);
-            affectedPackageIds.UnionWith(incomingTransfers.Keys);
+            // Get the transfer changes for all packages that have popularity transfers.
+            var packageIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            packageIds.UnionWith(outgoingTransfers.Keys);
+            packageIds.UnionWith(incomingTransfers.Keys);
 
-            var result = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-            foreach (var packageId in affectedPackageIds)
-            {
-                result[packageId] = GetPackageDownloadsAfterTransfers(
-                    packageId,
-                    outgoingTransfers,
-                    incomingTransfers,
-                    downloads);
-            }
-
-            await AddDownloadOverridesAsync(downloads, result);
-
-            return new DownloadTransferResult(
-                result,
-                outgoingTransfers);
+            return await GetTransferChangesAsync(
+                downloads,
+                outgoingTransfers,
+                incomingTransfers,
+                packageIds);
         }
 
         public async Task<DownloadTransferResult> GetTransferChangesAsync(
@@ -77,19 +68,33 @@ namespace NuGet.Services.AzureSearch
             var transferChanges = _dataComparer.ComparePopularityTransfers(oldTransfers, outgoingTransfers);
             _logger.LogInformation("{Count} popularity transfers have changed.", transferChanges.Count);
 
-            var affectedPackageIds = GetAffectedPackageIds(
+            // Get the transfer changes for packages affected by the download and transfer changes.
+            var affectedPackages = GetPackagesAffectedByChanges(
                 oldTransfers,
                 outgoingTransfers,
                 incomingTransfers,
                 transferChanges,
                 downloadChanges);
 
+            return await GetTransferChangesAsync(
+                downloads,
+                outgoingTransfers,
+                incomingTransfers,
+                affectedPackages);
+        }
+
+        private async Task<DownloadTransferResult> GetTransferChangesAsync(
+            DownloadData downloads,
+            SortedDictionary<string, SortedSet<string>> outgoingTransfers,
+            SortedDictionary<string, SortedSet<string>> incomingTransfers,
+            HashSet<string> packageIds)
+        {
             _logger.LogInformation(
                 "{Count} package IDs have download changes due to popularity transfers.",
-                affectedPackageIds.Count);
+                packageIds.Count);
 
             var result = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-            foreach (var packageId in affectedPackageIds)
+            foreach (var packageId in packageIds)
             {
                 result[packageId] = GetPackageDownloadsAfterTransfers(
                     packageId,
@@ -103,45 +108,6 @@ namespace NuGet.Services.AzureSearch
             return new DownloadTransferResult(
                 result,
                 outgoingTransfers);
-        }
-
-        private async Task AddDownloadOverridesAsync(
-            DownloadData downloads,
-            Dictionary<string, long> downloadChanges)
-        {
-            // TODO: Remove this! Add issue
-            _logger.LogInformation("Fetching download override data.");
-            var downloadOverrides = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
-
-            foreach (var downloadOverride in downloadOverrides)
-            {
-                var packageId = downloadOverride.Key;
-                var packageDownloads = downloads.GetDownloadCount(packageId);
-
-                if (downloadChanges.TryGetValue(packageId, out var updatedDownloads))
-                {
-                    packageDownloads = updatedDownloads;
-                }
-
-                if (packageDownloads >= downloadOverride.Value)
-                {
-                    _logger.LogInformation(
-                        "Skipping download override for package {PackageId} as its downloads of {Downloads} are " +
-                        "greater than its override of {DownloadsOverride}",
-                        packageId,
-                        packageDownloads,
-                        downloadOverride.Value);
-                    continue;
-                }
-
-                _logger.LogInformation(
-                    "Overriding downloads of package {PackageId} from {Downloads} to {DownloadsOverride}",
-                    packageId,
-                    packageDownloads,
-                    downloadOverride.Value);
-
-                downloadChanges[packageId] = downloadOverride.Value;
-            }
         }
 
         private SortedDictionary<string, SortedSet<string>> GetIncomingTransfers(
@@ -168,7 +134,7 @@ namespace NuGet.Services.AzureSearch
             return result;
         }
 
-        private HashSet<string> GetAffectedPackageIds(
+        private HashSet<string> GetPackagesAffectedByChanges(
             SortedDictionary<string, SortedSet<string>> oldOutgoingTransfers,
             SortedDictionary<string, SortedSet<string>> outgoingTransfers,
             SortedDictionary<string, SortedSet<string>> incomingTransfers,
@@ -180,7 +146,7 @@ namespace NuGet.Services.AzureSearch
             // If a package adds, changes, or removes outgoing transfers:
             //    Update "from" package
             //    Update all new "to" packages
-            //    Update all old "to" packages (in case the "to" was removed)
+            //    Update all old "to" packages (in case "to" packages were removed)
             foreach (var transferChange in transferChanges)
             {
                 var fromPackage = transferChange.Key;
@@ -200,7 +166,7 @@ namespace NuGet.Services.AzureSearch
             //    Update all "to" packages
             //
             // If a package has download changes and incoming transfers
-            //    Update package
+            //    Update "to" package
             foreach (var packageId in downloadChanges.Keys)
             {
                 if (outgoingTransfers.TryGetValue(packageId, out var toPackages))
@@ -258,6 +224,45 @@ namespace NuGet.Services.AzureSearch
 
             // The package has no outgoing or incoming transfers. Return its downloads unchanged.
             return originalDownloads;
+        }
+
+        private async Task AddDownloadOverridesAsync(
+            DownloadData downloads,
+            Dictionary<string, long> downloadChanges)
+        {
+            // TODO: Remove this! Add issue
+            _logger.LogInformation("Fetching download override data.");
+            var downloadOverrides = await _auxiliaryFileClient.LoadDownloadOverridesAsync();
+
+            foreach (var downloadOverride in downloadOverrides)
+            {
+                var packageId = downloadOverride.Key;
+                var packageDownloads = downloads.GetDownloadCount(packageId);
+
+                if (downloadChanges.TryGetValue(packageId, out var updatedDownloads))
+                {
+                    packageDownloads = updatedDownloads;
+                }
+
+                if (packageDownloads >= downloadOverride.Value)
+                {
+                    _logger.LogInformation(
+                        "Skipping download override for package {PackageId} as its downloads of {Downloads} are " +
+                        "greater than its override of {DownloadsOverride}",
+                        packageId,
+                        packageDownloads,
+                        downloadOverride.Value);
+                    continue;
+                }
+
+                _logger.LogInformation(
+                    "Overriding downloads of package {PackageId} from {Downloads} to {DownloadsOverride}",
+                    packageId,
+                    packageDownloads,
+                    downloadOverride.Value);
+
+                downloadChanges[packageId] = downloadOverride.Value;
+            }
         }
     }
 }
