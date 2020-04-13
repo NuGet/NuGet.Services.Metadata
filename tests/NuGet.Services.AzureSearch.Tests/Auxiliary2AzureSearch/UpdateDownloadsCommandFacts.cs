@@ -171,13 +171,13 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                         return downloadChanges;
                     });
 
-                TransferChanges["Package1"] = 100;
-                TransferChanges["Package2"] = 200;
-
                 NewTransfers["Package1"] = new SortedSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
                     "Package2"
                 };
+
+                TransferChanges["Package1"] = 100;
+                TransferChanges["Package2"] = 200;
 
                 await Target.ExecuteAsync();
 
@@ -221,8 +221,15 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                         It.IsAny<IAccessCondition>()),
                     Times.Once);
 
-                // TODO: Popularity transfers auxiliary file should have new data.
-                // See: https://github.com/NuGet/NuGetGallery/issues/7898
+                // Popularity transfers auxiliary file should have new data.
+                PopularityTransferDataClient.Verify(
+                    c => c.ReplaceLatestIndexedAsync(
+                        It.Is<SortedDictionary<string, SortedSet<string>>>(d =>
+                            d.Count == 1 &&
+                            d["Package1"].Count == 1 &&
+                            d["Package1"].Contains("Package2")),
+                        It.IsAny<IAccessCondition>()),
+                    Times.Once);
             }
 
             [Fact]
@@ -246,13 +253,13 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 NewDownloadData.SetDownloadCount("C", "5.0.0", 2);
                 NewDownloadData.SetDownloadCount("C", "6.0.0", 3);
 
+                NewTransfers["A"] = new SortedSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "b"
+                };
+
                 TransferChanges["A"] = 55;
                 TransferChanges["b"] = 66;
-
-                NewTransfers["FromPackage"] = new SortedSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "ToPackage"
-                };
 
                 await Target.ExecuteAsync();
 
@@ -288,8 +295,15 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                         It.IsAny<IAccessCondition>()),
                     Times.Once);
 
-                // TODO: Popularity transfers auxiliary file should have new data.
-                // See: https://github.com/NuGet/NuGetGallery/issues/7898
+                // Popularity transfers auxiliary file should have new data.
+                PopularityTransferDataClient.Verify(
+                    c => c.ReplaceLatestIndexedAsync(
+                        It.Is<SortedDictionary<string, SortedSet<string>>>(d =>
+                            d.Count == 1 &&
+                            d["A"].Count == 1 &&
+                            d["A"].Contains("b")),
+                        It.IsAny<IAccessCondition>()),
+                    Times.Once);
             }
         }
 
@@ -334,7 +348,6 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                     .Returns(() => Changes);
 
                 OldTransfers = new SortedDictionary<string, SortedSet<string>>(StringComparer.OrdinalIgnoreCase);
-
                 OldTransferResult = new ResultAndAccessCondition<SortedDictionary<string, SortedSet<string>>>(
                     OldTransfers,
                     Mock.Of<IAccessCondition>());
@@ -349,7 +362,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
 
                 DownloadOverrides = new Dictionary<string, long>();
                 AuxiliaryFileClient.Setup(x => x.LoadDownloadOverridesAsync()).ReturnsAsync(() => DownloadOverrides);
-
+ 
                 TransferChanges = new SortedDictionary<string, long>(StringComparer.OrdinalIgnoreCase);
                 DownloadTransferrer
                     .Setup(x => x.UpdateDownloadTransfers(
