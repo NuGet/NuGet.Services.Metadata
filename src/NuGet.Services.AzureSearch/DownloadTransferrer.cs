@@ -136,7 +136,7 @@ namespace NuGet.Services.AzureSearch
             return result;
         }
 
-	    private SortedDictionary<string, SortedSet<string>> GetIncomingTransfers(
+        private SortedDictionary<string, SortedSet<string>> GetIncomingTransfers(
             SortedDictionary<string, SortedSet<string>> outgoingTransfers)
         {
             var result = new SortedDictionary<string, SortedSet<string>>(StringComparer.OrdinalIgnoreCase);
