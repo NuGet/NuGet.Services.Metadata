@@ -171,13 +171,13 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                         return downloadChanges;
                     });
 
+                TransferChanges["Package1"] = 100;
+                TransferChanges["Package2"] = 200;
+
                 NewTransfers["Package1"] = new SortedSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
                     "Package2"
                 };
-
-                TransferChanges["Package1"] = 100;
-                TransferChanges["Package2"] = 200;
 
                 await Target.ExecuteAsync();
 
