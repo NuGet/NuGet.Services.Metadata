@@ -233,7 +233,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
             }
 
             [Fact]
-            public async Task TransferChangesOverideDownloadChanges()
+            public async Task TransferChangesOverrideDownloadChanges()
             {
                 DownloadSetComparer
                     .Setup(c => c.Compare(It.IsAny<DownloadData>(), It.IsAny<DownloadData>()))
