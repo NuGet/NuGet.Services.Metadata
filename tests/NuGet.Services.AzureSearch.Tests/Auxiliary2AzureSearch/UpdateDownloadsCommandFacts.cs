@@ -362,7 +362,7 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
 
                 DownloadOverrides = new Dictionary<string, long>();
                 AuxiliaryFileClient.Setup(x => x.LoadDownloadOverridesAsync()).ReturnsAsync(() => DownloadOverrides);
- 
+
                 TransferChanges = new SortedDictionary<string, long>(StringComparer.OrdinalIgnoreCase);
                 DownloadTransferrer
                     .Setup(x => x.UpdateDownloadTransfers(
