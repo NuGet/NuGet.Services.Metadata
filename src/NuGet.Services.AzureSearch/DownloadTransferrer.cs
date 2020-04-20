@@ -33,6 +33,10 @@ namespace NuGet.Services.AzureSearch
             SortedDictionary<string, SortedSet<string>> outgoingTransfers,
             IReadOnlyDictionary<string, long> downloadOverrides)
         {
+            Guard.Assert(
+                outgoingTransfers.Comparer == StringComparer.OrdinalIgnoreCase,
+                $"Popularity transfer should have comparer {nameof(StringComparer.OrdinalIgnoreCase)}");
+
             // Downloads are transferred from a "from" package to one or more "to" packages.
             // The "outgoingTransfers" maps "from" packages to their corresponding "to" packages.
             // The "incomingTransfers" maps "to" packages to their corresponding "from" packages.
@@ -70,6 +74,10 @@ namespace NuGet.Services.AzureSearch
             Guard.Assert(
                 oldTransfers.Comparer == StringComparer.OrdinalIgnoreCase,
                 $"Old popularity transfer should have comparer {nameof(StringComparer.OrdinalIgnoreCase)}");
+
+            Guard.Assert(
+                oldTransfers.Comparer == StringComparer.OrdinalIgnoreCase,
+                $"New popularity transfer should have comparer {nameof(StringComparer.OrdinalIgnoreCase)}");
 
             Guard.Assert(
                 downloadChanges.All(x => downloads.GetDownloadCount(x.Key) == x.Value),
