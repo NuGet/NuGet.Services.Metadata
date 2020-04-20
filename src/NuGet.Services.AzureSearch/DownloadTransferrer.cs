@@ -76,7 +76,7 @@ namespace NuGet.Services.AzureSearch
                 $"Old popularity transfer should have comparer {nameof(StringComparer.OrdinalIgnoreCase)}");
 
             Guard.Assert(
-                oldTransfers.Comparer == StringComparer.OrdinalIgnoreCase,
+                newTransfers.Comparer == StringComparer.OrdinalIgnoreCase,
                 $"New popularity transfer should have comparer {nameof(StringComparer.OrdinalIgnoreCase)}");
 
             Guard.Assert(
