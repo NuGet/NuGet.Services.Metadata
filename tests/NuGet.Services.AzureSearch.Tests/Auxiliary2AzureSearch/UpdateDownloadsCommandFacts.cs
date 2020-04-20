@@ -253,13 +253,13 @@ namespace NuGet.Services.AzureSearch.Auxiliary2AzureSearch
                 NewDownloadData.SetDownloadCount("C", "5.0.0", 2);
                 NewDownloadData.SetDownloadCount("C", "6.0.0", 3);
 
+                TransferChanges["A"] = 55;
+                TransferChanges["b"] = 66;
+
                 NewTransfers["A"] = new SortedSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
                     "b"
                 };
-
-                TransferChanges["A"] = 55;
-                TransferChanges["b"] = 66;
 
                 await Target.ExecuteAsync();
 
