@@ -155,48 +155,51 @@ ORDER BY r.[Key] ASC
 
         public async Task<SortedDictionary<string, SortedSet<string>>> GetPackageIdToPopularityTransfersAsync()
         {
-            var stopwatch = Stopwatch.StartNew();
+            await Task.Yield();
+
             var builder = new PackageIdToPopularityTransfersBuilder(_logger);
-            using (var connection = await _connectionFactory.OpenAsync())
-            using (var command = connection.CreateCommand())
+            	
+            var popularityTransfers = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
             {
-                command.CommandText = GetPopularityTransfersSql;
-                command.Parameters.Add(GetPopularityTransfersSkipParameter, SqlDbType.Int);
-                command.Parameters.AddWithValue(GetPopularityTransfersTakeParameter, GetPopularityTransfersPageSize);
+                // Azure SDK
+                { "Microsoft.Azure.CosmosDB.Table", new List<string> { "Microsoft.Azure.Cosmos.Table" } },
+                { "Microsoft.Azure.EventHubs", new List<string> { "Azure.Messaging.EventHubs" } },
+                { "Microsoft.Azure.EventHubs.Processor", new List<string> { "Azure.Messaging.EventHubs.Processor" } },
+                { "Microsoft.Azure.KeyVault", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
+                { "Microsoft.Azure.KeyVault.Core", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
+                { "Microsoft.Azure.KeyVault.Cryptography", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
+                { "Microsoft.Azure.KeyVault.Extensions", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
+                { "Microsoft.Azure.KeyVault.WebKey", new List<string> { "Azure.Security.KeyVault.Keys", "Azure.Security.KeyVault.Secrets", "Azure.Security.KeyVault.Certificates" } },
+                { "Microsoft.Azure.ServiceBus", new List<string> { "Azure.Messaging.ServiceBus" } },
+                { "Microsoft.Azure.Storage.Blob", new List<string> { "Azure.Storage.Blobs" } },
+                { "Microsoft.Azure.Storage.File", new List<string> { "Azure.Storage.Files.Shares" } },
+                { "Microsoft.Azure.Storage.Queue", new List<string> { "Azure.Storage.Queues" } },
+                { "WindowsAzure.ServiceBus", new List<string> { "Azure.Messaging.ServiceBus", "Azure.Messaging.EventHubs" } },
+                { "WindowsAzure.Storage", new List<string> { "Azure.Storage.Blobs", "Azure.Storage.Queues" } },
 
-                // Load popularity transfers by paging through the database.
-                // We continue paging until we receive fewer results than the page size.
-                int currentPageResults;
-                int totalResults = 0;
-                do
+                // ASP.NET Core -> Azure migration
+                { "Microsoft.Extensions.Configuration.AzureKeyVault", new List<string> { "Azure.Extensions.Configuration.Secrets" } },
+                { "Microsoft.AspNetCore.DataProtection.AzureKeyVault", new List<string> { "Azure.AspNetCore.DataProtection.Keys" } },
+                { "Microsoft.AspNetCore.DataProtection.AzureStorage", new List<string> { "Azure.AspNetCore.DataProtection.Blobs" } },
+
+                // Community
+                { "Microsoft.Net.Compilers", new List<string> { "Microsoft.Net.Compilers.Toolset" } },
+                { "iTextSharp", new List<string> { "itext7" } },
+                { "KendoUIWeb", new List<string> { "KendoUICore" } },
+                { "Optional", new List<string> { "Optional.Collections", "Optional.Utilities" } },
+            };
+
+            foreach (var popularityTransfer in popularityTransfers)
+            {
+                var fromId = popularityTransfer.Key;
+
+                foreach (var toId in popularityTransfer.Value)
                 {
-                    command.Parameters[GetPopularityTransfersSkipParameter].Value = totalResults;
-
-                    using (var reader = await command.ExecuteReaderAsync())
-                    {
-                        currentPageResults = 0;
-
-                        while (await reader.ReadAsync())
-                        {
-                            currentPageResults++;
-
-                            var fromId = reader.GetString(0);
-                            var toId = reader.GetString(1);
-
-                            builder.Add(fromId, toId);
-                        }
-                    }
-
-                    totalResults += currentPageResults;
+                    builder.Add(fromId, toId);
                 }
-                while (currentPageResults == GetPopularityTransfersPageSize);
-
-                var output = builder.GetResult();
-                stopwatch.Stop();
-                _telemetryService.TrackReadLatestPopularityTransfersFromDatabase(output.Count, stopwatch.Elapsed);
-
-                return output;
             }
+
+            return builder.GetResult();
         }
     }
 }
