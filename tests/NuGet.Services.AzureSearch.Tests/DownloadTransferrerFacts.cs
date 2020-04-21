@@ -88,6 +88,26 @@ namespace NuGet.Services.AzureSearch
             }
 
             [Fact]
+            public void PopularityTransferRoundsDown()
+            {
+                PopularityTransfer = 0.5;
+
+                DownloadData.SetDownloadCount("A", "1.0.0", 3);
+                DownloadData.SetDownloadCount("B", "1.0.0", 0);
+
+                AddPopularityTransfer("A", "B");
+
+                var result = Target.InitializeDownloadTransfers(
+                    DownloadData,
+                    PopularityTransfers,
+                    DownloadOverrides);
+
+                Assert.Equal(new[] { "A", "B" }, result.Keys);
+                Assert.Equal(1, result["A"]);
+                Assert.Equal(1, result["B"]);
+            }
+
+            [Fact]
             public void AcceptsPopularityFromMultipleSources()
             {
                 PopularityTransfer = 1;
@@ -453,6 +473,30 @@ namespace NuGet.Services.AzureSearch
                 Assert.Equal(0, result["A"]);
                 Assert.Equal(55, result["B"]);
                 Assert.Equal(50, result["C"]);
+            }
+
+            [Fact]
+            public void PopularityTransferRoundsDown()
+            {
+                PopularityTransfer = 0.5;
+
+                DownloadData.SetDownloadCount("A", "1.0.0", 3);
+                DownloadData.SetDownloadCount("B", "1.0.0", 0);
+
+                DownloadChanges["A"] = 3;
+
+                AddPopularityTransfer("A", "B");
+
+                var result = Target.UpdateDownloadTransfers(
+                    DownloadData,
+                    DownloadChanges,
+                    OldTransfers,
+                    PopularityTransfers,
+                    DownloadOverrides);
+
+                Assert.Equal(new[] { "A", "B" }, result.Keys);
+                Assert.Equal(1, result["A"]);
+                Assert.Equal(1, result["B"]);
             }
 
             [Fact]
