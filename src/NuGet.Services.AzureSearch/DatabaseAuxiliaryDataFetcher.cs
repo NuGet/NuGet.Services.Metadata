@@ -162,6 +162,7 @@ ORDER BY r.[Key] ASC
             var popularityTransfers = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
             {
                 // Azure SDK
+                { "Microsoft.Azure.Storage.Common", new List<string> { "Azure.Storage.Blobs", "Azure.Storage.Queues", "Azure.Storage.Files.Shares" } }
                 { "Microsoft.Azure.CosmosDB.Table", new List<string> { "Microsoft.Azure.Cosmos.Table" } },
                 { "Microsoft.Azure.EventHubs", new List<string> { "Azure.Messaging.EventHubs" } },
                 { "Microsoft.Azure.EventHubs.Processor", new List<string> { "Azure.Messaging.EventHubs.Processor" } },
@@ -183,10 +184,10 @@ ORDER BY r.[Key] ASC
                 { "Microsoft.AspNetCore.DataProtection.AzureStorage", new List<string> { "Azure.AspNetCore.DataProtection.Blobs" } },
 
                 // Community
-                { "Microsoft.Net.Compilers", new List<string> { "Microsoft.Net.Compilers.Toolset" } },
-                { "iTextSharp", new List<string> { "itext7" } },
-                { "KendoUIWeb", new List<string> { "KendoUICore" } },
-                { "Optional", new List<string> { "Optional.Collections", "Optional.Utilities" } },
+                //{ "Microsoft.Net.Compilers", new List<string> { "Microsoft.Net.Compilers.Toolset" } },
+                //{ "iTextSharp", new List<string> { "itext7" } },
+                //{ "KendoUIWeb", new List<string> { "KendoUICore" } },
+                //{ "Optional", new List<string> { "Optional.Collections", "Optional.Utilities" } },
             };
 
             foreach (var popularityTransfer in popularityTransfers)
