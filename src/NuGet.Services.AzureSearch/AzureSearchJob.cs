@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Rest;
 using NuGet.Jobs;
+using NuGet.Jobs.Validation;
 
 namespace NuGet.Services.AzureSearch
 {
@@ -17,6 +18,9 @@ namespace NuGet.Services.AzureSearch
         {
             ServicePointManager.DefaultConnectionLimit = 64;
             ServicePointManager.MaxServicePointIdleTime = 10000;
+
+            var featureFlagRefresher = _serviceProvider.GetRequiredService<IFeatureFlagRefresher>();
+            await featureFlagRefresher.StartIfConfiguredAsync();
 
             var tracingInterceptor = _serviceProvider.GetRequiredService<IServiceClientTracingInterceptor>();
             try
@@ -30,6 +34,8 @@ namespace NuGet.Services.AzureSearch
             {
                 ServiceClientTracing.RemoveTracingInterceptor(tracingInterceptor);
             }
+
+            await featureFlagRefresher.StopAndWaitAsync();
         }
 
         protected override void ConfigureAutofacServices(ContainerBuilder containerBuilder)

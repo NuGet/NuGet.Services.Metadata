@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NuGet.Jobs.Validation;
 using NuGet.Services.AzureSearch;
 using NuGet.Services.AzureSearch.Auxiliary2AzureSearch;
 using NuGet.Services.AzureSearch.AuxiliaryFiles;
@@ -12,6 +13,7 @@ namespace NuGet.Jobs
     public class Job : AzureSearchJob<Auxiliary2AzureSearchCommand>
     {
         private const string ConfigurationSectionName = "Auxiliary2AzureSearch";
+        private const string FeatureFlagConfigurationSectionName = "FeatureFlags";
 
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
@@ -21,6 +23,7 @@ namespace NuGet.Jobs
             services.Configure<AuxiliaryDataStorageConfiguration>(configurationRoot.GetSection(ConfigurationSectionName));
             services.Configure<AzureSearchJobConfiguration>(configurationRoot.GetSection(ConfigurationSectionName));
             services.Configure<AzureSearchConfiguration>(configurationRoot.GetSection(ConfigurationSectionName));
+            services.Configure<FeatureFlagConfiguration>(configurationRoot.GetSection(FeatureFlagConfigurationSectionName));
         }
     }
 }
