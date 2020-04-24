@@ -169,7 +169,7 @@ namespace NuGet.Services.AzureSearch.Db2AzureSearch
             {
                 _logger.LogWarning(
                     "Popularity transfers feature flag is disabled. " +
-                    "All popularity transfers will be removed.");
+                    "Popularity transfers will be ignored.");
                 return new SortedDictionary<string, SortedSet<string>>(StringComparer.OrdinalIgnoreCase);
             }
 
