@@ -8,7 +8,7 @@ namespace NuGet.Services.AzureSearch
 {
     public class FeatureFlagService : IFeatureFlagService
     {
-        private const string ValidationPrefix = "Search.";
+        private const string SearchPrefix = "Search.";
 
         private readonly IFeatureFlagClient _featureFlagClient;
 
@@ -19,7 +19,7 @@ namespace NuGet.Services.AzureSearch
 
         public bool IsPopularityTransferEnabled()
         {
-            return _featureFlagClient.IsEnabled(ValidationPrefix + "TransferPopularity", defaultValue: true);
+            return _featureFlagClient.IsEnabled(SearchPrefix + "TransferPopularity", defaultValue: true);
         }
     }
 }
