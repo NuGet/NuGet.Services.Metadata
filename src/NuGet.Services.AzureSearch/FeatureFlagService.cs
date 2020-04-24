@@ -19,7 +19,7 @@ namespace NuGet.Services.AzureSearch
 
         public bool IsPopularityTransferEnabled()
         {
-            return _featureFlagClient.IsEnabled(ValidationPrefix + "PopularityTransfer", defaultValue: true);
+            return _featureFlagClient.IsEnabled(ValidationPrefix + "TransferPopularity", defaultValue: true);
         }
     }
 }
