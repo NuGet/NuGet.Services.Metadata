@@ -27,6 +27,9 @@ namespace NuGet.Services.V3
     {
         private const string FeatureFlagBindingKey = nameof(FeatureFlagBindingKey);
 
+        private static readonly TimeSpan FeatureFlagServerTimeout = TimeSpan.FromSeconds(30);
+        private static readonly TimeSpan FeatureFlagMaxExecutionTime = TimeSpan.FromMinutes(10);
+
         public static IServiceCollection AddV3(this IServiceCollection services, IDictionary<string, string> telemetryGlobalDimensions)
         {
             services
@@ -69,8 +72,8 @@ namespace NuGet.Services.V3
                     var options = c.Resolve<IOptionsSnapshot<FeatureFlagConfiguration>>();
                     var requestOptions = new BlobRequestOptions
                     {
-                        ServerTimeout = TimeSpan.FromMinutes(2),
-                        MaximumExecutionTime = TimeSpan.FromMinutes(10),
+                        ServerTimeout = FeatureFlagServerTimeout,
+                        MaximumExecutionTime = FeatureFlagMaxExecutionTime,
                         LocationMode = LocationMode.PrimaryThenSecondary,
                         RetryPolicy = new ExponentialRetry(),
                     };
