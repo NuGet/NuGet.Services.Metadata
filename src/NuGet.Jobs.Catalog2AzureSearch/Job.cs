@@ -3,7 +3,6 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using NuGet.Jobs.Validation;
 using NuGet.Services.AzureSearch;
 using NuGet.Services.AzureSearch.Catalog2AzureSearch;
 using NuGet.Services.V3;
