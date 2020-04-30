@@ -15,7 +15,6 @@ namespace NuGet.Jobs
     {
         private const string ConfigurationSectionName = "Db2AzureSearch";
         private const string DevelopmentConfigurationSectionName = "Db2AzureSearch:Development";
-        private const string FeatureFlagConfigurationSectionName = "FeatureFlags";
 
         protected override void ConfigureJobServices(IServiceCollection services, IConfigurationRoot configurationRoot)
         {
@@ -29,7 +28,6 @@ namespace NuGet.Jobs
                 configurationRoot.GetSection(DevelopmentConfigurationSectionName));
             services.Configure<Db2AzureSearchDevelopmentConfiguration>(
                 configurationRoot.GetSection(DevelopmentConfigurationSectionName));
-            services.Configure<FeatureFlagConfiguration>(configurationRoot.GetSection(FeatureFlagConfigurationSectionName));
         }
     }
 }
