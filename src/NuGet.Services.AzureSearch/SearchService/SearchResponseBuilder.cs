@@ -449,6 +449,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     Id = document.PackageId,
                     DownloadCount = AuxiliaryData.GetTotalDownloadCount(document.PackageId),
                     Verified = AuxiliaryData.IsVerified(document.PackageId),
+                    PopularityTransfers = AuxiliaryData.GetPopularityTransfers(document.PackageId),
                 },
                 Version = document.OriginalVersion ?? document.NormalizedVersion,
                 NormalizedVersion = document.NormalizedVersion,
