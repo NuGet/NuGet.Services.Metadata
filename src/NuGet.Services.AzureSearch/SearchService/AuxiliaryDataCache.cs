@@ -77,6 +77,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     // Load the auxiliary files in parallel.
                     const string downloadsName = nameof(_data.Downloads);
                     const string verifiedPackagesName = nameof(_data.VerifiedPackages);
+                    const string popularityTransfersName = nameof(_data.PopularityTransfers);
                     var downloadsTask = LoadAsync(_data?.Downloads, _downloadDataClient.ReadLatestIndexedAsync);
                     var verifiedPackagesTask = LoadAsync(_data?.VerifiedPackages, _verifiedPackagesDataClient.ReadLatestAsync);
                     var popularityTransfersTask = LoadAsync(_data?.PopularityTransfers, _popularityTransferDataClient.ReadLatestIndexedAsync);
@@ -90,7 +91,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                     var notModifiedNames = new List<string>();
                     (ReferenceEquals(_data?.Downloads, downloads) ? notModifiedNames : reloadedNames).Add(downloadsName);
                     (ReferenceEquals(_data?.VerifiedPackages, verifiedPackages) ? notModifiedNames : reloadedNames).Add(verifiedPackagesName);
-                    (ReferenceEquals(_data?.PopularityTransfers, popularityTransfers) ? notModifiedNames : reloadedNames).Add(verifiedPackagesName);
+                    (ReferenceEquals(_data?.PopularityTransfers, popularityTransfers) ? notModifiedNames : reloadedNames).Add(popularityTransfersName);
 
                     // Reference assignment is atomic, so this is what makes the data available for readers.
                     _data = new AuxiliaryData(
