@@ -407,7 +407,7 @@ namespace NuGet.Services.AzureSearch
                 elapsed.TotalMilliseconds);
         }
 
-        public void TrackReadLatestVerifiedPackages(int? packageIdCount, bool notModified, TimeSpan elapsed)
+        public void TrackReadLatestVerifiedPackages(int? packageIdCount, bool modified, TimeSpan elapsed)
         {
             _telemetryClient.TrackMetric(
                 Prefix + "ReadLatestVerifiedPackagesSeconds",
@@ -415,7 +415,7 @@ namespace NuGet.Services.AzureSearch
                 new Dictionary<string, string>
                 {
                     { "PackageIdCount", packageIdCount?.ToString() },
-                    { "NotModified", notModified.ToString() },
+                    { "Modified", modified.ToString() },
                 });
         }
 
