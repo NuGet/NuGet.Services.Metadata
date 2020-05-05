@@ -10,8 +10,6 @@ namespace NuGet.Services.AzureSearch.SearchService
 {
     public class AuxiliaryData : IAuxiliaryData
     {
-        private static readonly string[] EmptyStringArray = new string[0];
-
         public AuxiliaryData(
             DateTimeOffset loaded,
             AuxiliaryFileResult<DownloadData> downloads,
@@ -56,7 +54,7 @@ namespace NuGet.Services.AzureSearch.SearchService
                 return result.ToArray();
             }
 
-            return EmptyStringArray;
+            return Array.Empty<string>();
         }
     }
 }
