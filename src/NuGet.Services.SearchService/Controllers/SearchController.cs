@@ -29,7 +29,8 @@ namespace NuGet.Services.SearchService.Controllers
             { "title-desc", V2SortBy.SortableTitleDesc },
             { "created-asc", V2SortBy.CreatedAsc },
             { "created-desc", V2SortBy.CreatedDesc },
-            { "totalDownloads", V2SortBy.TotalDownloads },
+            { "totalDownloads-asc", V2SortBy.TotalDownloadsAsc },
+            { "totalDownloads-desc", V2SortBy.TotalDownloadsDesc },
         };
 
         private readonly IAuxiliaryDataCache _auxiliaryDataCache;
