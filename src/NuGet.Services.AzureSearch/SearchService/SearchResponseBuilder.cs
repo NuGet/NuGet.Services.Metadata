@@ -323,16 +323,22 @@ namespace NuGet.Services.AzureSearch.SearchService
             }
             else
             {
+                var resultData = results.Select(x =>
+                {
+                    var package = toPackage(x.Document);
+                    package.Debug = request.ShowDebug ? x : null;
+                    return package;
+                });
+
+                if (request.SortBy == V2SortBy.TotalDownloads)
+                {
+                    resultData = resultData.OrderBy(x => x.DownloadCount);
+                }
+
                 return new V2SearchResponse
                 {
                     TotalHits = result.Count.Value,
-                    Data = results
-                        .Select(x =>
-                        {
-                            var package = toPackage(x.Document);
-                            package.Debug = request.ShowDebug ? x : null;
-                            return package;
-                        })
+                    Data = resultData
                         .ToList(),
                     Debug = DebugInformation.CreateFromSearchOrNull(
                         request,
