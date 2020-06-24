@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -22,12 +22,14 @@ namespace NuGet.Services.SearchService.Controllers
 
         private static readonly IReadOnlyDictionary<string, V2SortBy> SortBy = new Dictionary<string, V2SortBy>(StringComparer.OrdinalIgnoreCase)
         {
+            { "relevance", V2SortBy.Popularity},
             { "lastEdited", V2SortBy.LastEditedDesc },
             { "published", V2SortBy.PublishedDesc },
             { "title-asc", V2SortBy.SortableTitleAsc },
             { "title-desc", V2SortBy.SortableTitleDesc },
             { "created-asc", V2SortBy.CreatedAsc },
             { "created-desc", V2SortBy.CreatedDesc },
+            { "totalDownloads", V2SortBy.TotalDownloads },
         };
 
         private readonly IAuxiliaryDataCache _auxiliaryDataCache;

@@ -12,5 +12,6 @@ namespace NuGet.Services.AzureSearch.SearchService
         SortableTitleDesc,
         CreatedAsc,
         CreatedDesc,
+        TotalDownloads,
     }
 }

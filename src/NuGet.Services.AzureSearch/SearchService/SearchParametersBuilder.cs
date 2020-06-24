@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -34,6 +34,7 @@ namespace NuGet.Services.AzureSearch.SearchService
         private static readonly List<string> SortableTitleDesc = new List<string> { IndexFields.SortableTitle + Desc, IndexFields.Created + Desc }; // Last title by lex order first, then oldest
         private static readonly List<string> CreatedAsc = new List<string> { IndexFields.Created + Asc }; // Newest first
         private static readonly List<string> CreatedDesc = new List<string> { IndexFields.Created + Desc }; // Oldest first
+        private static readonly List<string> TotalDownloads = new List<string> { IndexFields.Search.TotalDownloadCount + Desc }; // Most downloads first
 
         public SearchParameters LastCommitTimestamp()
         {
@@ -201,6 +202,9 @@ namespace NuGet.Services.AzureSearch.SearchService
                     break;
                 case V2SortBy.CreatedDesc:
                     orderBy = CreatedDesc;
+                    break;
+                case V2SortBy.TotalDownloads:
+                    orderBy = TotalDownloads;
                     break;
                 default:
                     throw new ArgumentException($"The provided {nameof(V2SortBy)} is not supported.", nameof(sortBy));
