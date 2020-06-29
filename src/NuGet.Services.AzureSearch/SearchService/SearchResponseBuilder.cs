@@ -330,13 +330,14 @@ namespace NuGet.Services.AzureSearch.SearchService
                     return package;
                 });
 
+                // We sort here to make sure to sort on the same data displayed to the user (i.e: to avoid having inconsistencies in the displayed order of the packages)
                 if (request.SortBy == V2SortBy.TotalDownloadsAsc)
                 {
-                    resultData = resultData.OrderBy(x => x.DownloadCount);   
+                    resultData = resultData.OrderBy(x => x.PackageRegistration.DownloadCount);   
                 }
                 else if (request.SortBy == V2SortBy.TotalDownloadsDesc)
                 {
-                    resultData = resultData.OrderByDescending(x => x.DownloadCount);
+                    resultData = resultData.OrderByDescending(x => x.PackageRegistration.DownloadCount);
                 }
 
                 return new V2SearchResponse
