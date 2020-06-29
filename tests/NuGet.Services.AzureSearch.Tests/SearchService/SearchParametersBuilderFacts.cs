@@ -7,6 +7,7 @@ using System.Linq;
 using Microsoft.Azure.Search;
 using Microsoft.Azure.Search.Models;
 using Moq;
+using NuGet.Packaging;
 using Xunit;
 
 namespace NuGet.Services.AzureSearch.SearchService
@@ -179,7 +180,11 @@ namespace NuGet.Services.AzureSearch.SearchService
             {
                 var metadataProperties = typeof(BaseMetadataDocument)
                     .GetProperties()
+                    .Union(typeof(SearchDocument.Full).GetProperties()) // Properties can also be in a SearchDocument (e.g: TotalDownloadCount)
+                    .GroupBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => g.First())
                     .ToDictionary(x => x.Name, x => x, StringComparer.OrdinalIgnoreCase);
+
                 var expectedOrderBy = V2SortByToOrderBy[v2SortBy];
 
                 foreach (var clause in expectedOrderBy)
@@ -507,6 +512,8 @@ namespace NuGet.Services.AzureSearch.SearchService
                 { V2SortBy.SortableTitleDesc, new[] { "sortableTitle desc", "created desc" } },
                 { V2SortBy.CreatedAsc, new[] { "created asc" } },
                 { V2SortBy.CreatedDesc, new[] { "created desc" } },
+                { V2SortBy.TotalDownloadsAsc, new[] { "totalDownloadCount asc" } },
+                { V2SortBy.TotalDownloadsDesc, new[] { "totalDownloadCount desc" } },
             };
 
             public static IEnumerable<object[]> AllSearchFilters => new[]

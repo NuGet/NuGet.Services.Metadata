@@ -3,6 +3,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Net;
 using Microsoft.Azure.Search.Models;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -357,6 +360,145 @@ namespace NuGet.Services.AzureSearch.SearchService
                 Assert.Equal(4, response.Data[0].DownloadCount);
             }
 
+            [Fact]
+            public void SortDownloadsAscUsingAuxilaryFile()
+            {
+                const int MockSearchResultCount = 5;
+                var mockAuxilaryDataDownloads = new Dictionary<string, long>();
+                var doc = _searchResult.Results[0].Document;
+
+                // Duplicate the initial document and change packageId and totalDownloadCount to test sorting.
+                // i starts at 1 since _searchResult.Results already contains an element.
+                for (int i = 1; i <= MockSearchResultCount; ++i)
+                {
+                    var newDoc = new SearchDocument.Full()
+                    {
+                        // Nullable fields need to be copied
+                        Created = doc.Created,
+                        DownloadScore = doc.DownloadScore,
+                        FileSize = doc.FileSize,
+                        IsExcludedByDefault = doc.IsExcludedByDefault,
+                        IsLatest = doc.IsLatest,
+                        IsLatestStable = doc.IsLatestStable,
+                        LastCommitTimestamp = doc.LastCommitTimestamp,
+                        LastEdited = doc.LastEdited,
+                        LastUpdatedDocument = doc.LastUpdatedDocument,
+                        LastUpdatedFromCatalog = doc.LastUpdatedFromCatalog,
+                        Prerelease = doc.Prerelease,
+                        Published = doc.Published,
+                        RequiresLicenseAcceptance = doc.RequiresLicenseAcceptance,
+                        SemVerLevel = doc.SemVerLevel,
+
+                        // Changed fields
+                        PackageId = doc.PackageId + i,
+                        TotalDownloadCount = doc.TotalDownloadCount + i,
+                        Title = doc.Title + i,
+                    };
+
+                    _searchResult.Results.Add(new SearchResult<SearchDocument.Full>() { 
+                        Document = newDoc
+                    });
+
+                    // Add reverse order download count in the auxilary data
+                    mockAuxilaryDataDownloads.Add(newDoc.PackageId, doc.TotalDownloadCount.Value + 2*MockSearchResultCount - i);
+                }
+                mockAuxilaryDataDownloads.Add(doc.PackageId, doc.TotalDownloadCount.Value + 2 * MockSearchResultCount);
+                _searchResult.Count = _searchResult.Results.Count;
+                
+                var expectedOrder = _searchResult
+                    .Results
+                    .OrderBy(x => mockAuxilaryDataDownloads[x.Document.PackageId])
+                    .Select(x => x.Document.PackageId);
+
+                _auxiliaryData
+                    .Setup(x => x.GetTotalDownloadCount(It.IsAny<string>()))
+                    .Returns((string packageId) => {
+                        return mockAuxilaryDataDownloads[packageId];
+                    });
+
+                // Apply the order by ASCENDING TotalDownloadCount and search
+                _searchParameters.OrderBy = new List<string> { IndexFields.Search.TotalDownloadCount + " asc" };
+                _v2Request.SortBy = V2SortBy.TotalDownloadsAsc;
+                var responseAsc = Target.V2FromSearch(
+                   _v2Request,
+                   _text,
+                   _searchParameters,
+                   _searchResult,
+                   _duration);
+                
+                Assert.Equal(responseAsc.Data.Select(x => x.PackageRegistration.Id), expectedOrder);
+            }
+
+            [Fact]
+            public void SortDownloadsDescUsingAuxilaryFile()
+            {
+                const int MockSearchResultCount = 5;
+                var mockAuxilaryDataDownloads = new Dictionary<string, long>();
+                var doc = _searchResult.Results[0].Document;
+
+                // Duplicate the initial document and change packageId and totalDownloadCount to test sorting.
+                // i starts at 1 since _searchResult.Results already contains an element.
+                for (int i = 1; i <= MockSearchResultCount; ++i)
+                {
+                    var newDoc = new SearchDocument.Full()
+                    {
+                        // Nullable fields need to be copied
+                        Created = doc.Created,
+                        DownloadScore = doc.DownloadScore,
+                        FileSize = doc.FileSize,
+                        IsExcludedByDefault = doc.IsExcludedByDefault,
+                        IsLatest = doc.IsLatest,
+                        IsLatestStable = doc.IsLatestStable,
+                        LastCommitTimestamp = doc.LastCommitTimestamp,
+                        LastEdited = doc.LastEdited,
+                        LastUpdatedDocument = doc.LastUpdatedDocument,
+                        LastUpdatedFromCatalog = doc.LastUpdatedFromCatalog,
+                        Prerelease = doc.Prerelease,
+                        Published = doc.Published,
+                        RequiresLicenseAcceptance = doc.RequiresLicenseAcceptance,
+                        SemVerLevel = doc.SemVerLevel,
+
+                        // Changed fields
+                        PackageId = doc.PackageId + i,
+                        TotalDownloadCount = doc.TotalDownloadCount + i,
+                        Title = doc.Title + i,
+                    };
+
+                    _searchResult.Results.Add(new SearchResult<SearchDocument.Full>()
+                    {
+                        Document = newDoc
+                    });
+
+                    // Add reverse order download count in the auxilary data
+                    mockAuxilaryDataDownloads.Add(newDoc.PackageId, doc.TotalDownloadCount.Value + 2 * MockSearchResultCount - i);
+                }
+                mockAuxilaryDataDownloads.Add(doc.PackageId, doc.TotalDownloadCount.Value + 2 * MockSearchResultCount);
+                _searchResult.Count = _searchResult.Results.Count;
+
+                var expectedOrder = _searchResult
+                    .Results
+                    .OrderByDescending(x => mockAuxilaryDataDownloads[x.Document.PackageId])
+                    .Select(x => x.Document.PackageId);
+
+                _auxiliaryData
+                    .Setup(x => x.GetTotalDownloadCount(It.IsAny<string>()))
+                    .Returns((string packageId) => {
+                        return mockAuxilaryDataDownloads[packageId];
+                    });
+
+                // Apply the order by ASCENDING TotalDownloadCount and search
+                _searchParameters.OrderBy = new List<string> { IndexFields.Search.TotalDownloadCount + " desc" };
+                _v2Request.SortBy = V2SortBy.TotalDownloadsDesc;
+                var responseDesc = Target.V2FromSearch(
+                   _v2Request,
+                   _text,
+                   _searchParameters,
+                   _searchResult,
+                   _duration);
+
+                Assert.Equal(responseDesc.Data.Select(x => x.PackageRegistration.Id), expectedOrder);
+            }
+            
             [Fact]
             public void GetsPopularityTransfer()
             {

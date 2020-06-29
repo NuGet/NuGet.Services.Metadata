@@ -243,6 +243,10 @@ namespace NuGet.Services.SearchService.Controllers
             [InlineData("Created-asc", V2SortBy.CreatedAsc)]
             [InlineData("CREATED-desc", V2SortBy.CreatedDesc)]
             [InlineData("Created-desc", V2SortBy.CreatedDesc)]
+            [InlineData("totalDownloads", V2SortBy.Popularity)]
+            [InlineData("totalDownloads-asc", V2SortBy.TotalDownloadsAsc)]
+            [InlineData("totalDownloads-desc", V2SortBy.TotalDownloadsDesc)]
+            [InlineData("TotalDownloads-desc", V2SortBy.TotalDownloadsDesc)]
             public async Task ParsesSortBy(string sortBy, V2SortBy expected)
             {
                 await _target.V2SearchAsync(sortBy: sortBy);
