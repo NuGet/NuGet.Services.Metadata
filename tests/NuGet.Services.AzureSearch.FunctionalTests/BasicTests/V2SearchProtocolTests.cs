@@ -46,17 +46,17 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
         [MemberData(nameof(TakeResults))]
         public async Task TakeReturnsExactResults(int take)
         {
-            var results = await V2SearchAsync(new V2SearchBuilder { Query = "json", Take = take });
+            var results = await V2SearchAsync(new V2SearchBuilder { Query = "", Take = take });
 
             Assert.NotNull(results);
-            Assert.True(results.TotalHits > take);
+            Assert.True(results.TotalHits >= results.Data.Count);
             Assert.True(results.Data.Count == take, $"The search result did not return the expected {take} results");
         }
 
         [Fact]
         public async Task SkipDoesSkipThePackagesInResult()
         {
-            var searchTerm = "json";
+            var searchTerm = "";
             var skip = 5;
             var resultsWithoutSkip = await V2SearchAsync(new V2SearchBuilder { Query = searchTerm, Take = 10 });
             var resultsWithSkip = await V2SearchAsync(new V2SearchBuilder { Query = searchTerm, Skip = skip, Take = 10 - skip });
@@ -406,7 +406,7 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
         [MemberData(nameof(GetSortByData))]
         public async Task ResultsAreOrderedBySpecifiedParameter(string orderBy, Func<V2SearchResultEntry, object> GetPropertyValue, bool reverse = false)
         {
-            var results = await V2SearchAsync(new V2SearchBuilder { Query = "json", SortBy = orderBy });
+            var results = await V2SearchAsync(new V2SearchBuilder { Query = "", SortBy = orderBy });
 
             Assert.NotNull(results);
             Assert.True(results.Data.Count > 1);
@@ -420,10 +420,18 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
 
             // Descending comparers
             Func<object, object, bool> comparer = (x1, x2) => {
-                return topResults[0].GetType() == typeof(DateTime)
-                        ? DateTime.Compare((DateTime)x1, (DateTime)x2) >= 0
-                        : string.Compare(x1.ToString(), x2.ToString()) >= 0;
-                };
+                switch (x1)
+                {
+                    case DateTime _:
+                        return DateTime.Compare((DateTime)x1, (DateTime)x2) >= 0;
+                    case string _:
+                        return string.Compare(x1.ToString(), x2.ToString()) >= 0;
+                    case long _:
+                        return (long)x1 >= (long) x2;
+                    default:
+                        throw new NotSupportedException($"Type {x1.GetType()} is not supported.");
+                }
+            };
 
             for (int i = 1; i < topResults.Count(); i++)
             {
@@ -518,6 +526,8 @@ namespace NuGet.Services.AzureSearch.FunctionalTests
                 yield return new object[] { "title-desc", (Func<V2SearchResultEntry, object>)((V2SearchResultEntry data) => { return data.Title; }) };
                 yield return new object[] { "created-asc", (Func<V2SearchResultEntry, object>)((V2SearchResultEntry data) => { return data.Created; }), true };
                 yield return new object[] { "created-desc", (Func<V2SearchResultEntry, object>)((V2SearchResultEntry data) => { return data.Created; }) };
+                yield return new object[] { "totalDownloads-asc", (Func<V2SearchResultEntry, object>)((V2SearchResultEntry data) => { return data.PackageRegistration.DownloadCount; }), true };
+                yield return new object[] { "totalDownloads-desc", (Func<V2SearchResultEntry, object>)((V2SearchResultEntry data) => { return data.PackageRegistration.DownloadCount; }) };
             }
         }
     }
