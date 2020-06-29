@@ -1,0 +1,52 @@
+{
+  "GalleryDb": {
+    "ConnectionString": "Data Source=(localdb)\\mssqllocaldb; Initial Catalog=NuGetGallery; Integrated Security=True; MultipleActiveResultSets=True"
+  },
+
+  "Db2AzureSearch": {
+    "AzureSearchBatchSize": 1000,
+    "MaxConcurrentBatches": 4,
+    "MaxConcurrentVersionListWriters": 8,
+    "SearchServiceName": "mog-search",
+    "SearchServiceApiKey": "$$Tmog-Search-ApiKey-ReadWrite$$",
+    "SearchIndexName": "search",
+    "HijackIndexName": "hijack",
+    "StorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=tmogdev0;AccountKey=$$Tmog-Mogdev0-AccountKey$$;EndpointSuffix=core.windows.net",
+    "StorageContainer": "azs",
+    "StoragePath": "",
+    "GalleryBaseUrl": "https://dev.nugettest.org/",
+    "AuxiliaryDataStorageConnectionString": "DefaultEndpointsProtocol=https;AccountName=tmogdev0;AccountKey=$$Tmog-Mogdev0-AccountKey$$;EndpointSuffix=core.windows.net",
+    "AuxiliaryDataStorageContainer": "ng-search-data",
+    "AuxiliaryDataStorageDownloadsPath": "downloads.v1.json",
+    "AuxiliaryDataStorageDownloadOverridesPath": "downloadOverrides.json",
+    "AuxiliaryDataStorageExcludedPackagesPath": "ExcludedPackages.v1.json",
+    "AuxiliaryDataStorageVerifiedPackagesPath": "verifiedPackages.json",
+    "FlatContainerBaseUrl": "https://apidev.nugettest.org/",
+    "FlatContainerContainerName": "v3-flatcontainer",
+    "AllIconsInFlatContainer": false,
+    "DatabaseBatchSize": 10000,
+    "CatalogIndexUrl": "https://apidev.nugettest.org/v3/catalog0/index.json",
+    "EnablePopularityTransfers": true,
+    "Scoring": {
+      "FieldWeights": {
+        "PackageId": 9,
+        "TokenizedPackageId": 9,
+        "Tags": 5
+      },
+      "DownloadScoreBoost": 30000,
+      "PopularityTransfer": 0.99
+    },
+    "Development": {
+      "ReplaceContainersAndIndexes": true,
+      "DisableVersionListWriters": false,
+      "SkipPackagePrefixes": []
+    }
+  },
+
+  "KeyVault_VaultName": "NuGetDevKeyVault",
+  "KeyVault_ClientId": "0d0b9c1e-8d58-4821-8937-039d5d7fee0b",
+  "KeyVault_CertificateThumbprint": "396BB4AFD92838F286097D8D033E05960EDC619B",
+  "KeyVault_ValidateCertificate": true,
+  "KeyVault_StoreName": "My",
+  "KeyVault_StoreLocation": "CurrentUser"
+}

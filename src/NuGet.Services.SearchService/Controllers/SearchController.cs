@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation. All rights reserved.
+﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -84,7 +84,8 @@ namespace NuGet.Services.SearchService.Controllers
             string q = null,
             string sortBy = null,
             bool? luceneQuery = true,
-            bool? debug = false)
+            bool? debug = false,
+            string packageType = null)
         {
             await EnsureInitializedAsync();
 
@@ -100,6 +101,7 @@ namespace NuGet.Services.SearchService.Controllers
                 SortBy = GetSortBy(sortBy),
                 LuceneQuery = luceneQuery ?? true,
                 ShowDebug = debug ?? false,
+                PackageType = packageType,
             };
 
             return await _searchService.V2SearchAsync(request);
