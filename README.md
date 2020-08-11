@@ -20,6 +20,7 @@ BEFORE: https://github.com/NuGet/<b>NuGet.Services.Metadata</b>/blob/master/buil
 
 ## Perhaps you're looking for...
 
+- [NuGet/NuGet.Jobs](https://github.com/NuGet/NuGet.Jobs) - the destination for this repository move
 - [NuGet/NuGetGallery](https://github.com/NuGet/NuGetGallery) - the code that runs the www.nuget.org website
   and the issue tracker for all nuget.org issues
 - [NuGet/Home](https://github.com/NuGet/Home) - the issue tracker for NuGet client
