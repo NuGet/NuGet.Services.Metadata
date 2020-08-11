@@ -1,13 +1,33 @@
-# NuGet.Services.Metadata
+# This repository has moved!
 
-This repo contains nuget.org's implementation of the [NuGet V3 API](https://docs.microsoft.com/en-us/nuget/api/overview).
+This repository has been merged into https://github.com/NuGet/NuGet.Jobs. All changes to the nuget.org V3 jobs and
+Search Service should be made to the NuGet.Jobs repository.
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+As of commit NuGet.Jobs commit
+[`dd26676619c5901c9924fc9b3286ba263c41a446`](https://github.com/NuGet/NuGet.Jobs/commit/dd26676619c5901c9924fc9b3286ba263c41a446)
+all projects, files, and Git history of the NuGet.Services.Metadata repository have been merged into the NuGet.Jobs
+repository. This merge was done to reduce the amount of overhead needed to maintain the back-end of nuget.org.
 
-## Feedback
+If you have a broken link found in documentation, please let us know by opening a bug on that documentation page.
 
-If you're having trouble with the NuGet.org Website, file a bug on the [NuGet Gallery Issue Tracker](https://github.com/nuget/NuGetGallery/issues). 
+If you'd like to try to work around the broken link, try changing the "NuGet.Services.Metadata" part of the URL to
+"NuGet.Jobs". This is not guaranteed to work as the code changes, but it may help. For example:
 
-If you're having trouble with the NuGet client tools (the Visual Studio extension, NuGet.exe command line tool, etc.), file a bug on [NuGet Home](https://github.com/nuget/home/issues).
+<pre>
+BEFORE: https://github.com/NuGet/<b>NuGet.Services.Metadata</b>/blob/master/build.ps1
+ AFTER: https://github.com/NuGet/<b>NuGet.Jobs</b>/blob/master/build.ps1
+</pre>
 
-Check out the [contributing](http://docs.nuget.org/contribute) page to see the best places to log issues and start discussions. The [NuGet Home](https://github.com/NuGet/Home) repo provides an overview of the different NuGet projects available.
+## Perhaps you're looking for...
+
+- [NuGet/NuGet.Jobs](https://github.com/NuGet/NuGet.Jobs) - the destination for this repository move
+- [NuGet/NuGetGallery](https://github.com/NuGet/NuGetGallery) - the code that runs the www.nuget.org website
+  and the issue tracker for all nuget.org issues
+- [NuGet/Home](https://github.com/NuGet/Home) - the issue tracker for NuGet client
+- [NuGet/NuGet.Client](https://github.com/NuGet/NuGet.Client) - the code for NuGet client, i.e. Visual Studio
+  integration, .NET CLI integration, MSBuild integration, nuget.exe, etc. 
+
+## Still confused?
+
+Feel free to open an issue at [NuGet/NuGetGallery](https://github.com/NuGet/NuGetGallery/issues) and someone will help
+you out.
